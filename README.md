@@ -42,7 +42,7 @@ A mobile-first Progressive Web App for tracking daily calories with your partner
 
    Edit `.env.local`:
    ```env
-   DATABASE_URL="mongodb+srv://username:password@cluster.mongodb.net/eato"
+   DATABASE_URL="mongodb+srv://<username>:<password>@<cluster>.mongodb.net/eato"
    NEXTAUTH_URL="http://localhost:3000"
    NEXTAUTH_SECRET="generate-with-openssl-rand-base64-32"
    ```
