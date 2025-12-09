@@ -1,0 +1,219 @@
+import { z } from "zod";
+import { router, protectedProcedure } from "../trpc";
+import { startOfDay, endOfDay, subDays, startOfWeek, endOfWeek } from "date-fns";
+
+export const statsRouter = router({
+  // Get daily summary
+  getDailySummary: protectedProcedure
+    .input(z.object({ date: z.string().datetime() }))
+    .query(async ({ ctx, input }) => {
+      const date = new Date(input.date);
+      const dayStart = startOfDay(date);
+
+      const dailyLog = await ctx.prisma.dailyLog.findUnique({
+        where: {
+          userId_date: {
+            userId: ctx.user.id,
+            date: dayStart,
+          },
+        },
+        include: {
+          entries: {
+            orderBy: { consumedAt: "asc" },
+          },
+        },
+      });
+
+      const profile = await ctx.prisma.profile.findUnique({
+        where: { userId: ctx.user.id },
+      });
+
+      return {
+        date: dayStart,
+        totalCalories: dailyLog?.totalCalories ?? 0,
+        totalProtein: dailyLog?.totalProtein ?? 0,
+        totalCarbs: dailyLog?.totalCarbs ?? 0,
+        totalFat: dailyLog?.totalFat ?? 0,
+        totalFiber: dailyLog?.totalFiber ?? 0,
+        calorieGoal: profile?.calorieGoal ?? 2000,
+        bmr: profile?.bmr ?? null,
+        tdee: profile?.tdee ?? null,
+        entries: dailyLog?.entries ?? [],
+        entriesByMeal: {
+          BREAKFAST: dailyLog?.entries.filter((e) => e.mealType === "BREAKFAST") ?? [],
+          LUNCH: dailyLog?.entries.filter((e) => e.mealType === "LUNCH") ?? [],
+          DINNER: dailyLog?.entries.filter((e) => e.mealType === "DINNER") ?? [],
+          SNACK: dailyLog?.entries.filter((e) => e.mealType === "SNACK") ?? [],
+        },
+      };
+    }),
+
+  // Get weekly summary (last 7 days)
+  getWeeklySummary: protectedProcedure
+    .input(
+      z.object({
+        endDate: z.string().datetime().optional(),
+      })
+    )
+    .query(async ({ ctx, input }) => {
+      const endDate = input.endDate ? new Date(input.endDate) : new Date();
+      const startDate = subDays(startOfDay(endDate), 6);
+
+      const dailyLogs = await ctx.prisma.dailyLog.findMany({
+        where: {
+          userId: ctx.user.id,
+          date: {
+            gte: startDate,
+            lte: endOfDay(endDate),
+          },
+        },
+        orderBy: { date: "asc" },
+      });
+
+      const profile = await ctx.prisma.profile.findUnique({
+        where: { userId: ctx.user.id },
+      });
+
+      // Create a map for quick lookup
+      const logsByDate = new Map(
+        dailyLogs.map((log) => [log.date.toISOString().split("T")[0], log])
+      );
+
+      // Generate all 7 days
+      const days = [];
+      for (let i = 0; i < 7; i++) {
+        const date = subDays(endOfDay(endDate), 6 - i);
+        const dateKey = startOfDay(date).toISOString().split("T")[0];
+        const log = logsByDate.get(dateKey);
+
+        days.push({
+          date: startOfDay(date),
+          totalCalories: log?.totalCalories ?? 0,
+          totalProtein: log?.totalProtein ?? 0,
+          totalCarbs: log?.totalCarbs ?? 0,
+          totalFat: log?.totalFat ?? 0,
+          calorieGoal: log?.calorieGoal ?? profile?.calorieGoal ?? 2000,
+          goalMet: log ? log.totalCalories <= log.calorieGoal : false,
+        });
+      }
+
+      // Calculate weekly averages
+      const daysWithData = days.filter((d) => d.totalCalories > 0);
+      const avgCalories =
+        daysWithData.length > 0
+          ? Math.round(
+              daysWithData.reduce((sum, d) => sum + d.totalCalories, 0) /
+                daysWithData.length
+            )
+          : 0;
+
+      return {
+        days,
+        averageCalories: avgCalories,
+        totalCalories: days.reduce((sum, d) => sum + d.totalCalories, 0),
+        daysOnGoal: days.filter((d) => d.goalMet).length,
+        calorieGoal: profile?.calorieGoal ?? 2000,
+      };
+    }),
+
+  // Get partner's daily summary
+  getPartnerDailySummary: protectedProcedure
+    .input(z.object({ date: z.string().datetime() }))
+    .query(async ({ ctx, input }) => {
+      // Get current user to find partner
+      const user = await ctx.prisma.user.findUnique({
+        where: { id: ctx.user.id },
+        select: { partnerId: true },
+      });
+
+      if (!user?.partnerId) {
+        return null;
+      }
+
+      const date = new Date(input.date);
+      const dayStart = startOfDay(date);
+
+      const dailyLog = await ctx.prisma.dailyLog.findUnique({
+        where: {
+          userId_date: {
+            userId: user.partnerId,
+            date: dayStart,
+          },
+        },
+      });
+
+      const profile = await ctx.prisma.profile.findUnique({
+        where: { userId: user.partnerId },
+      });
+
+      const partner = await ctx.prisma.user.findUnique({
+        where: { id: user.partnerId },
+        select: { name: true },
+      });
+
+      return {
+        partnerName: partner?.name ?? "Partner",
+        date: dayStart,
+        totalCalories: dailyLog?.totalCalories ?? 0,
+        calorieGoal: profile?.calorieGoal ?? 2000,
+        goalProgress: dailyLog
+          ? Math.round(
+              (dailyLog.totalCalories / (profile?.calorieGoal ?? 2000)) * 100
+            )
+          : 0,
+      };
+    }),
+
+  // Get partner's weekly summary
+  getPartnerWeeklySummary: protectedProcedure.query(async ({ ctx }) => {
+    const user = await ctx.prisma.user.findUnique({
+      where: { id: ctx.user.id },
+      select: { partnerId: true },
+    });
+
+    if (!user?.partnerId) {
+      return null;
+    }
+
+    const endDate = new Date();
+    const startDate = subDays(startOfDay(endDate), 6);
+
+    const dailyLogs = await ctx.prisma.dailyLog.findMany({
+      where: {
+        userId: user.partnerId,
+        date: {
+          gte: startDate,
+          lte: endOfDay(endDate),
+        },
+      },
+      orderBy: { date: "asc" },
+    });
+
+    const profile = await ctx.prisma.profile.findUnique({
+      where: { userId: user.partnerId },
+    });
+
+    const partner = await ctx.prisma.user.findUnique({
+      where: { id: user.partnerId },
+      select: { name: true },
+    });
+
+    const daysOnGoal = dailyLogs.filter(
+      (log) => log.totalCalories <= log.calorieGoal
+    ).length;
+
+    return {
+      partnerName: partner?.name ?? "Partner",
+      daysOnGoal,
+      totalDays: 7,
+      averageCalories:
+        dailyLogs.length > 0
+          ? Math.round(
+              dailyLogs.reduce((sum, d) => sum + d.totalCalories, 0) /
+                dailyLogs.length
+            )
+          : 0,
+      calorieGoal: profile?.calorieGoal ?? 2000,
+    };
+  }),
+});

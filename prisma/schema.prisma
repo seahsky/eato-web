@@ -1,0 +1,146 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mongodb"
+  url      = env("DATABASE_URL")
+}
+
+// User model for authentication and profile
+model User {
+  id            String    @id @default(auto()) @map("_id") @db.ObjectId
+  clerkId       String    @unique // Clerk user ID
+  email         String    @unique
+  name          String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  // Profile data for BMR calculation
+  profile       Profile?
+
+  // Partner linking (bidirectional)
+  partnerId     String?   @db.ObjectId @unique
+  partner       User?     @relation("PartnerLink", fields: [partnerId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  partnerOf     User?     @relation("PartnerLink")
+
+  // Partner link request system
+  partnerLinkCode       String?   @unique
+  partnerLinkCodeExpiry DateTime?
+
+  // Food tracking
+  foodEntries   FoodEntry[]
+  dailyLogs     DailyLog[]
+}
+
+// Profile for BMR calculation
+model Profile {
+  id            String        @id @default(auto()) @map("_id") @db.ObjectId
+  userId        String        @unique @db.ObjectId
+  user          User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Physical data
+  age           Int
+  weight        Float         // in kg
+  height        Float         // in cm
+  gender        Gender
+  activityLevel ActivityLevel
+
+  // Calculated values
+  bmr           Float         // Basal Metabolic Rate
+  tdee          Float         // Total Daily Energy Expenditure
+  calorieGoal   Float         // User's daily target
+
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+}
+
+enum Gender {
+  MALE
+  FEMALE
+}
+
+enum ActivityLevel {
+  SEDENTARY
+  LIGHTLY_ACTIVE
+  MODERATELY_ACTIVE
+  ACTIVE
+  VERY_ACTIVE
+}
+
+// Individual food entry
+model FoodEntry {
+  id              String    @id @default(auto()) @map("_id") @db.ObjectId
+  userId          String    @db.ObjectId
+  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Food identification
+  name            String
+  barcode         String?
+  brand           String?
+  imageUrl        String?
+
+  // Nutritional data (per serving consumed)
+  calories        Float
+  protein         Float?
+  carbs           Float?
+  fat             Float?
+  fiber           Float?
+  sugar           Float?
+  sodium          Float?
+
+  // Serving info
+  servingSize     Float
+  servingUnit     String
+
+  // Meal categorization
+  mealType        MealType
+
+  // Timestamps
+  loggedAt        DateTime  @default(now())
+  consumedAt      DateTime
+
+  // Reference to daily log
+  dailyLogId      String?   @db.ObjectId
+  dailyLog        DailyLog? @relation(fields: [dailyLogId], references: [id])
+
+  // Source tracking
+  isManualEntry   Boolean   @default(false)
+  openFoodFactsId String?
+}
+
+enum MealType {
+  BREAKFAST
+  LUNCH
+  DINNER
+  SNACK
+}
+
+// Aggregated daily totals
+model DailyLog {
+  id            String      @id @default(auto()) @map("_id") @db.ObjectId
+  userId        String      @db.ObjectId
+  user          User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  date          DateTime    // Start of day
+
+  // Aggregated totals
+  totalCalories Float       @default(0)
+  totalProtein  Float       @default(0)
+  totalCarbs    Float       @default(0)
+  totalFat      Float       @default(0)
+  totalFiber    Float       @default(0)
+
+  // Goal tracking
+  calorieGoal   Float
+  goalMet       Boolean     @default(false)
+
+  // Related entries
+  entries       FoodEntry[]
+
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+
+  @@unique([userId, date])
+}
+
