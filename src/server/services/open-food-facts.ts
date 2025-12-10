@@ -1,4 +1,5 @@
 const BASE_URL = "https://world.openfoodfacts.org/api/v2";
+const V1_SEARCH_URL = "https://world.openfoodfacts.org/cgi/search.pl";
 const USER_AGENT = process.env.OPEN_FOOD_FACTS_USER_AGENT || "Eato/1.0";
 
 export interface OpenFoodFactsProduct {
@@ -50,8 +51,10 @@ export async function searchProducts(
     "serving_quantity",
   ].join(",");
 
+  // Use V1 API for full text search support (V2 only supports filtered search)
+  // See: https://openfoodfacts.github.io/openfoodfacts-server/api/tutorial-off-api/
   const response = await fetch(
-    `${BASE_URL}/search?search_terms=${encodeURIComponent(query)}&page=${page}&page_size=${pageSize}&fields=${fields}`,
+    `${V1_SEARCH_URL}?search_terms=${encodeURIComponent(query)}&action=process&json=1&page=${page}&page_size=${pageSize}&fields=${fields}`,
     {
       headers: { "User-Agent": USER_AGENT },
       next: { revalidate: 3600 }, // Cache for 1 hour
