@@ -22,7 +22,7 @@ import { cn } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
 import { EnergyValue } from "@/components/ui/energy-value";
 import { useEnergyUnit } from "@/contexts/energy-context";
-import { getEnergyLabel, type EnergyUnit } from "@/lib/energy";
+import { getEnergyLabel, convertEnergy, convertToKcal, type EnergyUnit } from "@/lib/energy";
 import type { ActivityLevel, Gender } from "@/lib/bmr";
 
 export default function ProfilePage() {
@@ -39,6 +39,9 @@ export default function ProfilePage() {
   const [activityLevel, setActivityLevel] = useState<ActivityLevel>("MODERATELY_ACTIVE");
   const [calorieGoal, setCalorieGoal] = useState("");
 
+  // Track previous energy unit to detect changes
+  const [prevEnergyUnit, setPrevEnergyUnit] = useState<EnergyUnit>(energyUnit);
+
   // Populate form when profile loads
   useEffect(() => {
     if (profile) {
@@ -47,9 +50,23 @@ export default function ProfilePage() {
       setHeight(profile.height.toString());
       setGender(profile.gender as Gender);
       setActivityLevel(profile.activityLevel as ActivityLevel);
-      setCalorieGoal(profile.calorieGoal.toString());
+      // Convert stored kcal to user's preferred unit for display
+      const displayGoal = convertEnergy(profile.calorieGoal, energyUnit);
+      setCalorieGoal(displayGoal.toString());
+      setPrevEnergyUnit(energyUnit);
     }
-  }, [profile]);
+  }, [profile, energyUnit]);
+
+  // Convert goal when energy unit changes (without profile reload)
+  useEffect(() => {
+    if (prevEnergyUnit !== energyUnit && calorieGoal) {
+      // Convert from old unit to kcal, then to new unit
+      const goalInKcal = convertToKcal(parseInt(calorieGoal), prevEnergyUnit);
+      const newDisplayGoal = convertEnergy(goalInKcal, energyUnit);
+      setCalorieGoal(newDisplayGoal.toString());
+      setPrevEnergyUnit(energyUnit);
+    }
+  }, [energyUnit, prevEnergyUnit, calorieGoal]);
 
   // Compute calorie suggestions based on TDEE
   const calorieSuggestions = useMemo(() => {
@@ -65,6 +82,10 @@ export default function ProfilePage() {
     ];
   }, [profile?.tdee]);
 
+  // Compute goal input bounds based on energy unit
+  const goalMin = useMemo(() => convertEnergy(1000, energyUnit), [energyUnit]);
+  const goalMax = useMemo(() => convertEnergy(10000, energyUnit), [energyUnit]);
+
   const upsertMutation = trpc.profile.upsert.useMutation({
     onSuccess: (data) => {
       toast.success("Profile updated!");
@@ -79,13 +100,15 @@ export default function ProfilePage() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    // Convert displayed goal back to kcal for storage
+    const goalInKcal = calorieGoal ? convertToKcal(parseInt(calorieGoal), energyUnit) : undefined;
     upsertMutation.mutate({
       age: parseInt(age),
       weight: parseFloat(weight),
       height: parseFloat(height),
       gender,
       activityLevel,
-      calorieGoal: calorieGoal ? parseInt(calorieGoal) : undefined,
+      calorieGoal: goalInKcal,
     });
   };
 
@@ -94,7 +117,9 @@ export default function ProfilePage() {
   };
 
   const handleSelectSuggestion = (kcal: number) => {
-    setCalorieGoal(kcal.toString());
+    // Convert suggestion (in kcal) to user's preferred display unit
+    const displayValue = convertEnergy(kcal, energyUnit);
+    setCalorieGoal(displayValue.toString());
   };
 
   if (isLoading) {
@@ -340,18 +365,18 @@ export default function ProfilePage() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="goal">Daily Calorie Goal (optional)</Label>
+                <Label htmlFor="goal">Daily Goal ({getEnergyLabel(energyUnit)}) (optional)</Label>
                 <Input
                   id="goal"
                   type="number"
                   value={calorieGoal}
                   onChange={(e) => setCalorieGoal(e.target.value)}
                   placeholder="Leave empty to use TDEE"
-                  min={1000}
-                  max={10000}
+                  min={goalMin}
+                  max={goalMax}
                 />
                 <p className="text-xs text-muted-foreground">
-                  Select a suggestion above or enter a custom goal
+                  Select a suggestion above or enter a custom goal in {getEnergyLabel(energyUnit)}
                 </p>
               </div>
 
