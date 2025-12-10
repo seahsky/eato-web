@@ -2,6 +2,7 @@
 
 import { useSearchParams } from "next/navigation";
 import { FoodEntryForm } from "@/components/food/food-entry-form";
+import { QuickEnergyForm } from "@/components/food/quick-energy-form";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { FoodSearch } from "@/components/food/food-search";
 import { RecipeList } from "@/components/recipe/recipe-list";
@@ -150,7 +151,7 @@ function LogPageContent() {
               </TabsContent>
 
               <TabsContent value="quick" className="mt-0">
-                <FoodEntryForm
+                <QuickEnergyForm
                   defaultMealType={mealParam}
                   onSuccess={handleSuccess}
                 />

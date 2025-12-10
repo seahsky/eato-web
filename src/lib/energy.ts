@@ -34,3 +34,14 @@ export function formatEnergy(kcal: number, unit: EnergyUnit): string {
 export function getOppositeUnit(unit: EnergyUnit): EnergyUnit {
   return unit === "KCAL" ? "KJ" : "KCAL";
 }
+
+/**
+ * Convert input energy value to kcal (for storage)
+ * Use when user enters energy in their preferred unit
+ */
+export function convertToKcal(value: number, unit: EnergyUnit): number {
+  if (unit === "KJ") {
+    return Math.round(value / KCAL_TO_KJ);
+  }
+  return Math.round(value);
+}
