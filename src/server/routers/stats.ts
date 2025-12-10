@@ -218,4 +218,94 @@ export const statsRouter = router({
       calorieGoal: profile?.calorieGoal ?? 2000,
     };
   }),
+
+  // Get partner's history with food entries
+  getPartnerHistory: protectedProcedure
+    .input(
+      z.object({
+        days: z.number().min(1).max(14).default(7),
+      })
+    )
+    .query(async ({ ctx, input }) => {
+      const user = await ctx.prisma.user.findUnique({
+        where: { id: ctx.user.id },
+        select: { partnerId: true },
+      });
+
+      if (!user?.partnerId) {
+        return null;
+      }
+
+      const partner = await ctx.prisma.user.findUnique({
+        where: { id: user.partnerId },
+        select: { id: true, name: true },
+      });
+
+      if (!partner) {
+        return null;
+      }
+
+      const profile = await ctx.prisma.profile.findUnique({
+        where: { userId: user.partnerId },
+      });
+
+      // Calculate date range (today and N-1 previous days)
+      const endDate = new Date();
+      const startDate = subDays(startOfDay(endDate), input.days - 1);
+
+      const dailyLogs = await ctx.prisma.dailyLog.findMany({
+        where: {
+          userId: user.partnerId,
+          date: {
+            gte: startDate,
+            lte: endOfDay(endDate),
+          },
+        },
+        include: {
+          entries: {
+            where: {
+              approvalStatus: "APPROVED",
+            },
+            orderBy: { consumedAt: "asc" },
+          },
+        },
+        orderBy: { date: "desc" },
+      });
+
+      // Create a map for quick lookup
+      const logsByDate = new Map(
+        dailyLogs.map((log) => [log.date.toISOString().split("T")[0], log])
+      );
+
+      // Generate all days (most recent first)
+      const days = [];
+      for (let i = 0; i < input.days; i++) {
+        const date = subDays(startOfDay(endDate), i);
+        const dateKey = date.toISOString().split("T")[0];
+        const log = logsByDate.get(dateKey);
+
+        const entries = log?.entries ?? [];
+        const calorieGoal = log?.calorieGoal ?? profile?.calorieGoal ?? 2000;
+
+        days.push({
+          date: dateKey,
+          totalCalories: log?.totalCalories ?? 0,
+          totalProtein: log?.totalProtein ?? 0,
+          totalCarbs: log?.totalCarbs ?? 0,
+          totalFat: log?.totalFat ?? 0,
+          calorieGoal,
+          entriesByMeal: {
+            BREAKFAST: entries.filter((e) => e.mealType === "BREAKFAST"),
+            LUNCH: entries.filter((e) => e.mealType === "LUNCH"),
+            DINNER: entries.filter((e) => e.mealType === "DINNER"),
+            SNACK: entries.filter((e) => e.mealType === "SNACK"),
+          },
+        });
+      }
+
+      return {
+        partnerName: partner.name ?? "Partner",
+        days,
+      };
+    }),
 });

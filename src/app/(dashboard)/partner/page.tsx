@@ -24,6 +24,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import { PartnerHistorySection } from "@/components/partner/partner-history-section";
 
 function PartnerWeeklyStats({
   averageCalories,
@@ -94,6 +95,7 @@ export default function PartnerPage() {
       toast.success("Partner unlinked");
       utils.auth.getMe.invalidate();
       utils.stats.getPartnerWeeklySummary.invalidate();
+      utils.stats.getPartnerHistory.invalidate();
     },
     onError: (error) => {
       toast.error(error.message);
@@ -230,6 +232,9 @@ export default function PartnerPage() {
               </Card>
             </motion.div>
           ) : null}
+
+          {/* Partner History */}
+          <PartnerHistorySection />
         </>
       ) : (
         <>
