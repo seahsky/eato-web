@@ -2,22 +2,25 @@ import type { FoodProduct } from "@/types/food";
 
 const USDA_BASE_URL = "https://api.nal.usda.gov/fdc/v1";
 
-// USDA Nutrient Numbers (integers matching API response)
+// USDA Nutrient Numbers (strings matching API response's nutrientNumber field)
 const NUTRIENT_IDS = {
-  ENERGY: 208, // Energy (kcal)
-  PROTEIN: 203, // Protein
-  FAT: 204, // Total lipid (fat)
-  CARBS: 205, // Carbohydrate
-  FIBER: 291, // Fiber, total dietary
-  SUGAR: 269, // Sugars, total
-  SODIUM: 307, // Sodium (in mg)
+  ENERGY: "208", // Energy (kcal) - SR Legacy
+  ENERGY_ATWATER_GENERAL: "957", // Energy (Atwater General Factors) - Foundation
+  ENERGY_ATWATER_SPECIFIC: "958", // Energy (Atwater Specific Factors) - Foundation
+  PROTEIN: "203", // Protein
+  FAT: "204", // Total lipid (fat)
+  CARBS: "205", // Carbohydrate
+  FIBER: "291", // Fiber, total dietary
+  SUGAR: "269", // Sugars, total
+  SODIUM: "307", // Sodium (in mg)
 };
 
 interface USDANutrient {
-  number: number; // Nutrient number as integer (e.g., 208)
-  name: string; // Nutrient name
-  amount: number; // The nutrient value
+  nutrientId: number;
+  nutrientName: string;
+  nutrientNumber: string; // String in API response (e.g., "208")
   unitName: string;
+  value: number; // The nutrient value
 }
 
 interface USDAFood {
@@ -116,9 +119,22 @@ export async function getUSDAFoodById(fdcId: number): Promise<USDAFood | null> {
   }
 }
 
-function getNutrientValue(nutrients: USDANutrient[], nutrientNumber: number): number {
-  const nutrient = nutrients.find((n) => n.number === nutrientNumber);
-  return nutrient?.amount ?? 0;
+function getNutrientValue(nutrients: USDANutrient[], nutrientNumber: string): number {
+  const nutrient = nutrients.find((n) => n.nutrientNumber === nutrientNumber);
+  return nutrient?.value ?? 0;
+}
+
+function getEnergyValue(nutrients: USDANutrient[]): number {
+  // Try standard energy first (SR Legacy)
+  let energy = getNutrientValue(nutrients, NUTRIENT_IDS.ENERGY);
+  if (energy > 0) return energy;
+
+  // Fall back to Atwater General (Foundation foods)
+  energy = getNutrientValue(nutrients, NUTRIENT_IDS.ENERGY_ATWATER_GENERAL);
+  if (energy > 0) return energy;
+
+  // Fall back to Atwater Specific (Foundation foods)
+  return getNutrientValue(nutrients, NUTRIENT_IDS.ENERGY_ATWATER_SPECIFIC);
 }
 
 export function normalizeUSDAProduct(food: USDAFood): FoodProduct {
@@ -135,7 +151,7 @@ export function normalizeUSDAProduct(food: USDAFood): FoodProduct {
     name: food.description,
     brand: food.brandOwner || null,
     imageUrl: null, // USDA doesn't provide images
-    caloriesPer100g: getNutrientValue(nutrients, NUTRIENT_IDS.ENERGY),
+    caloriesPer100g: getEnergyValue(nutrients),
     proteinPer100g: getNutrientValue(nutrients, NUTRIENT_IDS.PROTEIN),
     carbsPer100g: getNutrientValue(nutrients, NUTRIENT_IDS.CARBS),
     fatPer100g: getNutrientValue(nutrients, NUTRIENT_IDS.FAT),
