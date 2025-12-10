@@ -3,6 +3,7 @@
 import { motion } from "framer-motion";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Progress } from "@/components/ui/progress";
+import { EnergyValue } from "@/components/ui/energy-value";
 import { Heart } from "lucide-react";
 
 interface PartnerCardProps {
@@ -54,7 +55,9 @@ export function PartnerCard({
         {isOnTrack ? (
           <span className="text-success">On track today!</span>
         ) : (
-          <span>{Math.round(totalCalories - calorieGoal)} kcal over goal</span>
+          <span>
+            <EnergyValue kcal={totalCalories - calorieGoal} /> over goal
+          </span>
         )}
       </p>
     </motion.div>

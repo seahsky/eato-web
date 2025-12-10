@@ -2,6 +2,9 @@
 
 import { motion } from "framer-motion";
 import { useMemo } from "react";
+import { EnergyValue } from "@/components/ui/energy-value";
+import { useEnergyUnit } from "@/contexts/energy-context";
+import { convertEnergy, getEnergyLabel } from "@/lib/energy";
 
 interface ProgressRingProps {
   current: number;
@@ -71,36 +74,62 @@ export function ProgressRing({
       </svg>
 
       {/* Center content */}
-      <div className="text-center z-10">
-        <motion.div
-          initial={{ scale: 0.5, opacity: 0 }}
-          animate={{ scale: 1, opacity: 1 }}
-          transition={{ delay: 0.3, duration: 0.5 }}
-        >
-          <p className="text-4xl font-bold tracking-tight font-serif">
-            {Math.round(current)}
-          </p>
-          <p className="text-sm text-muted-foreground mt-1">
-            of {goal} kcal
-          </p>
-        </motion.div>
-        <motion.div
-          className="mt-3"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.5 }}
-        >
-          {over > 0 ? (
-            <span className="text-xs font-medium text-destructive bg-destructive/10 px-2 py-1 rounded-full">
-              +{Math.round(over)} over
-            </span>
-          ) : (
-            <span className="text-xs font-medium text-success bg-success/10 px-2 py-1 rounded-full">
-              {Math.round(remaining)} remaining
-            </span>
-          )}
-        </motion.div>
-      </div>
+      <CenterContent
+        current={current}
+        goal={goal}
+        over={over}
+        remaining={remaining}
+      />
+    </div>
+  );
+}
+
+function CenterContent({
+  current,
+  goal,
+  over,
+  remaining,
+}: {
+  current: number;
+  goal: number;
+  over: number;
+  remaining: number;
+}) {
+  const { energyUnit } = useEnergyUnit();
+
+  return (
+    <div className="text-center z-10">
+      <motion.div
+        initial={{ scale: 0.5, opacity: 0 }}
+        animate={{ scale: 1, opacity: 1 }}
+        transition={{ delay: 0.3, duration: 0.5 }}
+      >
+        <EnergyValue
+          kcal={current}
+          showUnit={false}
+          toggleable
+          className="text-4xl font-bold tracking-tight font-serif"
+        />
+        <p className="text-sm text-muted-foreground mt-1">
+          of {convertEnergy(goal, energyUnit)} {getEnergyLabel(energyUnit)}
+        </p>
+      </motion.div>
+      <motion.div
+        className="mt-3"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ delay: 0.5 }}
+      >
+        {over > 0 ? (
+          <span className="text-xs font-medium text-destructive bg-destructive/10 px-2 py-1 rounded-full">
+            +{convertEnergy(over, energyUnit)} over
+          </span>
+        ) : (
+          <span className="text-xs font-medium text-success bg-success/10 px-2 py-1 rounded-full">
+            {convertEnergy(remaining, energyUnit)} remaining
+          </span>
+        )}
+      </motion.div>
     </div>
   );
 }

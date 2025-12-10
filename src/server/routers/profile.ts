@@ -2,6 +2,8 @@ import { z } from "zod";
 import { router, protectedProcedure } from "../trpc";
 import { calculateBMR, calculateTDEE } from "@/lib/bmr";
 
+const energyUnitSchema = z.enum(["KCAL", "KJ"]);
+
 const profileSchema = z.object({
   age: z.number().min(13).max(120),
   weight: z.number().min(20).max(500),
@@ -15,6 +17,7 @@ const profileSchema = z.object({
     "VERY_ACTIVE",
   ]),
   calorieGoal: z.number().min(1000).max(10000).optional(),
+  energyUnit: energyUnitSchema.optional(),
 });
 
 export const profileRouter = router({
@@ -66,6 +69,17 @@ export const profileRouter = router({
       const profile = await ctx.prisma.profile.update({
         where: { userId: ctx.user.id },
         data: { calorieGoal: input.calorieGoal },
+      });
+      return profile;
+    }),
+
+  // Update energy unit preference
+  updateEnergyUnit: protectedProcedure
+    .input(z.object({ energyUnit: energyUnitSchema }))
+    .mutation(async ({ ctx, input }) => {
+      const profile = await ctx.prisma.profile.update({
+        where: { userId: ctx.user.id },
+        data: { energyUnit: input.energyUnit },
       });
       return profile;
     }),

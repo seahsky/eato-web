@@ -51,6 +51,9 @@ model Profile {
   tdee          Float         // Total Daily Energy Expenditure
   calorieGoal   Float         // User's daily target
 
+  // User preferences
+  energyUnit    EnergyUnit    @default(KCAL)
+
   createdAt     DateTime      @default(now())
   updatedAt     DateTime      @updatedAt
 }
@@ -58,6 +61,11 @@ model Profile {
 enum Gender {
   MALE
   FEMALE
+}
+
+enum EnergyUnit {
+  KCAL
+  KJ
 }
 
 enum ActivityLevel {

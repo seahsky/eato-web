@@ -10,6 +10,9 @@ import { Loader2, Copy, Heart, UserPlus, Users, TrendingUp, Check, Unlink } from
 import { motion } from "framer-motion";
 import { Progress } from "@/components/ui/progress";
 import { Skeleton } from "@/components/ui/skeleton";
+import { EnergyValue } from "@/components/ui/energy-value";
+import { useEnergyUnit } from "@/contexts/energy-context";
+import { getEnergyLabel } from "@/lib/energy";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -21,6 +24,39 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+
+function PartnerWeeklyStats({
+  averageCalories,
+  calorieGoal,
+}: {
+  averageCalories: number;
+  calorieGoal: number;
+}) {
+  const { energyUnit } = useEnergyUnit();
+
+  return (
+    <div className="grid grid-cols-2 gap-4 text-center">
+      <div className="bg-muted/50 rounded-xl p-3">
+        <EnergyValue
+          kcal={averageCalories}
+          showUnit={false}
+          toggleable
+          className="text-2xl font-bold"
+        />
+        <p className="text-xs text-muted-foreground">Avg daily {getEnergyLabel(energyUnit)}</p>
+      </div>
+      <div className="bg-muted/50 rounded-xl p-3">
+        <EnergyValue
+          kcal={calorieGoal}
+          showUnit={false}
+          toggleable
+          className="text-2xl font-bold"
+        />
+        <p className="text-xs text-muted-foreground">Daily goal</p>
+      </div>
+    </div>
+  );
+}
 
 export default function PartnerPage() {
   const utils = trpc.useUtils();
@@ -185,20 +221,10 @@ export default function PartnerPage() {
                         className="h-2"
                       />
                     </div>
-                    <div className="grid grid-cols-2 gap-4 text-center">
-                      <div className="bg-muted/50 rounded-xl p-3">
-                        <p className="text-2xl font-bold">
-                          {weeklyStats.averageCalories}
-                        </p>
-                        <p className="text-xs text-muted-foreground">Avg daily kcal</p>
-                      </div>
-                      <div className="bg-muted/50 rounded-xl p-3">
-                        <p className="text-2xl font-bold">
-                          {weeklyStats.calorieGoal}
-                        </p>
-                        <p className="text-xs text-muted-foreground">Daily goal</p>
-                      </div>
-                    </div>
+                    <PartnerWeeklyStats
+                      averageCalories={weeklyStats.averageCalories}
+                      calorieGoal={weeklyStats.calorieGoal}
+                    />
                   </div>
                 </CardContent>
               </Card>

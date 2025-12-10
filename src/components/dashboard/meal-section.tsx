@@ -3,6 +3,7 @@
 import { motion } from "framer-motion";
 import { Plus, Coffee, Sun, Moon, Cookie } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { EnergyValue } from "@/components/ui/energy-value";
 import Link from "next/link";
 import type { FoodEntry } from "@prisma/client";
 
@@ -46,9 +47,11 @@ export function MealSection({ mealType, entries, delay = 0 }: MealSectionProps) 
           </div>
         </div>
         <div className="flex items-center gap-2">
-          <span className="text-sm font-semibold">
-            {Math.round(totalCalories)} kcal
-          </span>
+          <EnergyValue
+            kcal={totalCalories}
+            toggleable
+            className="text-sm font-semibold"
+          />
           <Link href={`/log?meal=${mealType.toLowerCase()}`}>
             <Button size="icon" variant="ghost" className="h-8 w-8 rounded-full">
               <Plus className="w-4 h-4" />
@@ -73,7 +76,7 @@ export function MealSection({ mealType, entries, delay = 0 }: MealSectionProps) 
                   {entry.name}
                 </span>
               </div>
-              <span className="font-medium ml-2">{Math.round(entry.calories)}</span>
+              <EnergyValue kcal={entry.calories} className="font-medium ml-2" />
             </div>
           ))}
           {entries.length > 3 && (

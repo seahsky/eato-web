@@ -1,9 +1,10 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { EnergyValue } from "@/components/ui/energy-value";
 import { trpc } from "@/trpc/react";
 import { Search, Plus, Loader2 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -92,7 +93,7 @@ export function FoodSearch({ onSelect }: FoodSearchProps) {
                     </p>
                   )}
                   <p className="text-xs text-primary font-medium mt-0.5">
-                    {Math.round(product.caloriesPer100g)} kcal / 100g
+                    <EnergyValue kcal={product.caloriesPer100g} /> / 100g
                   </p>
                 </div>
                 <Button

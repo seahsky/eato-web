@@ -19,6 +19,9 @@ import { motion } from "framer-motion";
 import { useClerk } from "@clerk/nextjs";
 import { ACTIVITY_LABELS } from "@/lib/bmr";
 import { Skeleton } from "@/components/ui/skeleton";
+import { EnergyValue } from "@/components/ui/energy-value";
+import { useEnergyUnit } from "@/contexts/energy-context";
+import { getEnergyLabel, type EnergyUnit } from "@/lib/energy";
 import type { ActivityLevel, Gender } from "@/lib/bmr";
 
 export default function ProfilePage() {
@@ -26,6 +29,7 @@ export default function ProfilePage() {
   const utils = trpc.useUtils();
   const { data: profile, isLoading } = trpc.profile.get.useQuery();
   const { data: user } = trpc.auth.getMe.useQuery();
+  const { energyUnit, setEnergyUnit } = useEnergyUnit();
 
   const [age, setAge] = useState("");
   const [weight, setWeight] = useState("");
@@ -115,22 +119,37 @@ export default function ProfilePage() {
                   <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center mx-auto mb-2">
                     <Calculator className="w-5 h-5 text-primary" />
                   </div>
-                  <p className="text-2xl font-bold">{Math.round(profile.bmr)}</p>
-                  <p className="text-xs text-muted-foreground">BMR (kcal)</p>
+                  <EnergyValue
+                    kcal={profile.bmr}
+                    showUnit={false}
+                    toggleable
+                    className="text-2xl font-bold"
+                  />
+                  <p className="text-xs text-muted-foreground">BMR ({getEnergyLabel(energyUnit)})</p>
                 </div>
                 <div>
                   <div className="w-10 h-10 rounded-full bg-secondary/50 flex items-center justify-center mx-auto mb-2">
                     <Activity className="w-5 h-5 text-secondary-foreground" />
                   </div>
-                  <p className="text-2xl font-bold">{Math.round(profile.tdee)}</p>
-                  <p className="text-xs text-muted-foreground">TDEE (kcal)</p>
+                  <EnergyValue
+                    kcal={profile.tdee}
+                    showUnit={false}
+                    toggleable
+                    className="text-2xl font-bold"
+                  />
+                  <p className="text-xs text-muted-foreground">TDEE ({getEnergyLabel(energyUnit)})</p>
                 </div>
                 <div>
                   <div className="w-10 h-10 rounded-full bg-accent/50 flex items-center justify-center mx-auto mb-2">
                     <Target className="w-5 h-5 text-accent-foreground" />
                   </div>
-                  <p className="text-2xl font-bold">{Math.round(profile.calorieGoal)}</p>
-                  <p className="text-xs text-muted-foreground">Goal (kcal)</p>
+                  <EnergyValue
+                    kcal={profile.calorieGoal}
+                    showUnit={false}
+                    toggleable
+                    className="text-2xl font-bold"
+                  />
+                  <p className="text-xs text-muted-foreground">Goal ({getEnergyLabel(energyUnit)})</p>
                 </div>
               </div>
             </CardContent>
@@ -229,6 +248,25 @@ export default function ProfilePage() {
                     ))}
                   </SelectContent>
                 </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="energyUnit">Energy Unit</Label>
+                <Select
+                  value={energyUnit}
+                  onValueChange={(v) => setEnergyUnit(v as EnergyUnit)}
+                >
+                  <SelectTrigger className="w-full">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="KCAL">Kilocalories (kcal)</SelectItem>
+                    <SelectItem value="KJ">Kilojoules (kJ)</SelectItem>
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-muted-foreground">
+                  Tap any energy value to temporarily see the other unit
+                </p>
               </div>
 
               <div className="space-y-2">

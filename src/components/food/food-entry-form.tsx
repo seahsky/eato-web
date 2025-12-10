@@ -12,6 +12,9 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { EnergyValue } from "@/components/ui/energy-value";
+import { useEnergyUnit } from "@/contexts/energy-context";
+import { formatEnergy } from "@/lib/energy";
 import { trpc } from "@/trpc/react";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
@@ -212,46 +215,85 @@ export function FoodEntryForm({
           </div>
 
           {/* Nutrition Summary */}
-          <motion.div
-            className="grid grid-cols-4 gap-2 p-3 bg-muted/30 rounded-xl"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-          >
-            <div className="text-center">
-              <p className="text-lg font-bold text-primary">{calories}</p>
-              <p className="text-[10px] text-muted-foreground uppercase">kcal</p>
-            </div>
-            <div className="text-center">
-              <p className="text-lg font-semibold">{protein}</p>
-              <p className="text-[10px] text-muted-foreground uppercase">protein</p>
-            </div>
-            <div className="text-center">
-              <p className="text-lg font-semibold">{carbs}</p>
-              <p className="text-[10px] text-muted-foreground uppercase">carbs</p>
-            </div>
-            <div className="text-center">
-              <p className="text-lg font-semibold">{fat}</p>
-              <p className="text-[10px] text-muted-foreground uppercase">fat</p>
-            </div>
-          </motion.div>
+          <NutritionSummary calories={calories} protein={protein} carbs={carbs} fat={fat} />
 
           {/* Submit */}
-          <Button
-            type="submit"
-            className="w-full h-12 text-base font-semibold"
-            disabled={logMutation.isPending}
-          >
-            {logMutation.isPending ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Adding...
-              </>
-            ) : (
-              `Add ${calories} kcal`
-            )}
-          </Button>
+          <SubmitButton isPending={logMutation.isPending} calories={calories} />
         </form>
       </CardContent>
     </Card>
+  );
+}
+
+function NutritionSummary({
+  calories,
+  protein,
+  carbs,
+  fat,
+}: {
+  calories: number;
+  protein: number;
+  carbs: number;
+  fat: number;
+}) {
+  const { energyUnit } = useEnergyUnit();
+
+  return (
+    <motion.div
+      className="grid grid-cols-4 gap-2 p-3 bg-muted/30 rounded-xl"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+    >
+      <div className="text-center">
+        <EnergyValue
+          kcal={calories}
+          showUnit={false}
+          toggleable
+          className="text-lg font-bold text-primary"
+        />
+        <p className="text-[10px] text-muted-foreground uppercase">
+          {energyUnit === "KJ" ? "kJ" : "kcal"}
+        </p>
+      </div>
+      <div className="text-center">
+        <p className="text-lg font-semibold">{protein}</p>
+        <p className="text-[10px] text-muted-foreground uppercase">protein</p>
+      </div>
+      <div className="text-center">
+        <p className="text-lg font-semibold">{carbs}</p>
+        <p className="text-[10px] text-muted-foreground uppercase">carbs</p>
+      </div>
+      <div className="text-center">
+        <p className="text-lg font-semibold">{fat}</p>
+        <p className="text-[10px] text-muted-foreground uppercase">fat</p>
+      </div>
+    </motion.div>
+  );
+}
+
+function SubmitButton({
+  isPending,
+  calories,
+}: {
+  isPending: boolean;
+  calories: number;
+}) {
+  const { energyUnit } = useEnergyUnit();
+
+  return (
+    <Button
+      type="submit"
+      className="w-full h-12 text-base font-semibold"
+      disabled={isPending}
+    >
+      {isPending ? (
+        <>
+          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+          Adding...
+        </>
+      ) : (
+        `Add ${formatEnergy(calories, energyUnit)}`
+      )}
+    </Button>
   );
 }
