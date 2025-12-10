@@ -26,6 +26,7 @@ const foodEntrySchema = z.object({
   consumedAt: z.string().datetime(),
   isManualEntry: z.boolean().default(false),
   openFoodFactsId: z.string().optional(),
+  forPartnerId: z.string().optional(),
 });
 
 export const foodRouter = router({
@@ -63,22 +64,42 @@ export const foodRouter = router({
 
   // Log food entry
   log: protectedProcedure.input(foodEntrySchema).mutation(async ({ ctx, input }) => {
+    const { forPartnerId, ...entryData } = input;
+    const isLoggingForPartner = !!forPartnerId;
+    let targetUserId = ctx.user.id;
+
+    // Validate partner relationship if logging for partner
+    if (isLoggingForPartner) {
+      const user = await ctx.prisma.user.findUnique({
+        where: { id: ctx.user.id },
+        select: { partnerId: true },
+      });
+
+      if (user?.partnerId !== forPartnerId) {
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: "You can only log food for your linked partner",
+        });
+      }
+      targetUserId = forPartnerId;
+    }
+
     const consumedAt = new Date(input.consumedAt);
     const dayStart = startOfDay(consumedAt);
 
-    // Get or create daily log
+    // Get or create daily log for target user
     let dailyLog = await ctx.prisma.dailyLog.findUnique({
       where: {
         userId_date: {
-          userId: ctx.user.id,
+          userId: targetUserId,
           date: dayStart,
         },
       },
     });
 
-    // Get user's calorie goal
+    // Get target user's calorie goal
     const profile = await ctx.prisma.profile.findUnique({
-      where: { userId: ctx.user.id },
+      where: { userId: targetUserId },
     });
 
     const calorieGoal = profile?.calorieGoal ?? 2000;
@@ -86,7 +107,7 @@ export const foodRouter = router({
     if (!dailyLog) {
       dailyLog = await ctx.prisma.dailyLog.create({
         data: {
-          userId: ctx.user.id,
+          userId: targetUserId,
           date: dayStart,
           calorieGoal,
         },
@@ -96,24 +117,28 @@ export const foodRouter = router({
     // Create food entry
     const entry = await ctx.prisma.foodEntry.create({
       data: {
-        userId: ctx.user.id,
+        userId: targetUserId,
         dailyLogId: dailyLog.id,
-        ...input,
+        loggedByUserId: isLoggingForPartner ? ctx.user.id : null,
+        approvalStatus: isLoggingForPartner ? "PENDING" : "APPROVED",
+        ...entryData,
         consumedAt,
       },
     });
 
-    // Update daily log totals
-    await ctx.prisma.dailyLog.update({
-      where: { id: dailyLog.id },
-      data: {
-        totalCalories: { increment: input.calories },
-        totalProtein: { increment: input.protein ?? 0 },
-        totalCarbs: { increment: input.carbs ?? 0 },
-        totalFat: { increment: input.fat ?? 0 },
-        totalFiber: { increment: input.fiber ?? 0 },
-      },
-    });
+    // Only update daily log totals for approved (self-logged) entries
+    if (!isLoggingForPartner) {
+      await ctx.prisma.dailyLog.update({
+        where: { id: dailyLog.id },
+        data: {
+          totalCalories: { increment: input.calories },
+          totalProtein: { increment: input.protein ?? 0 },
+          totalCarbs: { increment: input.carbs ?? 0 },
+          totalFat: { increment: input.fat ?? 0 },
+          totalFiber: { increment: input.fiber ?? 0 },
+        },
+      });
+    }
 
     return entry;
   }),
@@ -146,8 +171,9 @@ export const foodRouter = router({
       })
     )
     .mutation(async ({ ctx, input }) => {
+      // First find the entry without user restriction
       const entry = await ctx.prisma.foodEntry.findFirst({
-        where: { id: input.id, userId: ctx.user.id },
+        where: { id: input.id },
       });
 
       if (!entry) {
@@ -157,6 +183,29 @@ export const foodRouter = router({
         });
       }
 
+      // Check permissions:
+      // - APPROVED entries: only owner can update
+      // - PENDING/REJECTED entries: only the logger can update
+      const isOwner = entry.userId === ctx.user.id;
+      const isLogger = entry.loggedByUserId === ctx.user.id;
+
+      if (entry.approvalStatus === "APPROVED") {
+        if (!isOwner) {
+          throw new TRPCError({
+            code: "FORBIDDEN",
+            message: "Only the owner can update approved entries",
+          });
+        }
+      } else {
+        // PENDING or REJECTED
+        if (!isLogger) {
+          throw new TRPCError({
+            code: "FORBIDDEN",
+            message: "Only the person who logged this entry can update it",
+          });
+        }
+      }
+
       // Calculate difference for updating daily log
       const calorieDiff = (input.data.calories ?? entry.calories) - entry.calories;
       const proteinDiff = (input.data.protein ?? entry.protein ?? 0) - (entry.protein ?? 0);
@@ -164,13 +213,16 @@ export const foodRouter = router({
       const fatDiff = (input.data.fat ?? entry.fat ?? 0) - (entry.fat ?? 0);
       const fiberDiff = (input.data.fiber ?? entry.fiber ?? 0) - (entry.fiber ?? 0);
 
+      // Remove forPartnerId from update data if present
+      const { forPartnerId, ...updateData } = input.data;
+
       const updated = await ctx.prisma.foodEntry.update({
         where: { id: input.id },
-        data: input.data,
+        data: updateData,
       });
 
-      // Update daily log if entry has one
-      if (entry.dailyLogId) {
+      // Only update daily log for APPROVED entries
+      if (entry.approvalStatus === "APPROVED" && entry.dailyLogId) {
         await ctx.prisma.dailyLog.update({
           where: { id: entry.dailyLogId },
           data: {
@@ -190,8 +242,9 @@ export const foodRouter = router({
   delete: protectedProcedure
     .input(z.object({ id: z.string() }))
     .mutation(async ({ ctx, input }) => {
+      // First find the entry without user restriction
       const entry = await ctx.prisma.foodEntry.findFirst({
-        where: { id: input.id, userId: ctx.user.id },
+        where: { id: input.id },
       });
 
       if (!entry) {
@@ -201,8 +254,31 @@ export const foodRouter = router({
         });
       }
 
-      // Update daily log before deleting
-      if (entry.dailyLogId) {
+      // Check permissions:
+      // - APPROVED entries: only owner can delete
+      // - PENDING/REJECTED entries: only the logger can delete
+      const isOwner = entry.userId === ctx.user.id;
+      const isLogger = entry.loggedByUserId === ctx.user.id;
+
+      if (entry.approvalStatus === "APPROVED") {
+        if (!isOwner) {
+          throw new TRPCError({
+            code: "FORBIDDEN",
+            message: "Only the owner can delete approved entries",
+          });
+        }
+      } else {
+        // PENDING or REJECTED
+        if (!isLogger) {
+          throw new TRPCError({
+            code: "FORBIDDEN",
+            message: "Only the person who logged this entry can delete it",
+          });
+        }
+      }
+
+      // Only update daily log for APPROVED entries (others don't affect totals)
+      if (entry.approvalStatus === "APPROVED" && entry.dailyLogId) {
         await ctx.prisma.dailyLog.update({
           where: { id: entry.dailyLogId },
           data: {
@@ -217,6 +293,165 @@ export const foodRouter = router({
 
       await ctx.prisma.foodEntry.delete({
         where: { id: input.id },
+      });
+
+      return { success: true };
+    }),
+
+  // Get entries pending current user's approval
+  getPendingApprovals: protectedProcedure.query(async ({ ctx }) => {
+    const entries = await ctx.prisma.foodEntry.findMany({
+      where: {
+        userId: ctx.user.id,
+        approvalStatus: "PENDING",
+        loggedByUserId: { not: null },
+      },
+      orderBy: { loggedAt: "desc" },
+    });
+
+    // Get logger names
+    const loggerIds = [...new Set(entries.map((e) => e.loggedByUserId).filter(Boolean))] as string[];
+    const loggers = await ctx.prisma.user.findMany({
+      where: { id: { in: loggerIds } },
+      select: { id: true, name: true },
+    });
+    const loggerMap = new Map(loggers.map((l) => [l.id, l.name]));
+
+    return entries.map((e) => ({
+      ...e,
+      loggedByName: e.loggedByUserId ? loggerMap.get(e.loggedByUserId) : null,
+    }));
+  }),
+
+  // Get pending approval count (for badge)
+  getPendingApprovalCount: protectedProcedure.query(async ({ ctx }) => {
+    const count = await ctx.prisma.foodEntry.count({
+      where: {
+        userId: ctx.user.id,
+        approvalStatus: "PENDING",
+        loggedByUserId: { not: null },
+      },
+    });
+    return { count };
+  }),
+
+  // Get entries I logged for partner that are pending/rejected
+  getMyPendingSubmissions: protectedProcedure.query(async ({ ctx }) => {
+    const entries = await ctx.prisma.foodEntry.findMany({
+      where: {
+        loggedByUserId: ctx.user.id,
+        approvalStatus: { in: ["PENDING", "REJECTED"] },
+      },
+      include: {
+        user: { select: { name: true } },
+      },
+      orderBy: { loggedAt: "desc" },
+    });
+    return entries;
+  }),
+
+  // Approve an entry
+  approveEntry: protectedProcedure
+    .input(z.object({ entryId: z.string() }))
+    .mutation(async ({ ctx, input }) => {
+      const entry = await ctx.prisma.foodEntry.findFirst({
+        where: {
+          id: input.entryId,
+          userId: ctx.user.id,
+          approvalStatus: "PENDING",
+        },
+      });
+
+      if (!entry) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Entry not found or already processed",
+        });
+      }
+
+      // Update entry status
+      await ctx.prisma.foodEntry.update({
+        where: { id: input.entryId },
+        data: { approvalStatus: "APPROVED" },
+      });
+
+      // Update daily log totals
+      if (entry.dailyLogId) {
+        await ctx.prisma.dailyLog.update({
+          where: { id: entry.dailyLogId },
+          data: {
+            totalCalories: { increment: entry.calories },
+            totalProtein: { increment: entry.protein ?? 0 },
+            totalCarbs: { increment: entry.carbs ?? 0 },
+            totalFat: { increment: entry.fat ?? 0 },
+            totalFiber: { increment: entry.fiber ?? 0 },
+          },
+        });
+      }
+
+      return { success: true };
+    }),
+
+  // Reject an entry
+  rejectEntry: protectedProcedure
+    .input(
+      z.object({
+        entryId: z.string(),
+        note: z.string().optional(),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      const entry = await ctx.prisma.foodEntry.findFirst({
+        where: {
+          id: input.entryId,
+          userId: ctx.user.id,
+          approvalStatus: "PENDING",
+        },
+      });
+
+      if (!entry) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Entry not found or already processed",
+        });
+      }
+
+      await ctx.prisma.foodEntry.update({
+        where: { id: input.entryId },
+        data: {
+          approvalStatus: "REJECTED",
+          rejectionNote: input.note,
+        },
+      });
+
+      return { success: true };
+    }),
+
+  // Resubmit a rejected entry
+  resubmitEntry: protectedProcedure
+    .input(z.object({ entryId: z.string() }))
+    .mutation(async ({ ctx, input }) => {
+      const entry = await ctx.prisma.foodEntry.findFirst({
+        where: {
+          id: input.entryId,
+          loggedByUserId: ctx.user.id,
+          approvalStatus: "REJECTED",
+        },
+      });
+
+      if (!entry) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Entry not found or not rejected",
+        });
+      }
+
+      await ctx.prisma.foodEntry.update({
+        where: { id: input.entryId },
+        data: {
+          approvalStatus: "PENDING",
+          rejectionNote: null,
+        },
       });
 
       return { success: true };

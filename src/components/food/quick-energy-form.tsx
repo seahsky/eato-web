@@ -18,7 +18,8 @@ import type { EnergyUnit } from "@/lib/energy";
 import { trpc } from "@/trpc/react";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
-import { Loader2 } from "lucide-react";
+import { Loader2, Users } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
 
 interface QuickEnergyFormProps {
   defaultMealType?: string;
@@ -37,13 +38,23 @@ export function QuickEnergyForm({
   const [inputUnit, setInputUnit] = useState<EnergyUnit>(userPreferredUnit);
   const [description, setDescription] = useState("");
   const [mealType, setMealType] = useState(defaultMealType);
+  const [logForPartner, setLogForPartner] = useState(false);
+
+  // Get user info to check for partner
+  const { data: user } = trpc.auth.getMe.useQuery();
+  const hasPartner = !!user?.partner;
 
   // Calculate kcal value for storage
   const caloriesKcal = convertToKcal(energyValue, inputUnit);
 
   const logMutation = trpc.food.log.useMutation({
     onSuccess: () => {
-      toast.success("Energy logged successfully!");
+      if (logForPartner) {
+        toast.success(`Energy logged for ${user?.partner?.name}! They will need to approve it.`);
+        utils.food.getMyPendingSubmissions.invalidate();
+      } else {
+        toast.success("Energy logged successfully!");
+      }
       utils.stats.getDailySummary.invalidate();
       if (onSuccess) {
         onSuccess();
@@ -67,6 +78,7 @@ export function QuickEnergyForm({
       mealType: mealType as "BREAKFAST" | "LUNCH" | "DINNER" | "SNACK",
       consumedAt: new Date().toISOString(),
       isManualEntry: true,
+      forPartnerId: logForPartner ? user?.partner?.id : undefined,
     });
   };
 
@@ -139,6 +151,30 @@ export function QuickEnergyForm({
               </SelectContent>
             </Select>
           </div>
+
+          {/* Log for Partner Toggle */}
+          {hasPartner && (
+            <div className="space-y-2">
+              <div className="flex items-center justify-between p-3 bg-muted/50 rounded-xl">
+                <div className="flex items-center gap-2">
+                  <Users className="w-4 h-4 text-muted-foreground" />
+                  <Label htmlFor="log-for-partner-quick" className="text-sm font-normal cursor-pointer">
+                    Log for {user?.partner?.name}
+                  </Label>
+                </div>
+                <Switch
+                  id="log-for-partner-quick"
+                  checked={logForPartner}
+                  onCheckedChange={setLogForPartner}
+                />
+              </div>
+              {logForPartner && (
+                <p className="text-xs text-muted-foreground text-center">
+                  {user?.partner?.name} will need to approve this entry
+                </p>
+              )}
+            </div>
+          )}
 
           {/* Submit */}
           <Button

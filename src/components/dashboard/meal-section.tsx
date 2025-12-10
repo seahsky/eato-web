@@ -4,8 +4,10 @@ import { motion } from "framer-motion";
 import { Plus, Coffee, Sun, Moon, Cookie } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { EnergyValue } from "@/components/ui/energy-value";
+import { Badge } from "@/components/ui/badge";
 import Link from "next/link";
 import type { FoodEntry } from "@prisma/client";
+import { cn } from "@/lib/utils";
 
 const mealConfig = {
   BREAKFAST: { icon: Coffee, label: "Breakfast", color: "text-chart-3" },
@@ -23,7 +25,10 @@ interface MealSectionProps {
 export function MealSection({ mealType, entries, delay = 0 }: MealSectionProps) {
   const config = mealConfig[mealType];
   const Icon = config.icon;
-  const totalCalories = entries.reduce((sum, e) => sum + e.calories, 0);
+  // Only count approved entries toward total calories
+  const totalCalories = entries
+    .filter((e) => e.approvalStatus === "APPROVED")
+    .reduce((sum, e) => sum + e.calories, 0);
 
   return (
     <motion.div
@@ -62,23 +67,47 @@ export function MealSection({ mealType, entries, delay = 0 }: MealSectionProps) 
 
       {entries.length > 0 && (
         <div className="space-y-2 mt-3 pt-3 border-t border-border/50">
-          {entries.slice(0, 3).map((entry) => (
-            <div key={entry.id} className="flex items-center justify-between text-sm">
-              <div className="flex items-center gap-2 flex-1 min-w-0">
-                {entry.imageUrl && (
-                  <img
-                    src={entry.imageUrl}
-                    alt={entry.name}
-                    className="w-8 h-8 rounded-lg object-cover"
-                  />
-                )}
-                <span className="truncate text-muted-foreground">
-                  {entry.name}
-                </span>
+          {entries.slice(0, 3).map((entry) => {
+            const isPending = entry.approvalStatus === "PENDING";
+            return (
+              <div key={entry.id} className="flex items-center justify-between text-sm">
+                <div className="flex items-center gap-2 flex-1 min-w-0">
+                  {entry.imageUrl && (
+                    <img
+                      src={entry.imageUrl}
+                      alt={entry.name}
+                      className={cn(
+                        "w-8 h-8 rounded-lg object-cover",
+                        isPending && "opacity-50"
+                      )}
+                    />
+                  )}
+                  <span
+                    className={cn(
+                      "truncate",
+                      isPending
+                        ? "text-muted-foreground/60 italic"
+                        : "text-muted-foreground"
+                    )}
+                  >
+                    {entry.name}
+                  </span>
+                  {isPending && (
+                    <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-4 shrink-0">
+                      Pending
+                    </Badge>
+                  )}
+                </div>
+                <EnergyValue
+                  kcal={entry.calories}
+                  className={cn(
+                    "font-medium ml-2",
+                    isPending && "text-muted-foreground/60"
+                  )}
+                />
               </div>
-              <EnergyValue kcal={entry.calories} className="font-medium ml-2" />
-            </div>
-          ))}
+            );
+          })}
           {entries.length > 3 && (
             <p className="text-xs text-muted-foreground text-center pt-1">
               +{entries.length - 3} more

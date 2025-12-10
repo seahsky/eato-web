@@ -8,11 +8,12 @@ import { trpc } from "@/trpc/react";
 import { format } from "date-fns";
 import { motion } from "framer-motion";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ChevronLeft, ChevronRight, CalendarDays } from "lucide-react";
+import { ChevronLeft, ChevronRight, CalendarDays, Bell } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
 import { calculateMacroTargets } from "@/lib/bmr";
 import Link from "next/link";
+import { Card, CardContent } from "@/components/ui/card";
 
 export default function DashboardPage() {
   const [selectedDate, setSelectedDate] = useState(new Date());
@@ -24,6 +25,8 @@ export default function DashboardPage() {
   const { data: partnerSummary } = trpc.stats.getPartnerDailySummary.useQuery({
     date: selectedDate.toISOString(),
   });
+
+  const { data: pendingCount } = trpc.food.getPendingApprovalCount.useQuery();
 
   const isToday = format(selectedDate, "yyyy-MM-dd") === format(new Date(), "yyyy-MM-dd");
 
@@ -99,6 +102,28 @@ export default function DashboardPage() {
           <ChevronRight className="w-5 h-5" />
         </Button>
       </motion.div>
+
+      {/* Pending Approvals Banner */}
+      {pendingCount && pendingCount.count > 0 && (
+        <motion.div
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+        >
+          <Link href="/partner?tab=approvals">
+            <Card className="bg-primary/10 border-primary/20 cursor-pointer hover:bg-primary/15 transition-colors">
+              <CardContent className="py-3 flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Bell className="w-4 h-4 text-primary" />
+                  <span className="text-sm font-medium">
+                    {pendingCount.count} pending approval{pendingCount.count > 1 ? "s" : ""}
+                  </span>
+                </div>
+                <ChevronRight className="w-4 h-4 text-muted-foreground" />
+              </CardContent>
+            </Card>
+          </Link>
+        </motion.div>
+      )}
 
       {/* Progress Ring */}
       <motion.div

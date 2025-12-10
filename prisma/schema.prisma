@@ -119,6 +119,11 @@ model FoodEntry {
 
   // Recipe reference (if logged from a recipe)
   recipeId        String?   @db.ObjectId
+
+  // Partner logging fields
+  loggedByUserId  String?        @db.ObjectId
+  approvalStatus  ApprovalStatus @default(APPROVED)
+  rejectionNote   String?
 }
 
 enum MealType {
@@ -126,6 +131,12 @@ enum MealType {
   LUNCH
   DINNER
   SNACK
+}
+
+enum ApprovalStatus {
+  APPROVED
+  PENDING
+  REJECTED
 }
 
 // Aggregated daily totals

@@ -18,8 +18,9 @@ import { formatEnergy } from "@/lib/energy";
 import { trpc } from "@/trpc/react";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
-import { Loader2, Minus, Plus } from "lucide-react";
+import { Loader2, Minus, Plus, Users } from "lucide-react";
 import { motion } from "framer-motion";
+import { Switch } from "@/components/ui/switch";
 
 interface FoodProduct {
   barcode?: string;
@@ -54,6 +55,11 @@ export function FoodEntryForm({
   const [name, setName] = useState(product?.name ?? "");
   const [servingSize, setServingSize] = useState(product?.servingSize ?? 100);
   const [mealType, setMealType] = useState(defaultMealType);
+  const [logForPartner, setLogForPartner] = useState(false);
+
+  // Get user info to check for partner
+  const { data: user } = trpc.auth.getMe.useQuery();
+  const hasPartner = !!user?.partner;
 
   // Calculate nutrients based on serving size
   const ratio = product ? servingSize / 100 : 1;
@@ -68,7 +74,12 @@ export function FoodEntryForm({
 
   const logMutation = trpc.food.log.useMutation({
     onSuccess: () => {
-      toast.success("Food logged successfully!");
+      if (logForPartner) {
+        toast.success(`Food logged for ${user?.partner?.name}! They will need to approve it.`);
+        utils.food.getMyPendingSubmissions.invalidate();
+      } else {
+        toast.success("Food logged successfully!");
+      }
       utils.stats.getDailySummary.invalidate();
       if (onSuccess) {
         onSuccess();
@@ -102,6 +113,7 @@ export function FoodEntryForm({
       consumedAt: new Date().toISOString(),
       isManualEntry: !product,
       openFoodFactsId: product?.barcode,
+      forPartnerId: logForPartner ? user?.partner?.id : undefined,
     });
   };
 
@@ -213,6 +225,30 @@ export function FoodEntryForm({
               </SelectContent>
             </Select>
           </div>
+
+          {/* Log for Partner Toggle */}
+          {hasPartner && (
+            <div className="space-y-2">
+              <div className="flex items-center justify-between p-3 bg-muted/50 rounded-xl">
+                <div className="flex items-center gap-2">
+                  <Users className="w-4 h-4 text-muted-foreground" />
+                  <Label htmlFor="log-for-partner" className="text-sm font-normal cursor-pointer">
+                    Log for {user?.partner?.name}
+                  </Label>
+                </div>
+                <Switch
+                  id="log-for-partner"
+                  checked={logForPartner}
+                  onCheckedChange={setLogForPartner}
+                />
+              </div>
+              {logForPartner && (
+                <p className="text-xs text-muted-foreground text-center">
+                  {user?.partner?.name} will need to approve this entry
+                </p>
+              )}
+            </div>
+          )}
 
           {/* Nutrition Summary */}
           <NutritionSummary calories={calories} protein={protein} carbs={carbs} fat={fat} />
