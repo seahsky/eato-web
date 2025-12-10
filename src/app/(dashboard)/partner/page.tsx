@@ -25,6 +25,10 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { PartnerHistorySection } from "@/components/partner/partner-history-section";
+import { ApprovalsList } from "@/components/partner/approvals-list";
+import { MySubmissionsList } from "@/components/partner/my-submissions-list";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Badge } from "@/components/ui/badge";
 
 function PartnerWeeklyStats({
   averageCalories,
@@ -63,6 +67,7 @@ export default function PartnerPage() {
   const utils = trpc.useUtils();
   const { data: user, isLoading: userLoading } = trpc.auth.getMe.useQuery();
   const { data: weeklyStats, isLoading: statsLoading } = trpc.stats.getPartnerWeeklySummary.useQuery();
+  const { data: approvalCount } = trpc.food.getPendingApprovalCount.useQuery();
 
   const [linkCode, setLinkCode] = useState("");
   const [generatedCode, setGeneratedCode] = useState<string | null>(null);
@@ -233,8 +238,39 @@ export default function PartnerPage() {
             </motion.div>
           ) : null}
 
-          {/* Partner History */}
-          <PartnerHistorySection />
+          {/* Tabs for History, Approvals, Submissions */}
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.3 }}
+          >
+            <Tabs defaultValue="history" className="w-full">
+              <TabsList className="w-full grid grid-cols-3">
+                <TabsTrigger value="history">History</TabsTrigger>
+                <TabsTrigger value="approvals" className="relative">
+                  Approvals
+                  {(approvalCount?.count ?? 0) > 0 && (
+                    <Badge
+                      variant="destructive"
+                      className="ml-1.5 h-5 min-w-5 px-1.5 text-xs"
+                    >
+                      {approvalCount?.count}
+                    </Badge>
+                  )}
+                </TabsTrigger>
+                <TabsTrigger value="submissions">Submissions</TabsTrigger>
+              </TabsList>
+              <TabsContent value="history" className="mt-4">
+                <PartnerHistorySection />
+              </TabsContent>
+              <TabsContent value="approvals" className="mt-4">
+                <ApprovalsList />
+              </TabsContent>
+              <TabsContent value="submissions" className="mt-4">
+                <MySubmissionsList />
+              </TabsContent>
+            </Tabs>
+          </motion.div>
         </>
       ) : (
         <>
