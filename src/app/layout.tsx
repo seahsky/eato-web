@@ -1,19 +1,29 @@
 import type { Metadata, Viewport } from "next";
-import { Nunito, Fraunces } from "next/font/google";
+import localFont from "next/font/local";
 import { ClerkProvider } from "@clerk/nextjs";
 import "./globals.css";
 import { TRPCProvider } from "@/trpc/react";
 import { Toaster } from "@/components/ui/sonner";
 
-const nunito = Nunito({
-  variable: "--font-nunito",
-  subsets: ["latin"],
+const sfProText = localFont({
+  src: [
+    { path: "../../public/fonts/SF-Pro-Text-Regular.otf", weight: "400", style: "normal" },
+    { path: "../../public/fonts/SF-Pro-Text-Medium.otf", weight: "500", style: "normal" },
+    { path: "../../public/fonts/SF-Pro-Text-Semibold.otf", weight: "600", style: "normal" },
+    { path: "../../public/fonts/SF-Pro-Text-Bold.otf", weight: "700", style: "normal" },
+  ],
+  variable: "--font-sf-text",
   display: "swap",
 });
 
-const fraunces = Fraunces({
-  variable: "--font-fraunces",
-  subsets: ["latin"],
+const sfProDisplay = localFont({
+  src: [
+    { path: "../../public/fonts/SF-Pro-Display-Regular.otf", weight: "400", style: "normal" },
+    { path: "../../public/fonts/SF-Pro-Display-Medium.otf", weight: "500", style: "normal" },
+    { path: "../../public/fonts/SF-Pro-Display-Semibold.otf", weight: "600", style: "normal" },
+    { path: "../../public/fonts/SF-Pro-Display-Bold.otf", weight: "700", style: "normal" },
+  ],
+  variable: "--font-sf-display",
   display: "swap",
 });
 
@@ -47,7 +57,7 @@ export default function RootLayout({
 }>) {
   return (
     <ClerkProvider>
-      <html lang="en" className={`${nunito.variable} ${fraunces.variable}`}>
+      <html lang="en" className={`${sfProText.variable} ${sfProDisplay.variable}`}>
         <head>
           <link rel="apple-touch-icon" href="/icons/icon-192x192.png" />
         </head>
