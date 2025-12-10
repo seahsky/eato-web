@@ -6,11 +6,12 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { EnergyValue } from "@/components/ui/energy-value";
 import { BarcodeScannerSheet } from "@/components/barcode";
+import { FoodQuickAccess } from "./food-quick-access";
 import { trpc } from "@/trpc/react";
 import { Search, Plus, Loader2, ScanBarcode } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useDebounce } from "@/hooks/use-debounce";
-import type { FoodProduct } from "@/types/food";
+import type { FoodProduct, QuickAccessFood } from "@/types/food";
 
 interface FoodSearchProps {
   onSelect: (product: FoodProduct) => void;
@@ -63,7 +64,18 @@ export function FoodSearch({ onSelect }: FoodSearchProps) {
       />
 
       <AnimatePresence mode="wait">
-        {isLoading && debouncedQuery.length >= 2 ? (
+        {/* Show quick-access when not searching */}
+        {!query ? (
+          <motion.div
+            key="quick-access"
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            transition={{ duration: 0.15 }}
+          >
+            <FoodQuickAccess onSelect={(food) => onSelect(food as FoodProduct)} />
+          </motion.div>
+        ) : isLoading && debouncedQuery.length >= 2 ? (
           <div className="space-y-3">
             {[...Array(3)].map((_, i) => (
               <Skeleton key={i} className="h-20 rounded-xl" />

@@ -2,19 +2,19 @@ import type { FoodProduct } from "@/types/food";
 
 const USDA_BASE_URL = "https://api.nal.usda.gov/fdc/v1";
 
-// USDA Nutrient Numbers (as strings, matching API response)
+// USDA Nutrient Numbers (integers matching API response)
 const NUTRIENT_IDS = {
-  ENERGY: "208", // Energy (kcal)
-  PROTEIN: "203", // Protein
-  FAT: "204", // Total lipid (fat)
-  CARBS: "205", // Carbohydrate
-  FIBER: "291", // Fiber, total dietary
-  SUGAR: "269", // Sugars, total
-  SODIUM: "307", // Sodium (in mg)
+  ENERGY: 208, // Energy (kcal)
+  PROTEIN: 203, // Protein
+  FAT: 204, // Total lipid (fat)
+  CARBS: 205, // Carbohydrate
+  FIBER: 291, // Fiber, total dietary
+  SUGAR: 269, // Sugars, total
+  SODIUM: 307, // Sodium (in mg)
 };
 
 interface USDANutrient {
-  number: string; // Nutrient number as string (e.g., "208")
+  number: number; // Nutrient number as integer (e.g., 208)
   name: string; // Nutrient name
   amount: number; // The nutrient value
   unitName: string;
@@ -116,7 +116,7 @@ export async function getUSDAFoodById(fdcId: number): Promise<USDAFood | null> {
   }
 }
 
-function getNutrientValue(nutrients: USDANutrient[], nutrientNumber: string): number {
+function getNutrientValue(nutrients: USDANutrient[], nutrientNumber: number): number {
   const nutrient = nutrients.find((n) => n.number === nutrientNumber);
   return nutrient?.amount ?? 0;
 }

@@ -576,4 +576,316 @@ export const foodRouter = router({
         partnerName: user.partner.name,
       };
     }),
+
+  // Get recent unique foods (last 14 days)
+  getRecentFoods: protectedProcedure.query(async ({ ctx }) => {
+    const fourteenDaysAgo = new Date();
+    fourteenDaysAgo.setDate(fourteenDaysAgo.getDate() - 14);
+
+    // Get recent entries grouped by name+brand
+    const entries = await ctx.prisma.foodEntry.findMany({
+      where: {
+        userId: ctx.user.id,
+        approvalStatus: "APPROVED",
+        consumedAt: { gte: fourteenDaysAgo },
+      },
+      orderBy: { consumedAt: "desc" },
+      select: {
+        name: true,
+        brand: true,
+        imageUrl: true,
+        barcode: true,
+        calories: true,
+        protein: true,
+        carbs: true,
+        fat: true,
+        fiber: true,
+        sugar: true,
+        sodium: true,
+        servingSize: true,
+        servingUnit: true,
+        consumedAt: true,
+        dataSource: true,
+        openFoodFactsId: true,
+        usdaFdcId: true,
+      },
+    });
+
+    // Get user's favorites for isFavorite flag
+    const favorites = await ctx.prisma.favoriteFood.findMany({
+      where: { userId: ctx.user.id },
+      select: { name: true, brand: true },
+    });
+    const favoriteSet = new Set(favorites.map((f) => `${f.name}|${f.brand ?? ""}`));
+
+    // Deduplicate by name+brand, keeping most recent
+    const seen = new Map<string, (typeof entries)[0]>();
+    for (const entry of entries) {
+      const key = `${entry.name}|${entry.brand ?? ""}`;
+      if (!seen.has(key)) {
+        seen.set(key, entry);
+      }
+    }
+
+    // Convert to QuickAccessFood format (limit to 15)
+    const recentFoods = Array.from(seen.values())
+      .slice(0, 15)
+      .map((entry) => {
+        const key = `${entry.name}|${entry.brand ?? ""}`;
+        const caloriesPer100g =
+          entry.servingSize > 0 ? (entry.calories / entry.servingSize) * 100 : entry.calories;
+        return {
+          id: entry.openFoodFactsId
+            ? `off_${entry.openFoodFactsId}`
+            : entry.usdaFdcId
+              ? `usda_${entry.usdaFdcId}`
+              : `manual_${entry.name}`,
+          dataSource: entry.dataSource,
+          barcode: entry.barcode,
+          fdcId: entry.usdaFdcId,
+          name: entry.name,
+          brand: entry.brand,
+          imageUrl: entry.imageUrl,
+          caloriesPer100g: Math.round(caloriesPer100g),
+          proteinPer100g: Math.round(
+            entry.servingSize > 0 ? ((entry.protein ?? 0) / entry.servingSize) * 100 : 0
+          ),
+          carbsPer100g: Math.round(
+            entry.servingSize > 0 ? ((entry.carbs ?? 0) / entry.servingSize) * 100 : 0
+          ),
+          fatPer100g: Math.round(
+            entry.servingSize > 0 ? ((entry.fat ?? 0) / entry.servingSize) * 100 : 0
+          ),
+          fiberPer100g: Math.round(
+            entry.servingSize > 0 ? ((entry.fiber ?? 0) / entry.servingSize) * 100 : 0
+          ),
+          sugarPer100g: Math.round(
+            entry.servingSize > 0 ? ((entry.sugar ?? 0) / entry.servingSize) * 100 : 0
+          ),
+          sodiumPer100g: Math.round(
+            entry.servingSize > 0 ? ((entry.sodium ?? 0) / entry.servingSize) * 100 : 0
+          ),
+          servingSize: entry.servingSize,
+          servingUnit: entry.servingUnit,
+          servingSizeText: `${entry.servingSize}${entry.servingUnit}`,
+          lastLoggedAt: entry.consumedAt.toISOString(),
+          isFavorite: favoriteSet.has(key),
+          defaultServingSize: entry.servingSize,
+          defaultServingUnit: entry.servingUnit,
+        };
+      });
+
+    return recentFoods;
+  }),
+
+  // Get frequently logged foods (3+ times in last 30 days)
+  getFrequentFoods: protectedProcedure.query(async ({ ctx }) => {
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
+    // Get entries from last 30 days
+    const entries = await ctx.prisma.foodEntry.findMany({
+      where: {
+        userId: ctx.user.id,
+        approvalStatus: "APPROVED",
+        consumedAt: { gte: thirtyDaysAgo },
+      },
+      select: {
+        name: true,
+        brand: true,
+        imageUrl: true,
+        barcode: true,
+        calories: true,
+        protein: true,
+        carbs: true,
+        fat: true,
+        fiber: true,
+        sugar: true,
+        sodium: true,
+        servingSize: true,
+        servingUnit: true,
+        consumedAt: true,
+        dataSource: true,
+        openFoodFactsId: true,
+        usdaFdcId: true,
+      },
+    });
+
+    // Get user's favorites for isFavorite flag
+    const favorites = await ctx.prisma.favoriteFood.findMany({
+      where: { userId: ctx.user.id },
+      select: { name: true, brand: true },
+    });
+    const favoriteSet = new Set(favorites.map((f) => `${f.name}|${f.brand ?? ""}`));
+
+    // Count occurrences and keep most recent entry per food
+    const countMap = new Map<string, { count: number; entry: (typeof entries)[0] }>();
+    for (const entry of entries) {
+      const key = `${entry.name}|${entry.brand ?? ""}`;
+      const existing = countMap.get(key);
+      if (existing) {
+        existing.count++;
+        // Keep most recent
+        if (entry.consumedAt > existing.entry.consumedAt) {
+          existing.entry = entry;
+        }
+      } else {
+        countMap.set(key, { count: 1, entry });
+      }
+    }
+
+    // Filter to 3+ occurrences, sort by count desc
+    const frequentFoods = Array.from(countMap.entries())
+      .filter(([, data]) => data.count >= 3)
+      .sort((a, b) => b[1].count - a[1].count)
+      .slice(0, 15)
+      .map(([key, { count, entry }]) => {
+        const caloriesPer100g =
+          entry.servingSize > 0 ? (entry.calories / entry.servingSize) * 100 : entry.calories;
+        return {
+          id: entry.openFoodFactsId
+            ? `off_${entry.openFoodFactsId}`
+            : entry.usdaFdcId
+              ? `usda_${entry.usdaFdcId}`
+              : `manual_${entry.name}`,
+          dataSource: entry.dataSource,
+          barcode: entry.barcode,
+          fdcId: entry.usdaFdcId,
+          name: entry.name,
+          brand: entry.brand,
+          imageUrl: entry.imageUrl,
+          caloriesPer100g: Math.round(caloriesPer100g),
+          proteinPer100g: Math.round(
+            entry.servingSize > 0 ? ((entry.protein ?? 0) / entry.servingSize) * 100 : 0
+          ),
+          carbsPer100g: Math.round(
+            entry.servingSize > 0 ? ((entry.carbs ?? 0) / entry.servingSize) * 100 : 0
+          ),
+          fatPer100g: Math.round(
+            entry.servingSize > 0 ? ((entry.fat ?? 0) / entry.servingSize) * 100 : 0
+          ),
+          fiberPer100g: Math.round(
+            entry.servingSize > 0 ? ((entry.fiber ?? 0) / entry.servingSize) * 100 : 0
+          ),
+          sugarPer100g: Math.round(
+            entry.servingSize > 0 ? ((entry.sugar ?? 0) / entry.servingSize) * 100 : 0
+          ),
+          sodiumPer100g: Math.round(
+            entry.servingSize > 0 ? ((entry.sodium ?? 0) / entry.servingSize) * 100 : 0
+          ),
+          servingSize: entry.servingSize,
+          servingUnit: entry.servingUnit,
+          servingSizeText: `${entry.servingSize}${entry.servingUnit}`,
+          lastLoggedAt: entry.consumedAt.toISOString(),
+          logCount: count,
+          isFavorite: favoriteSet.has(key),
+          defaultServingSize: entry.servingSize,
+          defaultServingUnit: entry.servingUnit,
+        };
+      });
+
+    return frequentFoods;
+  }),
+
+  // Get user's favorite foods
+  getFavoriteFoods: protectedProcedure.query(async ({ ctx }) => {
+    const favorites = await ctx.prisma.favoriteFood.findMany({
+      where: { userId: ctx.user.id },
+      orderBy: { createdAt: "desc" },
+    });
+
+    return favorites.map((fav) => ({
+      id: fav.openFoodFactsId
+        ? `off_${fav.openFoodFactsId}`
+        : fav.usdaFdcId
+          ? `usda_${fav.usdaFdcId}`
+          : `manual_${fav.name}`,
+      dataSource: fav.dataSource,
+      barcode: fav.barcode,
+      fdcId: fav.usdaFdcId,
+      name: fav.name,
+      brand: fav.brand,
+      imageUrl: fav.imageUrl,
+      caloriesPer100g: fav.caloriesPer100g,
+      proteinPer100g: fav.proteinPer100g,
+      carbsPer100g: fav.carbsPer100g,
+      fatPer100g: fav.fatPer100g,
+      fiberPer100g: fav.fiberPer100g,
+      sugarPer100g: fav.sugarPer100g,
+      sodiumPer100g: fav.sodiumPer100g,
+      servingSize: fav.defaultServingSize,
+      servingUnit: fav.defaultServingUnit,
+      servingSizeText: `${fav.defaultServingSize}${fav.defaultServingUnit}`,
+      isFavorite: true,
+      defaultServingSize: fav.defaultServingSize,
+      defaultServingUnit: fav.defaultServingUnit,
+    }));
+  }),
+
+  // Toggle favorite status for a food
+  toggleFavorite: protectedProcedure
+    .input(
+      z.object({
+        name: z.string(),
+        brand: z.string().nullable(),
+        imageUrl: z.string().nullable(),
+        barcode: z.string().nullable(),
+        caloriesPer100g: z.number(),
+        proteinPer100g: z.number(),
+        carbsPer100g: z.number(),
+        fatPer100g: z.number(),
+        fiberPer100g: z.number().default(0),
+        sugarPer100g: z.number().default(0),
+        sodiumPer100g: z.number().default(0),
+        dataSource: z.enum(["OPEN_FOOD_FACTS", "USDA", "MANUAL"]),
+        openFoodFactsId: z.string().nullable(),
+        usdaFdcId: z.number().nullable(),
+        defaultServingSize: z.number().default(100),
+        defaultServingUnit: z.string().default("g"),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      // Check if already favorited
+      const existing = await ctx.prisma.favoriteFood.findUnique({
+        where: {
+          userId_name_brand: {
+            userId: ctx.user.id,
+            name: input.name,
+            brand: input.brand ?? "",
+          },
+        },
+      });
+
+      if (existing) {
+        // Remove from favorites
+        await ctx.prisma.favoriteFood.delete({
+          where: { id: existing.id },
+        });
+        return { isFavorite: false };
+      } else {
+        // Add to favorites
+        await ctx.prisma.favoriteFood.create({
+          data: {
+            userId: ctx.user.id,
+            name: input.name,
+            brand: input.brand,
+            imageUrl: input.imageUrl,
+            barcode: input.barcode,
+            caloriesPer100g: input.caloriesPer100g,
+            proteinPer100g: input.proteinPer100g,
+            carbsPer100g: input.carbsPer100g,
+            fatPer100g: input.fatPer100g,
+            fiberPer100g: input.fiberPer100g,
+            sugarPer100g: input.sugarPer100g,
+            sodiumPer100g: input.sodiumPer100g,
+            dataSource: input.dataSource,
+            openFoodFactsId: input.openFoodFactsId,
+            usdaFdcId: input.usdaFdcId,
+            defaultServingSize: input.defaultServingSize,
+            defaultServingUnit: input.defaultServingUnit,
+          },
+        });
+        return { isFavorite: true };
+      }
+    }),
 });

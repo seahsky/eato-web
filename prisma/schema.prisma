@@ -32,6 +32,7 @@ model User {
   foodEntries   FoodEntry[]
   dailyLogs     DailyLog[]
   recipes       Recipe[]
+  favoriteFoods FavoriteFood[]
 }
 
 // Profile for BMR calculation
@@ -236,5 +237,40 @@ model RecipeIngredient {
 
   // Order in recipe
   sortOrder        Int                @default(0)
+}
+
+// User's favorited foods for quick access
+model FavoriteFood {
+  id              String         @id @default(auto()) @map("_id") @db.ObjectId
+  userId          String         @db.ObjectId
+  user            User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Food identification (snapshot of product data)
+  name            String
+  brand           String?
+  imageUrl        String?
+  barcode         String?
+
+  // Per-100g nutrition
+  caloriesPer100g Float
+  proteinPer100g  Float
+  carbsPer100g    Float
+  fatPer100g      Float
+  fiberPer100g    Float          @default(0)
+  sugarPer100g    Float          @default(0)
+  sodiumPer100g   Float          @default(0)
+
+  // Source tracking
+  dataSource      FoodDataSource
+  openFoodFactsId String?
+  usdaFdcId       Int?
+
+  // Default serving (from last log)
+  defaultServingSize Float       @default(100)
+  defaultServingUnit String      @default("g")
+
+  createdAt       DateTime       @default(now())
+
+  @@unique([userId, name, brand])
 }
 

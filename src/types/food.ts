@@ -30,3 +30,12 @@ export interface FoodSearchResult {
     openFoodFacts: { count: number; error?: string };
   };
 }
+
+// Quick-access food for Recent/Favorites/Frequent tabs
+export interface QuickAccessFood extends FoodProduct {
+  lastLoggedAt?: string; // ISO date string
+  logCount?: number;
+  isFavorite: boolean;
+  defaultServingSize: number;
+  defaultServingUnit: string;
+}
