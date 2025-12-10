@@ -18,6 +18,8 @@ import { Card, CardContent } from "@/components/ui/card";
 export default function DashboardPage() {
   const [selectedDate, setSelectedDate] = useState(new Date());
 
+  const { data: user } = trpc.auth.getMe.useQuery();
+
   const { data: summary, isLoading } = trpc.stats.getDailySummary.useQuery({
     date: selectedDate.toISOString(),
   });
@@ -203,6 +205,7 @@ export default function DashboardPage() {
           delay={0.1}
           hasPartner={hasPartner}
           selectedDate={selectedDate}
+          currentUserId={user?.id}
         />
         <MealSection
           mealType="LUNCH"
@@ -210,6 +213,7 @@ export default function DashboardPage() {
           delay={0.2}
           hasPartner={hasPartner}
           selectedDate={selectedDate}
+          currentUserId={user?.id}
         />
         <MealSection
           mealType="DINNER"
@@ -217,6 +221,7 @@ export default function DashboardPage() {
           delay={0.3}
           hasPartner={hasPartner}
           selectedDate={selectedDate}
+          currentUserId={user?.id}
         />
         <MealSection
           mealType="SNACK"
@@ -224,6 +229,7 @@ export default function DashboardPage() {
           delay={0.4}
           hasPartner={hasPartner}
           selectedDate={selectedDate}
+          currentUserId={user?.id}
         />
       </div>
     </div>

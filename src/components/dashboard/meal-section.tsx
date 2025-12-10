@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { motion } from "framer-motion";
 import { Plus, Coffee, Sun, Moon, Cookie, MoreHorizontal, Copy, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -11,6 +12,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { FoodEntryEditSheet } from "@/components/food/food-entry-edit-sheet";
 import Link from "next/link";
 import type { FoodEntry } from "@prisma/client";
 import { cn } from "@/lib/utils";
@@ -30,6 +32,7 @@ interface MealSectionProps {
   delay?: number;
   hasPartner?: boolean;
   selectedDate?: Date;
+  currentUserId?: string;
 }
 
 export function MealSection({
@@ -38,10 +41,12 @@ export function MealSection({
   delay = 0,
   hasPartner = false,
   selectedDate = new Date(),
+  currentUserId,
 }: MealSectionProps) {
   const config = mealConfig[mealType];
   const Icon = config.icon;
   const utils = trpc.useUtils();
+  const [editEntry, setEditEntry] = useState<FoodEntry | null>(null);
 
   // Only count approved entries toward total calories
   const approvedEntries = entries.filter((e) => e.approvalStatus === "APPROVED");
@@ -128,11 +133,15 @@ export function MealSection({
       </div>
 
       {entries.length > 0 && (
-        <div className="space-y-2 mt-3 pt-3 border-t border-border/50">
+        <div className="space-y-1 mt-3 pt-3 border-t border-border/50">
           {entries.slice(0, 3).map((entry) => {
             const isPending = entry.approvalStatus === "PENDING";
             return (
-              <div key={entry.id} className="flex items-center justify-between text-sm">
+              <button
+                key={entry.id}
+                onClick={() => setEditEntry(entry)}
+                className="flex items-center justify-between text-sm w-full text-left p-2 -mx-2 rounded-lg hover:bg-muted/50 transition-colors"
+              >
                 <div className="flex items-center gap-2 flex-1 min-w-0">
                   {entry.imageUrl && (
                     <img
@@ -167,7 +176,7 @@ export function MealSection({
                     isPending && "text-muted-foreground/60"
                   )}
                 />
-              </div>
+              </button>
             );
           })}
           {entries.length > 3 && (
@@ -177,6 +186,13 @@ export function MealSection({
           )}
         </div>
       )}
+
+      <FoodEntryEditSheet
+        entry={editEntry}
+        open={!!editEntry}
+        onOpenChange={(open) => !open && setEditEntry(null)}
+        currentUserId={currentUserId}
+      />
     </motion.div>
   );
 }
