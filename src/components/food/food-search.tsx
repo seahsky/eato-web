@@ -5,8 +5,9 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { EnergyValue } from "@/components/ui/energy-value";
+import { BarcodeScannerSheet } from "@/components/barcode";
 import { trpc } from "@/trpc/react";
-import { Search, Plus, Loader2 } from "lucide-react";
+import { Search, Plus, Loader2, ScanBarcode } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useDebounce } from "@/hooks/use-debounce";
 import type { FoodProduct } from "@/types/food";
@@ -17,6 +18,7 @@ interface FoodSearchProps {
 
 export function FoodSearch({ onSelect }: FoodSearchProps) {
   const [query, setQuery] = useState("");
+  const [scannerOpen, setScannerOpen] = useState(false);
   const debouncedQuery = useDebounce(query, 300);
 
   const { data, isLoading, isFetching } = trpc.food.search.useQuery(
@@ -26,19 +28,39 @@ export function FoodSearch({ onSelect }: FoodSearchProps) {
 
   return (
     <div className="space-y-4">
-      <div className="relative">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-        <Input
-          type="text"
-          placeholder="Search foods..."
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          className="pl-10 h-12 bg-card"
-        />
-        {isFetching && (
-          <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 animate-spin text-muted-foreground" />
-        )}
+      <div className="flex gap-2">
+        <div className="relative flex-1">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+          <Input
+            type="text"
+            placeholder="Search foods..."
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            className="pl-10 h-12 bg-card"
+          />
+          {isFetching && (
+            <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 animate-spin text-muted-foreground" />
+          )}
+        </div>
+        <Button
+          variant="outline"
+          size="icon"
+          className="h-12 w-12 shrink-0"
+          onClick={() => setScannerOpen(true)}
+          title="Scan barcode"
+        >
+          <ScanBarcode className="w-5 h-5" />
+        </Button>
       </div>
+
+      <BarcodeScannerSheet
+        open={scannerOpen}
+        onOpenChange={setScannerOpen}
+        onProductFound={(product) => {
+          setScannerOpen(false);
+          onSelect(product);
+        }}
+      />
 
       <AnimatePresence mode="wait">
         {isLoading && debouncedQuery.length >= 2 ? (
