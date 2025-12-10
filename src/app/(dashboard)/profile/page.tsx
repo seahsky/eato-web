@@ -70,8 +70,8 @@ export default function ProfilePage() {
     });
   };
 
-  const handleLogout = async () => {
-    await signOut({ redirectUrl: "/login" });
+  const handleLogout = () => {
+    signOut({ redirectUrl: "/" });
   };
 
   if (isLoading) {
