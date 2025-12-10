@@ -1,11 +1,9 @@
 import { z } from "zod";
 import { router, protectedProcedure } from "../trpc";
 import { TRPCError } from "@trpc/server";
-import {
-  searchProducts,
-  getProductByBarcode,
-  normalizeProduct,
-} from "../services/open-food-facts";
+import { getProductByBarcode, normalizeProduct } from "../services/open-food-facts";
+import { getUSDAFoodById, normalizeUSDAProduct } from "../services/usda-food-data";
+import { searchFoods } from "../services/food-search";
 import { startOfDay, endOfDay } from "date-fns";
 
 const foodEntrySchema = z.object({
@@ -25,12 +23,14 @@ const foodEntrySchema = z.object({
   mealType: z.enum(["BREAKFAST", "LUNCH", "DINNER", "SNACK"]),
   consumedAt: z.string().datetime(),
   isManualEntry: z.boolean().default(false),
+  dataSource: z.enum(["OPEN_FOOD_FACTS", "USDA", "MANUAL"]).default("MANUAL"),
   openFoodFactsId: z.string().optional(),
+  usdaFdcId: z.number().optional(),
   forPartnerId: z.string().optional(),
 });
 
 export const foodRouter = router({
-  // Search Open Food Facts
+  // Unified search across USDA and Open Food Facts
   search: protectedProcedure
     .input(
       z.object({
@@ -39,16 +39,10 @@ export const foodRouter = router({
       })
     )
     .query(async ({ input }) => {
-      const result = await searchProducts(input.query, input.page);
-      return {
-        products: result.products.map(normalizeProduct),
-        count: result.count,
-        page: result.page,
-        hasMore: result.page * 20 < result.count,
-      };
+      return searchFoods(input.query, input.page);
     }),
 
-  // Get product by barcode
+  // Get product by barcode (Open Food Facts only)
   getByBarcode: protectedProcedure
     .input(z.object({ barcode: z.string() }))
     .query(async ({ input }) => {
@@ -59,7 +53,27 @@ export const foodRouter = router({
           message: "Product not found",
         });
       }
-      return normalizeProduct(product);
+      const normalized = normalizeProduct(product);
+      return {
+        ...normalized,
+        id: `off_${product.code}`,
+        dataSource: "OPEN_FOOD_FACTS" as const,
+        fdcId: null,
+      };
+    }),
+
+  // Get USDA food by FDC ID
+  getByFdcId: protectedProcedure
+    .input(z.object({ fdcId: z.number() }))
+    .query(async ({ input }) => {
+      const food = await getUSDAFoodById(input.fdcId);
+      if (!food) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "USDA food not found",
+        });
+      }
+      return normalizeUSDAProduct(food);
     }),
 
   // Log food entry

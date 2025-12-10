@@ -9,19 +9,7 @@ import { trpc } from "@/trpc/react";
 import { Search, Plus, Loader2 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useDebounce } from "@/hooks/use-debounce";
-
-interface FoodProduct {
-  barcode: string;
-  name: string;
-  brand: string | null;
-  imageUrl: string | null;
-  caloriesPer100g: number;
-  proteinPer100g: number;
-  carbsPer100g: number;
-  fatPer100g: number;
-  servingSize: number;
-  servingUnit: string;
-}
+import type { FoodProduct } from "@/types/food";
 
 interface FoodSearchProps {
   onSelect: (product: FoodProduct) => void;
@@ -68,7 +56,7 @@ export function FoodSearch({ onSelect }: FoodSearchProps) {
           >
             {data.products.map((product, index) => (
               <motion.div
-                key={product.barcode || index}
+                key={product.id}
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: index * 0.05 }}
@@ -82,16 +70,31 @@ export function FoodSearch({ onSelect }: FoodSearchProps) {
                   />
                 ) : (
                   <div className="w-14 h-14 rounded-lg bg-muted flex items-center justify-center">
-                    <span className="text-xs text-muted-foreground">No img</span>
+                    {product.dataSource === "USDA" ? (
+                      <span className="text-[10px] font-medium text-green-600">USDA</span>
+                    ) : (
+                      <span className="text-xs text-muted-foreground">No img</span>
+                    )}
                   </div>
                 )}
                 <div className="flex-1 min-w-0">
                   <p className="font-medium text-sm truncate">{product.name}</p>
-                  {product.brand && (
-                    <p className="text-xs text-muted-foreground truncate">
-                      {product.brand}
-                    </p>
-                  )}
+                  <div className="flex items-center gap-1.5 mt-0.5">
+                    {product.brand && (
+                      <span className="text-xs text-muted-foreground truncate">
+                        {product.brand}
+                      </span>
+                    )}
+                    <span
+                      className={`text-[9px] px-1.5 py-0.5 rounded font-medium shrink-0 ${
+                        product.dataSource === "USDA"
+                          ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400"
+                          : "bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400"
+                      }`}
+                    >
+                      {product.dataSource === "USDA" ? "USDA" : "OFF"}
+                    </span>
+                  </div>
                   <p className="text-xs text-primary font-medium mt-0.5">
                     <EnergyValue kcal={product.caloriesPer100g} /> / 100g
                   </p>

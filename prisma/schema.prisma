@@ -114,8 +114,10 @@ model FoodEntry {
   dailyLog        DailyLog? @relation(fields: [dailyLogId], references: [id])
 
   // Source tracking
-  isManualEntry   Boolean   @default(false)
+  isManualEntry   Boolean        @default(false)
+  dataSource      FoodDataSource @default(MANUAL)
   openFoodFactsId String?
+  usdaFdcId       Int?
 
   // Recipe reference (if logged from a recipe)
   recipeId        String?   @db.ObjectId
@@ -137,6 +139,12 @@ enum ApprovalStatus {
   APPROVED
   PENDING
   REJECTED
+}
+
+enum FoodDataSource {
+  OPEN_FOOD_FACTS
+  USDA
+  MANUAL
 }
 
 // Aggregated daily totals
@@ -222,7 +230,9 @@ model RecipeIngredient {
 
   // Source tracking
   isManualEntry    Boolean            @default(false)
+  dataSource       FoodDataSource     @default(MANUAL)
   openFoodFactsId  String?
+  usdaFdcId        Int?
 
   // Order in recipe
   sortOrder        Int                @default(0)

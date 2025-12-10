@@ -21,22 +21,7 @@ import { useRouter } from "next/navigation";
 import { Loader2, Minus, Plus, Users } from "lucide-react";
 import { motion } from "framer-motion";
 import { Switch } from "@/components/ui/switch";
-
-interface FoodProduct {
-  barcode?: string;
-  name: string;
-  brand?: string | null;
-  imageUrl?: string | null;
-  caloriesPer100g: number;
-  proteinPer100g: number;
-  carbsPer100g: number;
-  fatPer100g: number;
-  fiberPer100g?: number;
-  sugarPer100g?: number;
-  sodiumPer100g?: number;
-  servingSize: number;
-  servingUnit: string;
-}
+import type { FoodProduct } from "@/types/food";
 
 interface FoodEntryFormProps {
   product?: FoodProduct | null;
@@ -97,7 +82,7 @@ export function FoodEntryForm({
 
     logMutation.mutate({
       name,
-      barcode: product?.barcode,
+      barcode: product?.barcode ?? undefined,
       brand: product?.brand ?? undefined,
       imageUrl: product?.imageUrl ?? undefined,
       calories,
@@ -112,7 +97,9 @@ export function FoodEntryForm({
       mealType: mealType as "BREAKFAST" | "LUNCH" | "DINNER" | "SNACK",
       consumedAt: new Date().toISOString(),
       isManualEntry: !product,
-      openFoodFactsId: product?.barcode,
+      dataSource: product?.dataSource ?? "MANUAL",
+      openFoodFactsId: product?.dataSource === "OPEN_FOOD_FACTS" ? product.barcode ?? undefined : undefined,
+      usdaFdcId: product?.dataSource === "USDA" ? product.fdcId ?? undefined : undefined,
       forPartnerId: logForPartner ? user?.partner?.id : undefined,
     });
   };

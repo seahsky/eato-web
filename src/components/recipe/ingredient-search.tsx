@@ -36,8 +36,29 @@ export function IngredientSearch({ onSelect, onClose }: IngredientSearchProps) {
     { enabled: debouncedQuery.length >= 2 }
   );
 
-  const handleSelect = (product: IngredientProduct) => {
-    onSelect(product);
+  const handleSelect = (product: {
+    barcode?: string | null;
+    name: string;
+    brand?: string | null;
+    imageUrl?: string | null;
+    caloriesPer100g: number;
+    proteinPer100g: number;
+    carbsPer100g: number;
+    fatPer100g: number;
+    fiberPer100g?: number;
+  }) => {
+    // Convert FoodProduct to IngredientProduct (null -> undefined for barcode)
+    onSelect({
+      barcode: product.barcode ?? undefined,
+      name: product.name,
+      brand: product.brand,
+      imageUrl: product.imageUrl,
+      caloriesPer100g: product.caloriesPer100g,
+      proteinPer100g: product.proteinPer100g,
+      carbsPer100g: product.carbsPer100g,
+      fatPer100g: product.fatPer100g,
+      fiberPer100g: product.fiberPer100g,
+    });
     setQuery("");
   };
 

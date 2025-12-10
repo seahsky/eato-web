@@ -6,22 +6,7 @@ import { FoodEntryForm } from "@/components/food/food-entry-form";
 import { motion, AnimatePresence } from "framer-motion";
 import { ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
-
-interface FoodProduct {
-  barcode: string;
-  name: string;
-  brand: string | null;
-  imageUrl: string | null;
-  caloriesPer100g: number;
-  proteinPer100g: number;
-  carbsPer100g: number;
-  fatPer100g: number;
-  fiberPer100g?: number;
-  sugarPer100g?: number;
-  sodiumPer100g?: number;
-  servingSize: number;
-  servingUnit: string;
-}
+import type { FoodProduct } from "@/types/food";
 
 export default function SearchPage() {
   const [selectedProduct, setSelectedProduct] = useState<FoodProduct | null>(null);
