@@ -31,6 +31,7 @@ model User {
   // Food tracking
   foodEntries   FoodEntry[]
   dailyLogs     DailyLog[]
+  recipes       Recipe[]
 }
 
 // Profile for BMR calculation
@@ -115,6 +116,9 @@ model FoodEntry {
   // Source tracking
   isManualEntry   Boolean   @default(false)
   openFoodFactsId String?
+
+  // Recipe reference (if logged from a recipe)
+  recipeId        String?   @db.ObjectId
 }
 
 enum MealType {
@@ -150,5 +154,66 @@ model DailyLog {
   updatedAt     DateTime    @updatedAt
 
   @@unique([userId, date])
+}
+
+// Custom recipe created by user
+model Recipe {
+  id              String             @id @default(auto()) @map("_id") @db.ObjectId
+  userId          String             @db.ObjectId
+  user            User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Recipe identification
+  name            String
+  description     String?
+  imageUrl        String?
+
+  // Yield (finished product weight in grams)
+  yieldWeight     Float
+  yieldUnit       String             @default("g")
+
+  // Pre-calculated per-100g nutrition
+  caloriesPer100g Float
+  proteinPer100g  Float
+  carbsPer100g    Float
+  fatPer100g      Float
+  fiberPer100g    Float              @default(0)
+
+  // Ingredients
+  ingredients     RecipeIngredient[]
+
+  createdAt       DateTime           @default(now())
+  updatedAt       DateTime           @updatedAt
+}
+
+// Individual ingredient in a recipe
+model RecipeIngredient {
+  id               String   @id @default(auto()) @map("_id") @db.ObjectId
+  recipeId         String   @db.ObjectId
+  recipe           Recipe   @relation(fields: [recipeId], references: [id], onDelete: Cascade)
+
+  // Ingredient identification
+  name             String
+
+  // Quantity specification
+  quantity         Float              // Amount or percentage value
+  unit             String             // "g", "kg", "ml", "L", "%"
+
+  // Baker's percentage support
+  isPercentage     Boolean            @default(false)
+  baseIngredientId String?            @db.ObjectId
+
+  // Per-100g nutrition of this ingredient
+  caloriesPer100g  Float
+  proteinPer100g   Float
+  carbsPer100g     Float
+  fatPer100g       Float
+  fiberPer100g     Float              @default(0)
+
+  // Source tracking
+  isManualEntry    Boolean            @default(false)
+  openFoodFactsId  String?
+
+  // Order in recipe
+  sortOrder        Int                @default(0)
 }
 
