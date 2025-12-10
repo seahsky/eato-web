@@ -218,8 +218,8 @@ export default function ProfilePage() {
                   value={activityLevel}
                   onValueChange={(v) => setActivityLevel(v as ActivityLevel)}
                 >
-                  <SelectTrigger>
-                    <SelectValue />
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Select activity level" />
                   </SelectTrigger>
                   <SelectContent>
                     {Object.entries(ACTIVITY_LABELS).map(([value, label]) => (
