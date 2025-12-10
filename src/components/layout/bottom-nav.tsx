@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Home, Search, Plus, BarChart3, User } from "lucide-react";
+import { Home, Search, Plus, Users, User } from "lucide-react";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 
@@ -10,7 +10,7 @@ const navItems = [
   { href: "/dashboard", icon: Home, label: "Home" },
   { href: "/search", icon: Search, label: "Search" },
   { href: "/log", icon: Plus, label: "Add", isMain: true },
-  { href: "/partner", icon: BarChart3, label: "Partner" },
+  { href: "/partner", icon: Users, label: "Partner" },
   { href: "/profile", icon: User, label: "Profile" },
 ];
 
