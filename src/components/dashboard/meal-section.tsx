@@ -47,6 +47,7 @@ export function MealSection({
   const Icon = config.icon;
   const utils = trpc.useUtils();
   const [editEntry, setEditEntry] = useState<FoodEntry | null>(null);
+  const [isExpanded, setIsExpanded] = useState(false);
 
   // Only count approved entries toward total calories
   const approvedEntries = entries.filter((e) => e.approvalStatus === "APPROVED");
@@ -134,7 +135,7 @@ export function MealSection({
 
       {entries.length > 0 && (
         <div className="space-y-1 mt-3 pt-3 border-t border-border/50">
-          {entries.slice(0, 3).map((entry) => {
+          {(isExpanded ? entries : entries.slice(0, 3)).map((entry) => {
             const isPending = entry.approvalStatus === "PENDING";
             return (
               <button
@@ -180,9 +181,12 @@ export function MealSection({
             );
           })}
           {entries.length > 3 && (
-            <p className="text-xs text-muted-foreground text-center pt-1">
-              +{entries.length - 3} more
-            </p>
+            <button
+              onClick={() => setIsExpanded(!isExpanded)}
+              className="text-xs text-muted-foreground hover:text-foreground text-center pt-1 w-full transition-colors"
+            >
+              {isExpanded ? "Show less" : `+${entries.length - 3} more`}
+            </button>
           )}
         </div>
       )}
