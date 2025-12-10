@@ -28,13 +28,11 @@ interface Recipe {
 }
 
 interface RecipeListProps {
-  onSelect?: (recipe: Recipe) => void;
   onLog?: (recipe: Recipe) => void;
   showCreateButton?: boolean;
 }
 
 export function RecipeList({
-  onSelect,
   onLog,
   showCreateButton = true,
 }: RecipeListProps) {
@@ -99,7 +97,6 @@ export function RecipeList({
             <RecipeGrid
               recipes={userRecipes}
               isOwner={true}
-              onSelect={onSelect}
               onLog={onLog}
               emptyMessage="You haven't created any recipes yet"
             />
@@ -109,7 +106,6 @@ export function RecipeList({
             <RecipeGrid
               recipes={partnerRecipes}
               isOwner={false}
-              onSelect={onSelect}
               onLog={onLog}
               emptyMessage="Your partner hasn't created any recipes yet"
             />
@@ -120,7 +116,6 @@ export function RecipeList({
         <RecipeGrid
           recipes={userRecipes}
           isOwner={true}
-          onSelect={onSelect}
           onLog={onLog}
           emptyMessage="You haven't created any recipes yet"
         />
@@ -132,13 +127,11 @@ export function RecipeList({
 function RecipeGrid({
   recipes,
   isOwner,
-  onSelect,
   onLog,
   emptyMessage,
 }: {
   recipes: Recipe[];
   isOwner: boolean;
-  onSelect?: (recipe: Recipe) => void;
   onLog?: (recipe: Recipe) => void;
   emptyMessage: string;
 }) {
@@ -176,7 +169,7 @@ function RecipeGrid({
             recipe={recipe}
             isOwner={isOwner}
             partnerName={recipe.user?.name}
-            onSelect={onSelect ? () => onSelect(recipe) : undefined}
+            href={`/recipes/${recipe.id}`}
             onLog={onLog ? () => onLog(recipe) : undefined}
             index={index}
           />

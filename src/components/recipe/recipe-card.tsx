@@ -4,6 +4,7 @@ import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { EnergyValue } from "@/components/ui/energy-value";
 import { ChefHat, Plus, Users } from "lucide-react";
+import Link from "next/link";
 
 interface RecipeCardProps {
   recipe: {
@@ -21,7 +22,7 @@ interface RecipeCardProps {
   };
   isOwner?: boolean;
   partnerName?: string | null;
-  onSelect?: () => void;
+  href?: string;
   onLog?: () => void;
   index?: number;
 }
@@ -30,17 +31,16 @@ export function RecipeCard({
   recipe,
   isOwner = true,
   partnerName,
-  onSelect,
+  href,
   onLog,
   index = 0,
 }: RecipeCardProps) {
-  return (
+  const cardContent = (
     <motion.div
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: index * 0.05 }}
-      className="bg-card rounded-xl p-4 border border-border/50 space-y-3 cursor-pointer hover:border-primary/50 transition-colors"
-      onClick={onSelect}
+      className="bg-card rounded-xl p-4 border border-border/50 space-y-3 hover:border-primary/50 transition-colors"
     >
       <div className="flex items-start gap-3">
         {recipe.imageUrl ? (
@@ -79,6 +79,7 @@ export function RecipeCard({
             variant="secondary"
             className="rounded-full shrink-0"
             onClick={(e) => {
+              e.preventDefault();
               e.stopPropagation();
               onLog();
             }}
@@ -105,4 +106,14 @@ export function RecipeCard({
       </div>
     </motion.div>
   );
+
+  if (href) {
+    return (
+      <Link href={href} className="block">
+        {cardContent}
+      </Link>
+    );
+  }
+
+  return cardContent;
 }

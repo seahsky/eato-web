@@ -6,7 +6,6 @@ import { RecipeLogForm } from "@/components/recipe/recipe-log-form";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
-import { useRouter } from "next/navigation";
 
 interface Recipe {
   id: string;
@@ -23,13 +22,8 @@ interface Recipe {
 }
 
 export default function RecipesPage() {
-  const router = useRouter();
   const [selectedRecipe, setSelectedRecipe] = useState<Recipe | null>(null);
   const [mode, setMode] = useState<"list" | "log">("list");
-
-  const handleRecipeSelect = (recipe: Recipe) => {
-    router.push(`/recipes/${recipe.id}`);
-  };
 
   const handleRecipeLog = (recipe: Recipe) => {
     setSelectedRecipe(recipe as Recipe);
@@ -80,7 +74,6 @@ export default function RecipesPage() {
             exit={{ opacity: 0, y: -20 }}
           >
             <RecipeList
-              onSelect={handleRecipeSelect}
               onLog={handleRecipeLog}
             />
           </motion.div>
