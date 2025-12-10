@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -14,10 +14,11 @@ import {
 } from "@/components/ui/select";
 import { trpc } from "@/trpc/react";
 import { toast } from "sonner";
-import { Loader2, LogOut, Calculator, Target, Activity } from "lucide-react";
+import { Loader2, LogOut, Calculator, Target, Activity, Check, TrendingDown, TrendingUp, Minus } from "lucide-react";
 import { motion } from "framer-motion";
 import { useClerk } from "@clerk/nextjs";
 import { ACTIVITY_LABELS } from "@/lib/bmr";
+import { cn } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
 import { EnergyValue } from "@/components/ui/energy-value";
 import { useEnergyUnit } from "@/contexts/energy-context";
@@ -50,6 +51,20 @@ export default function ProfilePage() {
     }
   }, [profile]);
 
+  // Compute calorie suggestions based on TDEE
+  const calorieSuggestions = useMemo(() => {
+    if (!profile?.tdee) return [];
+    const tdee = profile.tdee;
+    return [
+      { type: 'lose-aggressive', label: 'Lose ~1.5 lb/wk', kcal: Math.max(1200, tdee - 750), icon: TrendingDown, color: 'text-orange-500' },
+      { type: 'lose-moderate', label: 'Lose ~1 lb/wk', kcal: Math.max(1200, tdee - 500), icon: TrendingDown, color: 'text-amber-500' },
+      { type: 'lose-mild', label: 'Lose ~0.5 lb/wk', kcal: Math.max(1200, tdee - 250), icon: TrendingDown, color: 'text-yellow-500' },
+      { type: 'maintain', label: 'Maintain weight', kcal: tdee, icon: Minus, color: 'text-primary' },
+      { type: 'gain-mild', label: 'Gain ~0.5 lb/wk', kcal: tdee + 250, icon: TrendingUp, color: 'text-green-500' },
+      { type: 'gain-moderate', label: 'Gain ~1 lb/wk', kcal: tdee + 500, icon: TrendingUp, color: 'text-emerald-500' },
+    ];
+  }, [profile?.tdee]);
+
   const upsertMutation = trpc.profile.upsert.useMutation({
     onSuccess: (data) => {
       toast.success("Profile updated!");
@@ -76,6 +91,10 @@ export default function ProfilePage() {
 
   const handleLogout = () => {
     signOut({ redirectUrl: "/" });
+  };
+
+  const handleSelectSuggestion = (kcal: number) => {
+    setCalorieGoal(kcal.toString());
   };
 
   if (isLoading) {
@@ -157,11 +176,62 @@ export default function ProfilePage() {
         </motion.div>
       )}
 
+      {/* Calorie Goal Suggestions */}
+      {profile && (
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.15 }}
+          className="space-y-3"
+        >
+          <div className="flex items-center gap-2 px-1">
+            <Target className="w-4 h-4 text-muted-foreground" />
+            <h2 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">
+              Goal Suggestions
+            </h2>
+          </div>
+
+          <div className="grid grid-cols-2 gap-2">
+            {calorieSuggestions.map((suggestion) => {
+              const Icon = suggestion.icon;
+              const selected = parseInt(calorieGoal) === suggestion.kcal;
+
+              return (
+                <motion.button
+                  key={suggestion.type}
+                  type="button"
+                  onClick={() => handleSelectSuggestion(suggestion.kcal)}
+                  className={cn(
+                    "relative p-3 rounded-xl border-2 transition-all text-left",
+                    "hover:bg-accent/50 active:scale-[0.98]",
+                    selected
+                      ? "border-primary bg-primary/5"
+                      : "border-border bg-card"
+                  )}
+                  whileTap={{ scale: 0.98 }}
+                >
+                  {selected && (
+                    <div className="absolute top-2 right-2">
+                      <Check className="w-4 h-4 text-primary" />
+                    </div>
+                  )}
+                  <div className="flex items-center gap-2 mb-1">
+                    <Icon className={cn("w-4 h-4", suggestion.color)} />
+                    <span className="text-xs text-muted-foreground">{suggestion.label}</span>
+                  </div>
+                  <EnergyValue kcal={suggestion.kcal} showUnit toggleable className="text-lg font-semibold" />
+                </motion.button>
+              );
+            })}
+          </div>
+        </motion.div>
+      )}
+
       {/* Profile Form */}
       <motion.div
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.2 }}
+        transition={{ delay: 0.25 }}
       >
         <Card>
           <CardHeader>
@@ -281,7 +351,7 @@ export default function ProfilePage() {
                   max={10000}
                 />
                 <p className="text-xs text-muted-foreground">
-                  Leave empty to automatically use your TDEE as your goal
+                  Select a suggestion above or enter a custom goal
                 </p>
               </div>
 
