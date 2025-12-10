@@ -41,7 +41,7 @@ const logRecipeSchema = z.object({
   recipeId: z.string(),
   consumedWeight: z.number().min(0),
   mealType: z.enum(["BREAKFAST", "LUNCH", "DINNER", "SNACK"]),
-  consumedAt: z.string().datetime(),
+  consumedAt: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Date must be in YYYY-MM-DD format"),
 });
 
 export const recipeRouter = router({
@@ -353,8 +353,9 @@ export const recipeRouter = router({
         input.consumedWeight
       );
 
-      const consumedAt = new Date(input.consumedAt);
-      const dayStart = startOfDay(consumedAt);
+      // Parse YYYY-MM-DD as UTC midnight for consistent date handling across timezones
+      const dayStart = new Date(input.consumedAt + "T00:00:00.000Z");
+      const consumedAt = new Date(input.consumedAt + "T12:00:00.000Z");
 
       // Get or create daily log
       let dailyLog = await ctx.prisma.dailyLog.findUnique({

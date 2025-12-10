@@ -19,6 +19,7 @@ import { trpc } from "@/trpc/react";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 import { Loader2, Users } from "lucide-react";
+import { format } from "date-fns";
 import { Switch } from "@/components/ui/switch";
 
 interface QuickEnergyFormProps {
@@ -76,7 +77,7 @@ export function QuickEnergyForm({
       servingSize: 1,
       servingUnit: "serving",
       mealType: mealType as "BREAKFAST" | "LUNCH" | "DINNER" | "SNACK",
-      consumedAt: new Date().toISOString(),
+      consumedAt: format(new Date(), "yyyy-MM-dd"),
       isManualEntry: true,
       forPartnerId: logForPartner ? user?.partner?.id : undefined,
     });

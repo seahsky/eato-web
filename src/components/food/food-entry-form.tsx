@@ -19,6 +19,7 @@ import { trpc } from "@/trpc/react";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 import { Loader2, Minus, Plus, Users } from "lucide-react";
+import { format } from "date-fns";
 import { motion } from "framer-motion";
 import { Switch } from "@/components/ui/switch";
 import type { FoodProduct } from "@/types/food";
@@ -95,7 +96,7 @@ export function FoodEntryForm({
       servingSize,
       servingUnit: product?.servingUnit ?? "g",
       mealType: mealType as "BREAKFAST" | "LUNCH" | "DINNER" | "SNACK",
-      consumedAt: new Date().toISOString(),
+      consumedAt: format(new Date(), "yyyy-MM-dd"),
       isManualEntry: !product,
       dataSource: product?.dataSource ?? "MANUAL",
       openFoodFactsId: product?.dataSource === "OPEN_FOOD_FACTS" ? product.barcode ?? undefined : undefined,

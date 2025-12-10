@@ -21,7 +21,7 @@ const foodEntrySchema = z.object({
   servingSize: z.number().min(0),
   servingUnit: z.string(),
   mealType: z.enum(["BREAKFAST", "LUNCH", "DINNER", "SNACK"]),
-  consumedAt: z.string().datetime(),
+  consumedAt: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Date must be in YYYY-MM-DD format"),
   isManualEntry: z.boolean().default(false),
   dataSource: z.enum(["OPEN_FOOD_FACTS", "USDA", "MANUAL"]).default("MANUAL"),
   openFoodFactsId: z.string().optional(),
@@ -98,8 +98,9 @@ export const foodRouter = router({
       targetUserId = forPartnerId;
     }
 
-    const consumedAt = new Date(input.consumedAt);
-    const dayStart = startOfDay(consumedAt);
+    // Parse YYYY-MM-DD as UTC midnight for consistent date handling across timezones
+    const dayStart = new Date(input.consumedAt + "T00:00:00.000Z");
+    const consumedAt = new Date(input.consumedAt + "T12:00:00.000Z");
 
     // Get or create daily log for target user
     let dailyLog = await ctx.prisma.dailyLog.findUnique({
@@ -159,15 +160,16 @@ export const foodRouter = router({
 
   // Get entries for a date
   getByDate: protectedProcedure
-    .input(z.object({ date: z.string().datetime() }))
+    .input(z.object({ date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Date must be in YYYY-MM-DD format") }))
     .query(async ({ ctx, input }) => {
-      const date = new Date(input.date);
+      const dayStart = new Date(input.date + "T00:00:00.000Z");
+      const dayEnd = new Date(input.date + "T23:59:59.999Z");
       const entries = await ctx.prisma.foodEntry.findMany({
         where: {
           userId: ctx.user.id,
           consumedAt: {
-            gte: startOfDay(date),
-            lte: endOfDay(date),
+            gte: dayStart,
+            lte: dayEnd,
           },
         },
         orderBy: { consumedAt: "asc" },
@@ -476,13 +478,14 @@ export const foodRouter = router({
     .input(
       z.object({
         mealType: z.enum(["BREAKFAST", "LUNCH", "DINNER", "SNACK"]),
-        date: z.string().datetime().optional(),
+        date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Date must be in YYYY-MM-DD format").optional(),
       })
     )
     .mutation(async ({ ctx, input }) => {
-      const date = input.date ? new Date(input.date) : new Date();
-      const dayStart = startOfDay(date);
-      const dayEnd = endOfDay(date);
+      // If no date provided, use today's date in a timezone-safe way
+      const dateStr = input.date ?? new Date().toISOString().split("T")[0];
+      const dayStart = new Date(dateStr + "T00:00:00.000Z");
+      const dayEnd = new Date(dateStr + "T23:59:59.999Z");
 
       // Get user with partner info
       const user = await ctx.prisma.user.findUnique({

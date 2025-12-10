@@ -18,6 +18,7 @@ import type { FoodEntry } from "@prisma/client";
 import { cn } from "@/lib/utils";
 import { trpc } from "@/trpc/react";
 import { toast } from "sonner";
+import { format } from "date-fns";
 
 const mealConfig = {
   BREAKFAST: { icon: Coffee, label: "Breakfast", color: "text-chart-3" },
@@ -72,7 +73,7 @@ export function MealSection({
   const handleCloneToPartner = () => {
     cloneMutation.mutate({
       mealType,
-      date: selectedDate.toISOString(),
+      date: format(selectedDate, "yyyy-MM-dd"),
     });
   };
 

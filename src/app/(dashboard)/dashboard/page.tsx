@@ -21,11 +21,11 @@ export default function DashboardPage() {
   const { data: user } = trpc.auth.getMe.useQuery();
 
   const { data: summary, isLoading } = trpc.stats.getDailySummary.useQuery({
-    date: selectedDate.toISOString(),
+    date: format(selectedDate, "yyyy-MM-dd"),
   });
 
   const { data: partnerSummary } = trpc.stats.getPartnerDailySummary.useQuery({
-    date: selectedDate.toISOString(),
+    date: format(selectedDate, "yyyy-MM-dd"),
   });
 
   const { data: pendingCount } = trpc.food.getPendingApprovalCount.useQuery();

@@ -5,10 +5,10 @@ import { startOfDay, endOfDay, subDays, startOfWeek, endOfWeek } from "date-fns"
 export const statsRouter = router({
   // Get daily summary
   getDailySummary: protectedProcedure
-    .input(z.object({ date: z.string().datetime() }))
+    .input(z.object({ date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Date must be in YYYY-MM-DD format") }))
     .query(async ({ ctx, input }) => {
-      const date = new Date(input.date);
-      const dayStart = startOfDay(date);
+      // Parse YYYY-MM-DD as UTC midnight for consistent date handling across timezones
+      const dayStart = new Date(input.date + "T00:00:00.000Z");
 
       const dailyLog = await ctx.prisma.dailyLog.findUnique({
         where: {
@@ -52,12 +52,14 @@ export const statsRouter = router({
   getWeeklySummary: protectedProcedure
     .input(
       z.object({
-        endDate: z.string().datetime().optional(),
+        endDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Date must be in YYYY-MM-DD format").optional(),
       })
     )
     .query(async ({ ctx, input }) => {
-      const endDate = input.endDate ? new Date(input.endDate) : new Date();
-      const startDate = subDays(startOfDay(endDate), 6);
+      // If no date provided, use today's date in a timezone-safe way
+      const endDateStr = input.endDate ?? new Date().toISOString().split("T")[0];
+      const endDate = new Date(endDateStr + "T00:00:00.000Z");
+      const startDate = subDays(endDate, 6);
 
       const dailyLogs = await ctx.prisma.dailyLog.findMany({
         where: {
@@ -118,7 +120,7 @@ export const statsRouter = router({
 
   // Get partner's daily summary
   getPartnerDailySummary: protectedProcedure
-    .input(z.object({ date: z.string().datetime() }))
+    .input(z.object({ date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Date must be in YYYY-MM-DD format") }))
     .query(async ({ ctx, input }) => {
       // Get current user to find partner
       const user = await ctx.prisma.user.findUnique({
@@ -130,8 +132,8 @@ export const statsRouter = router({
         return null;
       }
 
-      const date = new Date(input.date);
-      const dayStart = startOfDay(date);
+      // Parse YYYY-MM-DD as UTC midnight for consistent date handling across timezones
+      const dayStart = new Date(input.date + "T00:00:00.000Z");
 
       const dailyLog = await ctx.prisma.dailyLog.findUnique({
         where: {

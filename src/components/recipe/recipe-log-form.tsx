@@ -19,6 +19,7 @@ import { trpc } from "@/trpc/react";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 import { Loader2, Minus, Plus, ChefHat } from "lucide-react";
+import { format } from "date-fns";
 import { motion } from "framer-motion";
 import { calculatePortionNutrition } from "@/lib/recipe-calculator";
 
@@ -89,7 +90,7 @@ export function RecipeLogForm({
       recipeId: recipe.id,
       consumedWeight,
       mealType: mealType as "BREAKFAST" | "LUNCH" | "DINNER" | "SNACK",
-      consumedAt: new Date().toISOString(),
+      consumedAt: format(new Date(), "yyyy-MM-dd"),
     });
   };
 
