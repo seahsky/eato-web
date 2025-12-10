@@ -39,7 +39,8 @@ export function RecipeCard({
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: index * 0.05 }}
-      className="bg-card rounded-xl p-4 border border-border/50 space-y-3"
+      className="bg-card rounded-xl p-4 border border-border/50 space-y-3 cursor-pointer hover:border-primary/50 transition-colors"
+      onClick={onSelect}
     >
       <div className="flex items-start gap-3">
         {recipe.imageUrl ? (
@@ -54,12 +55,7 @@ export function RecipeCard({
           </div>
         )}
         <div className="flex-1 min-w-0">
-          <button
-            onClick={onSelect}
-            className="text-left w-full hover:text-primary transition-colors"
-          >
-            <p className="font-medium text-sm truncate">{recipe.name}</p>
-          </button>
+          <p className="font-medium text-sm truncate">{recipe.name}</p>
           {recipe.description && (
             <p className="text-xs text-muted-foreground truncate mt-0.5">
               {recipe.description}
@@ -82,7 +78,10 @@ export function RecipeCard({
             size="icon"
             variant="secondary"
             className="rounded-full shrink-0"
-            onClick={onLog}
+            onClick={(e) => {
+              e.stopPropagation();
+              onLog();
+            }}
           >
             <Plus className="w-4 h-4" />
           </Button>
