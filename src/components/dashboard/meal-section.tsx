@@ -1,13 +1,21 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { Plus, Coffee, Sun, Moon, Cookie } from "lucide-react";
+import { Plus, Coffee, Sun, Moon, Cookie, MoreHorizontal, Copy, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { EnergyValue } from "@/components/ui/energy-value";
 import { Badge } from "@/components/ui/badge";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import Link from "next/link";
 import type { FoodEntry } from "@prisma/client";
 import { cn } from "@/lib/utils";
+import { trpc } from "@/trpc/react";
+import { toast } from "sonner";
 
 const mealConfig = {
   BREAKFAST: { icon: Coffee, label: "Breakfast", color: "text-chart-3" },
@@ -20,15 +28,47 @@ interface MealSectionProps {
   mealType: keyof typeof mealConfig;
   entries: FoodEntry[];
   delay?: number;
+  hasPartner?: boolean;
+  selectedDate?: Date;
 }
 
-export function MealSection({ mealType, entries, delay = 0 }: MealSectionProps) {
+export function MealSection({
+  mealType,
+  entries,
+  delay = 0,
+  hasPartner = false,
+  selectedDate = new Date(),
+}: MealSectionProps) {
   const config = mealConfig[mealType];
   const Icon = config.icon;
+  const utils = trpc.useUtils();
+
   // Only count approved entries toward total calories
-  const totalCalories = entries
-    .filter((e) => e.approvalStatus === "APPROVED")
-    .reduce((sum, e) => sum + e.calories, 0);
+  const approvedEntries = entries.filter((e) => e.approvalStatus === "APPROVED");
+  const totalCalories = approvedEntries.reduce((sum, e) => sum + e.calories, 0);
+
+  const cloneMutation = trpc.food.cloneMealToPartner.useMutation({
+    onSuccess: (result) => {
+      if (result.clonedCount === 0) {
+        toast.info("No items to clone for this meal");
+      } else {
+        toast.success(
+          `Cloned ${result.clonedCount} item${result.clonedCount > 1 ? "s" : ""} to ${result.partnerName}'s ${config.label.toLowerCase()}`
+        );
+        utils.food.getPendingApprovalCount.invalidate();
+      }
+    },
+    onError: (error) => {
+      toast.error(error.message || "Failed to clone meal");
+    },
+  });
+
+  const handleCloneToPartner = () => {
+    cloneMutation.mutate({
+      mealType,
+      date: selectedDate.toISOString(),
+    });
+  };
 
   return (
     <motion.div
@@ -51,12 +91,34 @@ export function MealSection({ mealType, entries, delay = 0 }: MealSectionProps) 
             </p>
           </div>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1">
           <EnergyValue
             kcal={totalCalories}
             toggleable
-            className="text-sm font-semibold"
+            className="text-sm font-semibold mr-1"
           />
+          {hasPartner && approvedEntries.length > 0 && (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button size="icon" variant="ghost" className="h-8 w-8 rounded-full">
+                  <MoreHorizontal className="w-4 h-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem
+                  onClick={handleCloneToPartner}
+                  disabled={cloneMutation.isPending}
+                >
+                  {cloneMutation.isPending ? (
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  ) : (
+                    <Copy className="w-4 h-4 mr-2" />
+                  )}
+                  Clone to Partner
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
           <Link href={`/log?meal=${mealType.toLowerCase()}`}>
             <Button size="icon" variant="ghost" className="h-8 w-8 rounded-full">
               <Plus className="w-4 h-4" />

@@ -48,6 +48,8 @@ export default function DashboardPage() {
     ? calculateMacroTargets(summary.calorieGoal)
     : { protein: 150, carbs: 200, fat: 65 };
 
+  const hasPartner = !!partnerSummary;
+
   if (isLoading) {
     return (
       <div className="p-4 space-y-6">
@@ -199,21 +201,29 @@ export default function DashboardPage() {
           mealType="BREAKFAST"
           entries={summary?.entriesByMeal.BREAKFAST ?? []}
           delay={0.1}
+          hasPartner={hasPartner}
+          selectedDate={selectedDate}
         />
         <MealSection
           mealType="LUNCH"
           entries={summary?.entriesByMeal.LUNCH ?? []}
           delay={0.2}
+          hasPartner={hasPartner}
+          selectedDate={selectedDate}
         />
         <MealSection
           mealType="DINNER"
           entries={summary?.entriesByMeal.DINNER ?? []}
           delay={0.3}
+          hasPartner={hasPartner}
+          selectedDate={selectedDate}
         />
         <MealSection
           mealType="SNACK"
           entries={summary?.entriesByMeal.SNACK ?? []}
           delay={0.4}
+          hasPartner={hasPartner}
+          selectedDate={selectedDate}
         />
       </div>
     </div>

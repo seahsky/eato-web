@@ -470,4 +470,110 @@ export const foodRouter = router({
 
       return { success: true };
     }),
+
+  // Clone meal to partner
+  cloneMealToPartner: protectedProcedure
+    .input(
+      z.object({
+        mealType: z.enum(["BREAKFAST", "LUNCH", "DINNER", "SNACK"]),
+        date: z.string().datetime().optional(),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      const date = input.date ? new Date(input.date) : new Date();
+      const dayStart = startOfDay(date);
+      const dayEnd = endOfDay(date);
+
+      // Get user with partner info
+      const user = await ctx.prisma.user.findUnique({
+        where: { id: ctx.user.id },
+        include: {
+          partner: {
+            select: { id: true, name: true },
+          },
+        },
+      });
+
+      if (!user?.partner) {
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: "You must have a linked partner to clone meals",
+        });
+      }
+
+      // Get user's approved entries for this meal
+      const entries = await ctx.prisma.foodEntry.findMany({
+        where: {
+          userId: ctx.user.id,
+          mealType: input.mealType,
+          approvalStatus: "APPROVED",
+          consumedAt: {
+            gte: dayStart,
+            lte: dayEnd,
+          },
+        },
+      });
+
+      if (entries.length === 0) {
+        return { clonedCount: 0, partnerName: user.partner.name };
+      }
+
+      // Get or create partner's daily log
+      const partnerProfile = await ctx.prisma.profile.findUnique({
+        where: { userId: user.partner.id },
+      });
+      const calorieGoal = partnerProfile?.calorieGoal ?? 2000;
+
+      let partnerDailyLog = await ctx.prisma.dailyLog.findUnique({
+        where: {
+          userId_date: {
+            userId: user.partner.id,
+            date: dayStart,
+          },
+        },
+      });
+
+      if (!partnerDailyLog) {
+        partnerDailyLog = await ctx.prisma.dailyLog.create({
+          data: {
+            userId: user.partner.id,
+            date: dayStart,
+            calorieGoal,
+          },
+        });
+      }
+
+      // Clone entries for partner
+      const clonedEntries = await ctx.prisma.foodEntry.createMany({
+        data: entries.map((entry) => ({
+          userId: user.partner!.id,
+          dailyLogId: partnerDailyLog!.id,
+          loggedByUserId: ctx.user.id,
+          approvalStatus: "PENDING" as const,
+          name: entry.name,
+          barcode: entry.barcode,
+          brand: entry.brand,
+          imageUrl: entry.imageUrl,
+          calories: entry.calories,
+          protein: entry.protein,
+          carbs: entry.carbs,
+          fat: entry.fat,
+          fiber: entry.fiber,
+          sugar: entry.sugar,
+          sodium: entry.sodium,
+          servingSize: entry.servingSize,
+          servingUnit: entry.servingUnit,
+          mealType: entry.mealType,
+          consumedAt: entry.consumedAt,
+          isManualEntry: entry.isManualEntry,
+          openFoodFactsId: entry.openFoodFactsId,
+          recipeId: entry.recipeId,
+        })),
+      });
+
+      return {
+        clonedCount: clonedEntries.count,
+        partnerName: user.partner.name,
+      };
+    }),
 });
