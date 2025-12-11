@@ -200,9 +200,13 @@ export const statsRouter = router({
       select: { name: true },
     });
 
-    const daysOnGoal = dailyLogs.filter(
-      (log) => log.totalCalories <= log.calorieGoal
-    ).length;
+    const currentGoal = profile?.calorieGoal ?? 2000;
+    const todayStr = startOfDay(new Date()).toISOString().split("T")[0];
+    const daysOnGoal = dailyLogs.filter((log) => {
+      const logDateStr = log.date.toISOString().split("T")[0];
+      const goalToUse = logDateStr === todayStr ? currentGoal : log.calorieGoal;
+      return log.totalCalories <= goalToUse;
+    }).length;
 
     return {
       partnerName: partner?.name ?? "Partner",
@@ -279,13 +283,17 @@ export const statsRouter = router({
 
       // Generate all days (most recent first)
       const days = [];
+      const todayStr = startOfDay(new Date()).toISOString().split("T")[0];
       for (let i = 0; i < input.days; i++) {
         const date = subDays(startOfDay(endDate), i);
         const dateKey = date.toISOString().split("T")[0];
         const log = logsByDate.get(dateKey);
 
         const entries = log?.entries ?? [];
-        const calorieGoal = log?.calorieGoal ?? profile?.calorieGoal ?? 2000;
+        // Use current profile goal for today, historical for past days
+        const calorieGoal = dateKey === todayStr
+          ? (profile?.calorieGoal ?? 2000)
+          : (log?.calorieGoal ?? profile?.calorieGoal ?? 2000);
 
         days.push({
           date: dateKey,
