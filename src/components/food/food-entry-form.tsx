@@ -14,7 +14,7 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { EnergyValue } from "@/components/ui/energy-value";
 import { useEnergyUnit } from "@/contexts/energy-context";
-import { formatEnergy } from "@/lib/energy";
+import { formatEnergy, convertToKcal, getEnergyLabel, convertEnergy, getOppositeUnit, type EnergyUnit } from "@/lib/energy";
 import { trpc } from "@/trpc/react";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
@@ -37,6 +37,7 @@ export function FoodEntryForm({
 }: FoodEntryFormProps) {
   const router = useRouter();
   const utils = trpc.useUtils();
+  const { energyUnit: userPreferredUnit } = useEnergyUnit();
 
   const [name, setName] = useState(product?.name ?? "");
   const [servingSize, setServingSize] = useState(product?.servingSize ?? 100);
@@ -49,11 +50,15 @@ export function FoodEntryForm({
 
   // Calculate nutrients based on serving size
   const ratio = product ? servingSize / 100 : 1;
-  const [manualCalories, setManualCalories] = useState(100);
+  const [manualEnergyValue, setManualEnergyValue] = useState(100);
+  const [inputUnit, setInputUnit] = useState<EnergyUnit>(userPreferredUnit);
+
+  // Convert manual energy input to kcal for storage
+  const manualCaloriesKcal = convertToKcal(manualEnergyValue, inputUnit);
 
   const calories = product
     ? Math.round(product.caloriesPer100g * ratio)
-    : manualCalories;
+    : manualCaloriesKcal;
   const protein = product ? Math.round(product.proteinPer100g * ratio) : 0;
   const carbs = product ? Math.round(product.carbsPer100g * ratio) : 0;
   const fat = product ? Math.round(product.fatPer100g * ratio) : 0;
@@ -184,17 +189,35 @@ export function FoodEntryForm({
             </div>
           </div>
 
-          {/* Calories (for manual entry) */}
+          {/* Energy (for manual entry) */}
           {!product && (
             <div className="space-y-2">
-              <Label>Calories</Label>
-              <Input
-                type="number"
-                value={manualCalories}
-                onChange={(e) => setManualCalories(Number(e.target.value))}
-                min={0}
-                required
-              />
+              <Label>Energy</Label>
+              <div className="flex gap-2">
+                <Input
+                  type="number"
+                  value={manualEnergyValue}
+                  onChange={(e) => setManualEnergyValue(Number(e.target.value))}
+                  className="flex-1 text-lg font-semibold"
+                  min={0}
+                  required
+                />
+                <Select
+                  value={inputUnit}
+                  onValueChange={(value) => setInputUnit(value as EnergyUnit)}
+                >
+                  <SelectTrigger className="w-24">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="KCAL">kcal</SelectItem>
+                    <SelectItem value="KJ">kJ</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                = {convertEnergy(manualCaloriesKcal, getOppositeUnit(inputUnit))} {getEnergyLabel(getOppositeUnit(inputUnit))}
+              </p>
             </div>
           )}
 

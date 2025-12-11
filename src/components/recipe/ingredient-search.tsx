@@ -126,7 +126,7 @@ export function IngredientSearch({ onSelect, onClose }: IngredientSearchProps) {
                 <div className="flex-1 min-w-0">
                   <p className="font-medium text-xs truncate">{product.name}</p>
                   <p className="text-[10px] text-primary">
-                    <EnergyValue kcal={product.caloriesPer100g} /> / 100g
+                    <EnergyValue kcal={product.caloriesPer100g} toggleable /> / 100g
                   </p>
                 </div>
                 <Button

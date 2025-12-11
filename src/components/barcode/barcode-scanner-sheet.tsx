@@ -229,7 +229,7 @@ export function BarcodeScannerSheet({
                         </p>
                       )}
                       <p className="text-sm text-primary font-medium mt-1">
-                        <EnergyValue kcal={product.caloriesPer100g} /> / 100g
+                        <EnergyValue kcal={product.caloriesPer100g} toggleable /> / 100g
                       </p>
                       <span className="inline-block mt-1 text-[9px] px-1.5 py-0.5 rounded font-medium bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400">
                         OFF

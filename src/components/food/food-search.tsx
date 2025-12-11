@@ -220,7 +220,7 @@ export function FoodSearch({ onSelect }: FoodSearchProps) {
                     </span>
                   </div>
                   <p className="text-xs text-primary font-medium mt-0.5">
-                    <EnergyValue kcal={product.caloriesPer100g} /> / 100g
+                    <EnergyValue kcal={product.caloriesPer100g} toggleable /> / 100g
                   </p>
                 </div>
                 <Button

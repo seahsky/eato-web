@@ -89,7 +89,9 @@ export default function ProfilePage() {
   const upsertMutation = trpc.profile.upsert.useMutation({
     onSuccess: (data) => {
       toast.success("Profile updated!");
-      setCalorieGoal(data.calorieGoal.toString());
+      // Convert stored kcal to user's display unit
+      const displayGoal = convertEnergy(data.calorieGoal, energyUnit);
+      setCalorieGoal(displayGoal.toString());
       utils.profile.get.invalidate();
       utils.auth.getMe.invalidate();
     },

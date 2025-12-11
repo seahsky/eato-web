@@ -13,7 +13,7 @@ import {
 } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useEnergyUnit } from "@/contexts/energy-context";
-import { convertToKcal, formatEnergy, getEnergyLabel } from "@/lib/energy";
+import { convertToKcal, formatEnergy, getEnergyLabel, convertEnergy, getOppositeUnit } from "@/lib/energy";
 import type { EnergyUnit } from "@/lib/energy";
 import { trpc } from "@/trpc/react";
 import { toast } from "sonner";
@@ -115,11 +115,9 @@ export function QuickEnergyForm({
                 </SelectContent>
               </Select>
             </div>
-            {inputUnit === "KJ" && (
-              <p className="text-xs text-muted-foreground">
-                = {caloriesKcal} kcal
-              </p>
-            )}
+            <p className="text-xs text-muted-foreground">
+              = {convertEnergy(caloriesKcal, getOppositeUnit(inputUnit))} {getEnergyLabel(getOppositeUnit(inputUnit))}
+            </p>
           </div>
 
           {/* Description (Optional) */}

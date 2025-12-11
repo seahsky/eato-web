@@ -121,7 +121,7 @@ export function RecipeLogForm({
             <div className="flex-1 min-w-0">
               <p className="font-semibold truncate">{recipe.name}</p>
               <p className="text-sm text-muted-foreground">
-                <EnergyValue kcal={recipe.caloriesPer100g} /> / 100g
+                <EnergyValue kcal={recipe.caloriesPer100g} toggleable /> / 100g
               </p>
               <p className="text-xs text-muted-foreground">
                 Yield: {recipe.yieldWeight}{recipe.yieldUnit}

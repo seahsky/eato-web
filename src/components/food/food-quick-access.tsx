@@ -298,7 +298,7 @@ function FoodGrid({
 
           {/* Calories */}
           <p className="text-[10px] text-primary font-medium">
-            <EnergyValue kcal={food.caloriesPer100g} /> /100g
+            <EnergyValue kcal={food.caloriesPer100g} toggleable /> /100g
           </p>
 
           {/* Log count badge for frequent tab */}
