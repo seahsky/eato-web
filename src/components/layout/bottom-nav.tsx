@@ -1,10 +1,10 @@
 "use client";
 
-import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { Home, Search, Plus, Users, User } from "lucide-react";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
+import { useState, useTransition } from "react";
 
 const navItems = [
   { href: "/dashboard", icon: Home, label: "Home" },
@@ -16,66 +16,95 @@ const navItems = [
 
 export function BottomNav() {
   const pathname = usePathname();
+  const router = useRouter();
+  const [isPending, startTransition] = useTransition();
+  const [pendingHref, setPendingHref] = useState<string | null>(null);
+
+  const handleNavigation = (href: string) => {
+    if (href === pathname) return;
+
+    setPendingHref(href);
+    window.dispatchEvent(new CustomEvent("navigation-start"));
+
+    startTransition(() => {
+      router.push(href);
+    });
+  };
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-50 bg-card/95 backdrop-blur-lg border-t border-border/50 safe-bottom">
       <div className="flex items-center justify-around h-16 max-w-lg mx-auto px-2">
         {navItems.map((item) => {
           const isActive = pathname === item.href;
+          const isPendingNav = pendingHref === item.href && isPending;
           const Icon = item.icon;
 
           if (item.isMain) {
             return (
-              <Link
+              <button
                 key={item.href}
-                href={item.href}
+                onClick={() => handleNavigation(item.href)}
                 className="relative -mt-6"
               >
                 <motion.div
-                  className="w-14 h-14 rounded-full bg-gradient-to-br from-primary to-primary/80 flex items-center justify-center shadow-lg shadow-primary/30"
+                  className={cn(
+                    "w-14 h-14 rounded-full bg-gradient-to-br from-primary to-primary/80 flex items-center justify-center shadow-lg shadow-primary/30",
+                    isPendingNav && "opacity-70"
+                  )}
                   whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
+                  whileTap={{ scale: 0.92 }}
                 >
-                  <Icon className="w-6 h-6 text-primary-foreground" />
+                  <Icon className={cn(
+                    "w-6 h-6 text-primary-foreground transition-transform",
+                    isPendingNav && "animate-pulse"
+                  )} />
                 </motion.div>
-              </Link>
+              </button>
             );
           }
 
           return (
-            <Link
+            <button
               key={item.href}
-              href={item.href}
+              onClick={() => handleNavigation(item.href)}
               className="relative flex flex-col items-center gap-1 px-3 py-2 group"
             >
-              <div className="relative">
+              <motion.div
+                className="relative"
+                whileTap={{ scale: 0.9 }}
+              >
                 <Icon
                   className={cn(
-                    "w-5 h-5 transition-colors",
+                    "w-5 h-5 transition-all",
                     isActive
                       ? "text-primary"
-                      : "text-muted-foreground group-hover:text-foreground"
+                      : "text-muted-foreground group-hover:text-foreground",
+                    isPendingNav && "text-primary animate-pulse"
                   )}
                 />
-                {isActive && (
+                {(isActive || isPendingNav) && (
                   <motion.div
                     layoutId="nav-indicator"
-                    className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-primary"
+                    className={cn(
+                      "absolute -bottom-1 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-primary",
+                      isPendingNav && "animate-pulse"
+                    )}
                     transition={{ type: "spring", stiffness: 500, damping: 30 }}
                   />
                 )}
-              </div>
+              </motion.div>
               <span
                 className={cn(
                   "text-[10px] font-medium transition-colors",
                   isActive
                     ? "text-primary"
-                    : "text-muted-foreground group-hover:text-foreground"
+                    : "text-muted-foreground group-hover:text-foreground",
+                  isPendingNav && "text-primary"
                 )}
               >
                 {item.label}
               </span>
-            </Link>
+            </button>
           );
         })}
       </div>

@@ -42,15 +42,84 @@ export function FoodQuickAccess({ onSelect }: FoodQuickAccessProps) {
     trpc.food.getFrequentFoods.useQuery();
 
   const toggleFavorite = trpc.food.toggleFavorite.useMutation({
-    onSuccess: (result, variables) => {
-      toast.success(result.isFavorite ? "Added to favorites" : "Removed from favorites");
-      // Invalidate all quick-access queries to update isFavorite flags
+    onMutate: async (variables) => {
+      // Cancel any outgoing refetches
+      await Promise.all([
+        utils.food.getRecentFoods.cancel(),
+        utils.food.getFavoriteFoods.cancel(),
+        utils.food.getFrequentFoods.cancel(),
+      ]);
+
+      // Snapshot the previous values
+      const previousRecent = utils.food.getRecentFoods.getData();
+      const previousFavorites = utils.food.getFavoriteFoods.getData();
+      const previousFrequent = utils.food.getFrequentFoods.getData();
+
+      // Find if the food is currently a favorite (by checking any list)
+      const isCurrentlyFavorite = [...(previousRecent ?? []), ...(previousFavorites ?? []), ...(previousFrequent ?? [])]
+        .find(f => f.name === variables.name && f.brand === variables.brand)?.isFavorite ?? false;
+
+      const newIsFavorite = !isCurrentlyFavorite;
+
+      // Optimistically update recent foods
+      utils.food.getRecentFoods.setData(undefined, (old) =>
+        old?.map((f) =>
+          f.name === variables.name && f.brand === variables.brand
+            ? { ...f, isFavorite: newIsFavorite }
+            : f
+        )
+      );
+
+      // Optimistically update favorites
+      if (newIsFavorite) {
+        // Adding to favorites - find the food and add it
+        const foodToAdd = previousRecent?.find(f => f.name === variables.name && f.brand === variables.brand)
+          ?? previousFrequent?.find(f => f.name === variables.name && f.brand === variables.brand);
+        if (foodToAdd) {
+          utils.food.getFavoriteFoods.setData(undefined, (old) => [
+            { ...foodToAdd, isFavorite: true },
+            ...(old ?? []),
+          ]);
+        }
+      } else {
+        // Removing from favorites
+        utils.food.getFavoriteFoods.setData(undefined, (old) =>
+          old?.filter((f) => !(f.name === variables.name && f.brand === variables.brand))
+        );
+      }
+
+      // Optimistically update frequent foods
+      utils.food.getFrequentFoods.setData(undefined, (old) =>
+        old?.map((f) =>
+          f.name === variables.name && f.brand === variables.brand
+            ? { ...f, isFavorite: newIsFavorite }
+            : f
+        )
+      );
+
+      return { previousRecent, previousFavorites, previousFrequent, newIsFavorite };
+    },
+    onSuccess: (_result, _variables, context) => {
+      toast.success(context?.newIsFavorite ? "Added to favorites" : "Removed from favorites");
+    },
+    onError: (_error, _variables, context) => {
+      // Rollback on error
+      if (context?.previousRecent) {
+        utils.food.getRecentFoods.setData(undefined, context.previousRecent);
+      }
+      if (context?.previousFavorites) {
+        utils.food.getFavoriteFoods.setData(undefined, context.previousFavorites);
+      }
+      if (context?.previousFrequent) {
+        utils.food.getFrequentFoods.setData(undefined, context.previousFrequent);
+      }
+      toast.error("Failed to update favorite");
+    },
+    onSettled: () => {
+      // Always refetch to ensure consistency
       utils.food.getRecentFoods.invalidate();
       utils.food.getFavoriteFoods.invalidate();
       utils.food.getFrequentFoods.invalidate();
-    },
-    onError: () => {
-      toast.error("Failed to update favorite");
     },
   });
 

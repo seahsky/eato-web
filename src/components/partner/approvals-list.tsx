@@ -15,25 +15,63 @@ export function ApprovalsList() {
   const { data: entries, isLoading } = trpc.food.getPendingApprovals.useQuery();
 
   const approveMutation = trpc.food.approveEntry.useMutation({
+    onMutate: async ({ entryId }) => {
+      // Cancel any outgoing refetches
+      await utils.food.getPendingApprovals.cancel();
+
+      // Snapshot the previous value
+      const previousEntries = utils.food.getPendingApprovals.getData();
+
+      // Optimistically remove from the list
+      utils.food.getPendingApprovals.setData(undefined, (old) =>
+        old?.filter((e) => e.id !== entryId)
+      );
+
+      return { previousEntries };
+    },
     onSuccess: () => {
       toast.success("Entry approved!");
+    },
+    onError: (error, _variables, context) => {
+      // Rollback on error
+      if (context?.previousEntries) {
+        utils.food.getPendingApprovals.setData(undefined, context.previousEntries);
+      }
+      toast.error(error.message || "Failed to approve entry");
+    },
+    onSettled: () => {
+      // Always refetch to ensure consistency
       utils.food.getPendingApprovals.invalidate();
       utils.food.getPendingApprovalCount.invalidate();
       utils.stats.getDailySummary.invalidate();
     },
-    onError: (error) => {
-      toast.error(error.message || "Failed to approve entry");
-    },
   });
 
   const rejectMutation = trpc.food.rejectEntry.useMutation({
+    onMutate: async ({ entryId }) => {
+      await utils.food.getPendingApprovals.cancel();
+
+      const previousEntries = utils.food.getPendingApprovals.getData();
+
+      // Optimistically remove from the list
+      utils.food.getPendingApprovals.setData(undefined, (old) =>
+        old?.filter((e) => e.id !== entryId)
+      );
+
+      return { previousEntries };
+    },
     onSuccess: () => {
       toast.success("Entry rejected");
+    },
+    onError: (error, _variables, context) => {
+      if (context?.previousEntries) {
+        utils.food.getPendingApprovals.setData(undefined, context.previousEntries);
+      }
+      toast.error(error.message || "Failed to reject entry");
+    },
+    onSettled: () => {
       utils.food.getPendingApprovals.invalidate();
       utils.food.getPendingApprovalCount.invalidate();
-    },
-    onError: (error) => {
-      toast.error(error.message || "Failed to reject entry");
     },
   });
 

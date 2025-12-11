@@ -131,14 +131,28 @@ export function FoodEntryEditSheet({
   });
 
   const deleteMutation = trpc.food.delete.useMutation({
+    onMutate: async ({ id }) => {
+      // Close the sheet immediately for better UX
+      onOpenChange(false);
+
+      // Cancel any outgoing refetches
+      await utils.stats.getDailySummary.cancel();
+
+      // We can't easily optimistically update getDailySummary due to its complex structure
+      // but closing the sheet immediately gives instant feedback
+
+      return { deletedId: id };
+    },
     onSuccess: () => {
       toast.success("Entry deleted successfully!");
-      utils.stats.getDailySummary.invalidate();
-      utils.food.getPendingApprovalCount.invalidate();
-      onOpenChange(false);
     },
     onError: (error) => {
       toast.error(error.message || "Failed to delete entry");
+    },
+    onSettled: () => {
+      // Always refetch to ensure consistency
+      utils.stats.getDailySummary.invalidate();
+      utils.food.getPendingApprovalCount.invalidate();
     },
   });
 

@@ -195,4 +195,23 @@
   .safe-right {
     padding-right: env(safe-area-inset-right);
   }
+
+  /* Touch-active feedback for mobile */
+  .tap-active {
+    transition: transform 0.1s ease, opacity 0.1s ease;
+  }
+}
+
+/* Touch device active states */
+@media (hover: none) and (pointer: coarse) {
+  .tap-active:active {
+    transform: scale(0.97);
+    opacity: 0.85;
+  }
+
+  button:active,
+  [role="button"]:active {
+    transform: scale(0.98);
+    opacity: 0.9;
+  }
 }
