@@ -2,6 +2,7 @@ import { z } from "zod";
 import { router, protectedProcedure } from "../trpc";
 import { TRPCError } from "@trpc/server";
 import { nanoid } from "nanoid";
+import { notifyPartnerLinked } from "@/lib/notifications/triggers";
 
 export const authRouter = router({
   // Generate a partner link code
@@ -55,6 +56,7 @@ export const authRouter = router({
       // Check if current user already has a partner
       const currentUser = await ctx.prisma.user.findUnique({
         where: { id: ctx.user.id },
+        select: { id: true, partnerId: true, name: true },
       });
 
       if (currentUser?.partnerId) {
@@ -78,6 +80,10 @@ export const authRouter = router({
           partnerLinkCodeExpiry: null,
         },
       });
+
+      // Notify both users about successful linking (fire and forget)
+      notifyPartnerLinked(partner.id, currentUser?.name || "Your partner").catch(() => {});
+      notifyPartnerLinked(ctx.user.id, partner.name || "Your partner").catch(() => {});
 
       return { success: true, partnerName: partner.name };
     }),

@@ -23,6 +23,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { EnergyValue } from "@/components/ui/energy-value";
 import { useEnergyUnit } from "@/contexts/energy-context";
 import { getEnergyLabel, convertEnergy, convertToKcal, type EnergyUnit } from "@/lib/energy";
+import { NotificationSettings } from "@/components/notifications/notification-settings";
 import type { ActivityLevel, Gender } from "@/lib/bmr";
 
 export default function ProfilePage() {
@@ -401,6 +402,15 @@ export default function ProfilePage() {
             </form>
           </CardContent>
         </Card>
+      </motion.div>
+
+      {/* Notification Settings */}
+      <motion.div
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.3 }}
+      >
+        <NotificationSettings />
       </motion.div>
     </div>
   );

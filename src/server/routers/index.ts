@@ -4,6 +4,7 @@ import { profileRouter } from "./profile";
 import { foodRouter } from "./food";
 import { statsRouter } from "./stats";
 import { recipeRouter } from "./recipe";
+import { notificationRouter } from "./notification";
 
 export const appRouter = router({
   auth: authRouter,
@@ -11,6 +12,7 @@ export const appRouter = router({
   food: foodRouter,
   stats: statsRouter,
   recipe: recipeRouter,
+  notification: notificationRouter,
 });
 
 export type AppRouter = typeof appRouter;

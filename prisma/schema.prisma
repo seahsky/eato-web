@@ -33,6 +33,12 @@ model User {
   dailyLogs     DailyLog[]
   recipes       Recipe[]
   favoriteFoods FavoriteFood[]
+
+  // Push notifications
+  pushSubscriptions    PushSubscription[]
+  notificationSettings NotificationSettings?
+  sentNudges           Nudge[]              @relation("SentNudges")
+  receivedNudges       Nudge[]              @relation("ReceivedNudges")
 }
 
 // Profile for BMR calculation
@@ -287,5 +293,56 @@ model SearchCache {
   hitCount   Int      @default(0) // Track popularity for analytics
 
   @@index([expiresAt])
+}
+
+// Push notification subscription per device
+model PushSubscription {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId    String   @db.ObjectId
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  endpoint  String   @unique
+  p256dh    String
+  auth      String
+  userAgent String?
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+}
+
+// User notification preferences
+model NotificationSettings {
+  id     String @id @default(auto()) @map("_id") @db.ObjectId
+  userId String @unique @db.ObjectId
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Partner activity notifications
+  partnerFoodLogged  Boolean @default(true)
+  partnerGoalReached Boolean @default(true)
+  partnerLinked      Boolean @default(true)
+
+  // Nudge notifications
+  receiveNudges Boolean @default(true)
+
+  // Daily reminder preferences (HH:MM format, null = disabled)
+  breakfastReminderTime String?
+  lunchReminderTime     String?
+  dinnerReminderTime    String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// Nudge history for rate limiting
+model Nudge {
+  id         String   @id @default(auto()) @map("_id") @db.ObjectId
+  fromUserId String   @db.ObjectId
+  fromUser   User     @relation("SentNudges", fields: [fromUserId], references: [id], onDelete: Cascade)
+  toUserId   String   @db.ObjectId
+  toUser     User     @relation("ReceivedNudges", fields: [toUserId], references: [id], onDelete: Cascade)
+  message    String?
+  createdAt  DateTime @default(now())
+
+  @@index([fromUserId])
+  @@index([toUserId])
 }
 

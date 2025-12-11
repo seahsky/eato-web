@@ -5,6 +5,7 @@ import { getProductByBarcode, normalizeProduct } from "../services/open-food-fac
 import { getUSDAFoodById, normalizeUSDAProduct } from "../services/usda-food-data";
 import { searchFoods, searchFoodsFast } from "../services/food-search";
 import { startOfDay, endOfDay } from "date-fns";
+import { notifyPartnerFoodLogged, notifyPartnerGoalReached } from "@/lib/notifications/triggers";
 
 const foodEntrySchema = z.object({
   name: z.string().min(1),
@@ -155,7 +156,7 @@ export const foodRouter = router({
 
     // Only update daily log totals for approved (self-logged) entries
     if (!isLoggingForPartner) {
-      await ctx.prisma.dailyLog.update({
+      const updatedLog = await ctx.prisma.dailyLog.update({
         where: { id: dailyLog.id },
         data: {
           totalCalories: { increment: input.calories },
@@ -165,6 +166,41 @@ export const foodRouter = router({
           totalFiber: { increment: input.fiber ?? 0 },
         },
       });
+
+      // Send push notifications (async, don't block the response)
+      const userWithPartner = await ctx.prisma.user.findUnique({
+        where: { id: ctx.user.id },
+        select: {
+          name: true,
+          partnerId: true,
+        },
+      });
+
+      if (userWithPartner?.partnerId) {
+        // Notify partner about food logged (fire and forget)
+        notifyPartnerFoodLogged(
+          userWithPartner.partnerId,
+          userWithPartner.name || "Your partner",
+          input.name,
+          input.mealType
+        ).catch(() => {});
+
+        // Check if goal was just reached (within 90-100% of goal)
+        const goalProgress = updatedLog.totalCalories / updatedLog.calorieGoal;
+        if (!updatedLog.goalMet && goalProgress >= 0.9 && goalProgress <= 1.0) {
+          // Mark goal as met
+          await ctx.prisma.dailyLog.update({
+            where: { id: dailyLog.id },
+            data: { goalMet: true },
+          });
+
+          // Notify partner about goal reached (fire and forget)
+          notifyPartnerGoalReached(
+            userWithPartner.partnerId,
+            userWithPartner.name || "Your partner"
+          ).catch(() => {});
+        }
+      }
     }
 
     return entry;

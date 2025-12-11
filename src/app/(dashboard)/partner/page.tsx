@@ -28,6 +28,7 @@ import { PartnerHistorySection } from "@/components/partner/partner-history-sect
 import { ApprovalsList } from "@/components/partner/approvals-list";
 import { MySubmissionsList } from "@/components/partner/my-submissions-list";
 import { PartnerProfileCard } from "@/components/partner/partner-profile-card";
+import { NudgePartnerButton } from "@/components/notifications/nudge-partner-button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 
@@ -169,6 +170,7 @@ export default function PartnerPage() {
                     </div>
                     <p className="text-sm text-muted-foreground">Your partner</p>
                   </div>
+                  <NudgePartnerButton partnerName={user.partner?.name ?? "Partner"} />
                   <AlertDialog>
                     <AlertDialogTrigger asChild>
                       <Button variant="ghost" size="icon">

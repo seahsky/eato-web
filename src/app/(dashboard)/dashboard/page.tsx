@@ -4,6 +4,7 @@ import { ProgressRing } from "@/components/dashboard/progress-ring";
 import { MacroCard } from "@/components/dashboard/macro-card";
 import { MealSection } from "@/components/dashboard/meal-section";
 import { PartnerCard } from "@/components/dashboard/partner-card";
+import { NotificationPermissionBanner } from "@/components/notifications/notification-permission-banner";
 import { trpc } from "@/trpc/react";
 import { format } from "date-fns";
 import { motion } from "framer-motion";
@@ -128,6 +129,9 @@ export default function DashboardPage() {
           </Link>
         </motion.div>
       )}
+
+      {/* Notification Permission Banner */}
+      <NotificationPermissionBanner />
 
       {/* Progress Ring */}
       <motion.div

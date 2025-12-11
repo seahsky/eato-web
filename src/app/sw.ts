@@ -21,3 +21,53 @@ const serwist = new Serwist({
 });
 
 serwist.addEventListeners();
+
+// Push notification types
+interface PushNotificationData {
+  title: string;
+  body: string;
+  icon?: string;
+  badge?: string;
+  tag?: string;
+  url?: string;
+  data?: Record<string, unknown>;
+}
+
+// Push notification handler
+sw.addEventListener("push", (event: PushEvent) => {
+  if (!event.data) return;
+
+  const data = event.data.json() as PushNotificationData;
+  const options = {
+    body: data.body,
+    icon: data.icon || "/icons/icon-192x192.png",
+    badge: data.badge || "/icons/badge-72x72.png",
+    tag: data.tag || "eato-notification",
+    data: { url: data.url || "/dashboard", ...data.data },
+    vibrate: [100, 50, 100],
+  } satisfies NotificationOptions & { vibrate?: number[] };
+
+  event.waitUntil(sw.registration.showNotification(data.title, options));
+});
+
+// Notification click handler
+sw.addEventListener("notificationclick", (event: NotificationEvent) => {
+  event.notification.close();
+
+  const url = (event.notification.data?.url as string) || "/dashboard";
+
+  event.waitUntil(
+    sw.clients.matchAll({ type: "window" }).then((clients) => {
+      // Try to focus an existing window
+      for (const client of clients) {
+        if (client.url.includes(url) && "focus" in client) {
+          return client.focus();
+        }
+      }
+      // Open a new window if none exists
+      if (sw.clients.openWindow) {
+        return sw.clients.openWindow(url);
+      }
+    })
+  );
+});

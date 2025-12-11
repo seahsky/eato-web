@@ -48,6 +48,7 @@
     "superjson": "^2.2.6",
     "svix": "^1.82.0",
     "tailwind-merge": "^3.4.0",
+    "web-push": "^3.6.7",
     "zod": "^4.1.13"
   },
   "devDependencies": {
@@ -55,6 +56,7 @@
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "@types/web-push": "^3.6.4",
     "eslint": "^9",
     "eslint-config-next": "16.0.8",
     "prisma": "^5.22.0",
