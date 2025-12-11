@@ -27,6 +27,7 @@ import {
 import { PartnerHistorySection } from "@/components/partner/partner-history-section";
 import { ApprovalsList } from "@/components/partner/approvals-list";
 import { MySubmissionsList } from "@/components/partner/my-submissions-list";
+import { PartnerProfileCard } from "@/components/partner/partner-profile-card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 
@@ -198,6 +199,15 @@ export default function PartnerPage() {
             </Card>
           </motion.div>
 
+          {/* Partner Profile */}
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.15 }}
+          >
+            <PartnerProfileCard />
+          </motion.div>
+
           {/* Partner Weekly Stats */}
           {statsLoading ? (
             <Skeleton className="h-[150px] rounded-2xl" />
@@ -205,7 +215,7 @@ export default function PartnerPage() {
             <motion.div
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.2 }}
+              transition={{ delay: 0.25 }}
             >
               <Card>
                 <CardHeader className="pb-2">
@@ -242,7 +252,7 @@ export default function PartnerPage() {
           <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.3 }}
+            transition={{ delay: 0.35 }}
           >
             <Tabs defaultValue="history" className="w-full">
               <TabsList className="w-full grid grid-cols-3">
