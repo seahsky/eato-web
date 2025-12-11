@@ -85,7 +85,12 @@ export function BarcodeScannerSheet({
   const handleCameraError = useCallback((error: BarcodeError) => {
     setCameraError(error);
     // Auto-switch to manual mode on camera errors
-    if (error === "PERMISSION_DENIED" || error === "NO_CAMERA" || error === "NOT_SUPPORTED") {
+    if (
+      error === "PERMISSION_DENIED" ||
+      error === "NO_CAMERA" ||
+      error === "NOT_SUPPORTED" ||
+      error === "IOS_PWA_NOT_SUPPORTED"
+    ) {
       setInputMode("manual");
     }
   }, []);
@@ -132,7 +137,11 @@ export function BarcodeScannerSheet({
             variant={inputMode === "camera" ? "default" : "outline"}
             size="sm"
             onClick={() => setInputMode("camera")}
-            disabled={cameraError === "NO_CAMERA" || cameraError === "NOT_SUPPORTED"}
+            disabled={
+              cameraError === "NO_CAMERA" ||
+              cameraError === "NOT_SUPPORTED" ||
+              cameraError === "IOS_PWA_NOT_SUPPORTED"
+            }
             className="flex-1"
           >
             <Camera className="w-4 h-4 mr-2" />

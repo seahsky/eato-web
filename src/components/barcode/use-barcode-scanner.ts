@@ -2,12 +2,14 @@
 
 import { useState, useCallback, useRef, useEffect } from "react";
 import { Html5Qrcode, Html5QrcodeSupportedFormats } from "html5-qrcode";
+import { isIOSPWA } from "@/lib/device-detection";
 
 export type BarcodeError =
   | "PERMISSION_DENIED"
   | "NO_CAMERA"
   | "SCANNER_ERROR"
-  | "NOT_SUPPORTED";
+  | "NOT_SUPPORTED"
+  | "IOS_PWA_NOT_SUPPORTED";
 
 interface UseBarcodeScanner {
   isScanning: boolean;
@@ -65,6 +67,13 @@ export function useBarcodeScanner(): UseBarcodeScanner {
       await stopScanning();
 
       try {
+        // Check for iOS PWA mode (camera not supported in standalone mode)
+        if (isIOSPWA()) {
+          setError("IOS_PWA_NOT_SUPPORTED");
+          setIsInitializing(false);
+          return;
+        }
+
         // Check if getUserMedia is supported
         if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
           setError("NOT_SUPPORTED");

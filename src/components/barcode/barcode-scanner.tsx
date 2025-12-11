@@ -93,6 +93,22 @@ export function BarcodeScanner({ isActive, onScan, onError }: BarcodeScannerProp
     );
   }
 
+  // iOS PWA not supported state
+  if (error === "IOS_PWA_NOT_SUPPORTED") {
+    return (
+      <div className="relative aspect-[4/3] w-full bg-muted rounded-xl overflow-hidden flex items-center justify-center p-6">
+        <div className="text-center">
+          <Camera className="w-12 h-12 mx-auto mb-3 text-muted-foreground" />
+          <p className="font-medium mb-1">Camera Not Available</p>
+          <p className="text-sm text-muted-foreground">
+            Camera scanning isn&apos;t supported when the app is installed on your home screen.
+            Use manual entry instead, or open Eato in Safari.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   // Scanner error state
   if (error === "SCANNER_ERROR" || error === "NOT_SUPPORTED") {
     return (
