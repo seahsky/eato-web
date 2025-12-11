@@ -274,3 +274,18 @@ model FavoriteFood {
   @@unique([userId, name, brand])
 }
 
+// Cache for food search results (persists across server restarts)
+model SearchCache {
+  id         String   @id @default(auto()) @map("_id") @db.ObjectId
+  queryHash  String   @unique // SHA-256 of normalized query
+  query      String // Original query (lowercase, trimmed)
+  results    Json // Normalized FoodProduct[]
+  totalCount Int
+  sources    Json // { usda: { count, error? }, openFoodFacts: { count, error? } }
+  createdAt  DateTime @default(now())
+  expiresAt  DateTime // TTL for cache invalidation
+  hitCount   Int      @default(0) // Track popularity for analytics
+
+  @@index([expiresAt])
+}
+

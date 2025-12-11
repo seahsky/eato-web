@@ -3,7 +3,7 @@ import { router, protectedProcedure } from "../trpc";
 import { TRPCError } from "@trpc/server";
 import { getProductByBarcode, normalizeProduct } from "../services/open-food-facts";
 import { getUSDAFoodById, normalizeUSDAProduct } from "../services/usda-food-data";
-import { searchFoods } from "../services/food-search";
+import { searchFoods, searchFoodsFast } from "../services/food-search";
 import { startOfDay, endOfDay } from "date-fns";
 
 const foodEntrySchema = z.object({
@@ -40,6 +40,18 @@ export const foodRouter = router({
     )
     .query(async ({ input }) => {
       return searchFoods(input.query, input.page);
+    }),
+
+  // Fast search - returns cached results or fastest API response
+  // Use this for progressive loading (shows results faster)
+  searchFast: protectedProcedure
+    .input(
+      z.object({
+        query: z.string().min(2),
+      })
+    )
+    .query(async ({ input }) => {
+      return searchFoodsFast(input.query);
     }),
 
   // Get product by barcode (Open Food Facts only)
