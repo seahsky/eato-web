@@ -1,14 +1,15 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { EnergyValue } from "@/components/ui/energy-value";
 import { trpc } from "@/trpc/react";
-import { Search, Plus, Loader2, X } from "lucide-react";
+import { Search, Plus, Loader2, X, Zap } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useDebounce } from "@/hooks/use-debounce";
+import type { FoodProduct } from "@/types/food";
 
 export interface IngredientProduct {
   barcode?: string;
@@ -31,10 +32,55 @@ export function IngredientSearch({ onSelect, onClose }: IngredientSearchProps) {
   const [query, setQuery] = useState("");
   const debouncedQuery = useDebounce(query, 300);
 
-  const { data, isLoading, isFetching } = trpc.food.search.useQuery(
+  // Keep track of previous results to show while loading
+  const previousResultsRef = useRef<FoodProduct[]>([]);
+
+  // Fast search - returns cached or fastest API response
+  const {
+    data: fastData,
+    isLoading: fastLoading,
+    isFetching: fastFetching,
+  } = trpc.food.searchFast.useQuery(
     { query: debouncedQuery },
-    { enabled: debouncedQuery.length >= 2 }
+    {
+      enabled: debouncedQuery.length >= 2,
+      staleTime: 30000, // Keep fast results for 30s
+    }
   );
+
+  // Full search - returns complete merged results from both APIs
+  const {
+    data: fullData,
+    isLoading: fullLoading,
+    isFetching: fullFetching,
+  } = trpc.food.search.useQuery(
+    { query: debouncedQuery },
+    {
+      enabled: debouncedQuery.length >= 2,
+      staleTime: 5000,
+    }
+  );
+
+  // Use full results if available, otherwise fast results
+  const displayData = fullData ?? fastData;
+  const isLoading = fastLoading && fullLoading;
+  const isFetching = fastFetching || fullFetching;
+
+  // Update previous results when we have data
+  useEffect(() => {
+    if (displayData?.products && displayData.products.length > 0) {
+      previousResultsRef.current = displayData.products;
+    }
+  }, [displayData]);
+
+  // Show previous results (dimmed) while loading new query
+  const showPreviousResults =
+    isLoading &&
+    debouncedQuery.length >= 2 &&
+    previousResultsRef.current.length > 0;
+
+  // Check if results came from cache (instant)
+  const isFromCache = (fastData as { fromCache?: boolean })?.fromCache;
 
   const handleSelect = (product: {
     barcode?: string | null;
@@ -93,22 +139,65 @@ export function IngredientSearch({ onSelect, onClose }: IngredientSearchProps) {
       </div>
 
       <AnimatePresence mode="wait">
-        {isLoading && debouncedQuery.length >= 2 ? (
+        {showPreviousResults ? (
+          // Show previous results dimmed while loading new query
+          <motion.div
+            key="previous-results"
+            initial={{ opacity: 0.5 }}
+            animate={{ opacity: 0.4 }}
+            className="space-y-2"
+          >
+            <p className="text-xs text-muted-foreground animate-pulse">
+              Searching for &ldquo;{debouncedQuery}&rdquo;...
+            </p>
+            {previousResultsRef.current.slice(0, 3).map((product, index) => (
+              <div
+                key={product.id || index}
+                className="bg-muted/50 rounded-lg p-2 flex items-center gap-2 pointer-events-none"
+              >
+                {product.imageUrl ? (
+                  <img
+                    src={product.imageUrl}
+                    alt={product.name}
+                    className="w-10 h-10 rounded object-cover bg-muted grayscale"
+                  />
+                ) : (
+                  <div className="w-10 h-10 rounded bg-muted" />
+                )}
+                <div className="flex-1 min-w-0">
+                  <p className="font-medium text-xs truncate">{product.name}</p>
+                  <Skeleton className="h-3 w-16 mt-1" />
+                </div>
+              </div>
+            ))}
+          </motion.div>
+        ) : isLoading && debouncedQuery.length >= 2 ? (
+          // Initial loading state with skeletons
           <div className="space-y-2">
+            <p className="text-xs text-muted-foreground animate-pulse">
+              Searching for &ldquo;{debouncedQuery}&rdquo;...
+            </p>
             {[...Array(3)].map((_, i) => (
               <Skeleton key={i} className="h-16 rounded-lg" />
             ))}
           </div>
-        ) : data?.products && data.products.length > 0 ? (
+        ) : displayData?.products && displayData.products.length > 0 ? (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             className="space-y-2 max-h-60 overflow-y-auto"
           >
-            {data.products.slice(0, 5).map((product, index) => (
+            {/* Cache indicator */}
+            {isFromCache && (
+              <div className="flex items-center gap-1 text-[10px] text-emerald-600 dark:text-emerald-400">
+                <Zap className="w-3 h-3" />
+                <span>Instant results</span>
+              </div>
+            )}
+            {displayData.products.slice(0, 5).map((product, index) => (
               <motion.div
-                key={product.barcode || index}
+                key={product.id || index}
                 initial={{ opacity: 0, y: 5 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: index * 0.03 }}
@@ -140,6 +229,12 @@ export function IngredientSearch({ onSelect, onClose }: IngredientSearchProps) {
                 </Button>
               </motion.div>
             ))}
+            {/* Loading indicator for full results */}
+            {fullFetching && !fullData && (
+              <p className="text-[10px] text-muted-foreground text-center animate-pulse">
+                Loading more results...
+              </p>
+            )}
           </motion.div>
         ) : debouncedQuery.length >= 2 && !isLoading ? (
           <motion.p
