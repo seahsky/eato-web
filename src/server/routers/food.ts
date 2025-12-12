@@ -55,6 +55,45 @@ export const foodRouter = router({
       return searchFoodsFast(input.query);
     }),
 
+  // Batch search - search for multiple ingredients in parallel
+  // Used by meal calculator to lookup all ingredients at once
+  batchSearch: protectedProcedure
+    .input(
+      z.object({
+        queries: z
+          .array(
+            z.object({
+              id: z.string(),
+              query: z.string().min(2),
+            })
+          )
+          .max(15),
+      })
+    )
+    .query(async ({ input }) => {
+      const results = await Promise.allSettled(
+        input.queries.map(({ id, query }) =>
+          searchFoodsFast(query, 5).then((result) => ({
+            id,
+            query,
+            products: result.products.slice(0, 3),
+          }))
+        )
+      );
+
+      return results.map((result, index) => {
+        if (result.status === "fulfilled") {
+          return result.value;
+        }
+        return {
+          id: input.queries[index].id,
+          query: input.queries[index].query,
+          products: [],
+          error: "Search failed",
+        };
+      });
+    }),
+
   // Get product by barcode (Open Food Facts only)
   getByBarcode: protectedProcedure
     .input(z.object({ barcode: z.string() }))

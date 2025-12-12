@@ -2,7 +2,7 @@
 
 import { useSearchParams } from "next/navigation";
 import { FoodEntryForm } from "@/components/food/food-entry-form";
-import { QuickEnergyForm } from "@/components/food/quick-energy-form";
+import { MealCalculator } from "@/components/food/meal-calculator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { FoodSearch } from "@/components/food/food-search";
 import { RecipeList } from "@/components/recipe/recipe-list";
@@ -121,7 +121,7 @@ function LogPageContent() {
               <TabsList className="w-full grid grid-cols-3 mb-4">
                 <TabsTrigger value="search">Search</TabsTrigger>
                 <TabsTrigger value="recipes">Recipes</TabsTrigger>
-                <TabsTrigger value="quick">Quick Add</TabsTrigger>
+                <TabsTrigger value="meal">Meal Calc</TabsTrigger>
               </TabsList>
 
               <TabsContent value="search" className="mt-0">
@@ -135,11 +135,8 @@ function LogPageContent() {
                 />
               </TabsContent>
 
-              <TabsContent value="quick" className="mt-0">
-                <QuickEnergyForm
-                  defaultMealType={mealParam}
-                  onSuccess={handleSuccess}
-                />
+              <TabsContent value="meal" className="mt-0">
+                <MealCalculator />
               </TabsContent>
             </Tabs>
           </motion.div>
