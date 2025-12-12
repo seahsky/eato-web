@@ -1,7 +1,8 @@
 import { searchProducts, normalizeProduct } from "./open-food-facts";
 import { searchUSDA, normalizeUSDAProduct } from "./usda-food-data";
 import { getCachedResults, cacheResults } from "./search-cache";
-import type { FoodProduct, FoodSearchResult } from "@/types/food";
+import { translateToEnglish, mightNeedTranslation } from "./translation";
+import type { FoodProduct, FoodSearchResult, TranslationInfo } from "@/types/food";
 
 // Keywords that indicate whole/fresh foods (prioritize USDA)
 const WHOLE_FOOD_PATTERNS = [
@@ -254,19 +255,37 @@ export async function searchFoods(
   page = 1,
   pageSize = 20
 ): Promise<FoodSearchResult> {
-  // Check cache first (only for page 1)
+  // Step 1: Translate if needed
+  let searchQuery = query;
+  let translationInfo: TranslationInfo | undefined;
+
+  if (mightNeedTranslation(query)) {
+    const translation = await translateToEnglish(query);
+    if (translation.wasTranslated) {
+      searchQuery = translation.translatedText;
+      translationInfo = {
+        originalQuery: translation.originalText,
+        translatedQuery: translation.translatedText,
+        detectedLanguage: translation.detectedLang,
+        fromCache: translation.fromCache,
+      };
+    }
+  }
+
+  // Check cache first (only for page 1, using translated query)
   if (page === 1) {
-    const cached = await getCachedResults(query);
+    const cached = await getCachedResults(searchQuery);
     if (cached) {
       return {
         ...cached,
         page: 1,
         hasMore: cached.totalCount > pageSize,
+        translationInfo,
       };
     }
   }
 
-  const classification = classifyQuery(query);
+  const classification = classifyQuery(searchQuery);
 
   // Determine which source to prioritize
   const prioritizeUSDA = classification === "whole_food";
@@ -277,8 +296,8 @@ export async function searchFoods(
   const halfSize = Math.ceil(pageSize / 2);
 
   const [usdaResult, offResult] = await Promise.allSettled([
-    searchUSDA(query, page, halfSize),
-    searchProducts(query, page, halfSize),
+    searchUSDA(searchQuery, page, halfSize),
+    searchProducts(searchQuery, page, halfSize),
   ]);
 
   // Process USDA results
@@ -311,7 +330,7 @@ export async function searchFoods(
   }
 
   // Filter out branded products for whole food queries (unless user searched for a brand)
-  const isExplicitBrandSearch = isBrandedQuery(query);
+  const isExplicitBrandSearch = isBrandedQuery(searchQuery);
   if (!isExplicitBrandSearch && classification !== "branded") {
     offProducts = filterBrandedProducts(offProducts);
   }
@@ -342,11 +361,12 @@ export async function searchFoods(
       usda: { count: usdaCount, error: usdaError },
       openFoodFacts: { count: offCount, error: offError },
     },
+    translationInfo,
   };
 
-  // Cache results for page 1 only (fire-and-forget)
+  // Cache results for page 1 only (fire-and-forget, using translated query)
   if (page === 1 && mergedProducts.length > 0) {
-    cacheResults(query, result).catch(console.error);
+    cacheResults(searchQuery, result).catch(console.error);
   }
 
   return result;
@@ -357,27 +377,45 @@ export async function searchFoodsFast(
   query: string,
   pageSize = 20
 ): Promise<FoodSearchResult & { fromCache?: boolean }> {
-  // Check cache first
-  const cached = await getCachedResults(query);
+  // Step 1: Translate if needed
+  let searchQuery = query;
+  let translationInfo: TranslationInfo | undefined;
+
+  if (mightNeedTranslation(query)) {
+    const translation = await translateToEnglish(query);
+    if (translation.wasTranslated) {
+      searchQuery = translation.translatedText;
+      translationInfo = {
+        originalQuery: translation.originalText,
+        translatedQuery: translation.translatedText,
+        detectedLanguage: translation.detectedLang,
+        fromCache: translation.fromCache,
+      };
+    }
+  }
+
+  // Check cache first (using translated query)
+  const cached = await getCachedResults(searchQuery);
   if (cached) {
     return {
       ...cached,
       page: 1,
       hasMore: cached.totalCount > pageSize,
+      translationInfo,
     };
   }
 
-  const classification = classifyQuery(query);
+  const classification = classifyQuery(searchQuery);
   const halfSize = Math.ceil(pageSize / 2);
 
   // Race both APIs - return whichever responds first
   const fastestResult = await Promise.race([
-    searchUSDA(query, 1, halfSize).then((r) => ({
+    searchUSDA(searchQuery, 1, halfSize).then((r) => ({
       source: "usda" as const,
       foods: r.foods,
       totalHits: r.totalHits,
     })),
-    searchProducts(query, 1, halfSize).then((r) => ({
+    searchProducts(searchQuery, 1, halfSize).then((r) => ({
       source: "off" as const,
       products: r.products,
       count: r.count,
@@ -390,7 +428,7 @@ export async function searchFoodsFast(
   let sources: FoodSearchResult["sources"];
 
   // Check if user explicitly searched for a brand
-  const isExplicitBrandSearch = isBrandedQuery(query);
+  const isExplicitBrandSearch = isBrandedQuery(searchQuery);
 
   if (fastestResult.source === "usda") {
     products = fastestResult.foods.map(normalizeUSDAProduct);
@@ -431,5 +469,6 @@ export async function searchFoodsFast(
     hasMore: totalCount > pageSize,
     sources,
     fromCache: false,
+    translationInfo,
   };
 }

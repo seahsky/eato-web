@@ -295,6 +295,20 @@ model SearchCache {
   @@index([expiresAt])
 }
 
+// Cache for query translations (non-English to English)
+model TranslationCache {
+  id             String   @id @default(auto()) @map("_id") @db.ObjectId
+  originalText   String // Original query text (normalized)
+  originalHash   String   @unique // SHA-256 of normalized original text
+  detectedLang   String // ISO 639-1 code (e.g., "zh", "ja", "ko")
+  translatedText String // English translation
+  createdAt      DateTime @default(now())
+  expiresAt      DateTime // TTL for cache invalidation (30 days)
+  hitCount       Int      @default(0) // Track usage for analytics
+
+  @@index([expiresAt])
+}
+
 // Push notification subscription per device
 model PushSubscription {
   id        String   @id @default(auto()) @map("_id") @db.ObjectId

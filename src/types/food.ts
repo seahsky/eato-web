@@ -20,6 +20,13 @@ export interface FoodProduct {
   servingSizeText: string;
 }
 
+export interface TranslationInfo {
+  originalQuery: string;
+  translatedQuery: string;
+  detectedLanguage: string;
+  fromCache: boolean;
+}
+
 export interface FoodSearchResult {
   products: FoodProduct[];
   totalCount: number;
@@ -29,6 +36,7 @@ export interface FoodSearchResult {
     usda: { count: number; error?: string };
     openFoodFacts: { count: number; error?: string };
   };
+  translationInfo?: TranslationInfo;
 }
 
 // Quick-access food for Recent/Favorites/Frequent tabs
