@@ -2,12 +2,24 @@
 
 import { useState, useMemo, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Calculator, Pencil, Loader2 } from "lucide-react";
+import { Calculator, Pencil, Loader2, Plus, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent } from "@/components/ui/card";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
 import { parseIngredientLines } from "@/lib/meal-parser";
 import { trpc } from "@/trpc/react";
+import { toast } from "sonner";
+import { useRouter } from "next/navigation";
+import { format } from "date-fns";
 import { MealIngredientRow, type ResolvedMealIngredient } from "./meal-ingredient-row";
 import { MealSwapSheet } from "./meal-swap-sheet";
 import type { FoodProduct } from "@/types/food";
@@ -20,10 +32,19 @@ const PLACEHOLDER = `Enter ingredients, one per line:
 30g honey`;
 
 export function MealCalculator() {
+  const router = useRouter();
+  const utils = trpc.useUtils();
+
   const [inputText, setInputText] = useState("");
   const [isEditing, setIsEditing] = useState(true);
   const [resolvedIngredients, setResolvedIngredients] = useState<ResolvedMealIngredient[]>([]);
   const [swapIngredient, setSwapIngredient] = useState<ResolvedMealIngredient | null>(null);
+  const [mealType, setMealType] = useState("LUNCH");
+  const [logForPartner, setLogForPartner] = useState(false);
+
+  // Get user info for partner feature
+  const { data: user } = trpc.auth.getMe.useQuery();
+  const hasPartner = !!user?.partner;
 
   // Parse input into structured ingredients
   const parsedIngredients = useMemo(() => {
@@ -116,6 +137,57 @@ export function MealCalculator() {
 
   // Count matched ingredients
   const matchedCount = resolvedIngredients.filter((ing) => ing.matchedProduct).length;
+
+  // Log mutation
+  const logMutation = trpc.food.log.useMutation({
+    onSuccess: () => {
+      if (logForPartner) {
+        toast.success(`Meal logged for ${user?.partner?.name}! They will need to approve it.`);
+        utils.food.getMyPendingSubmissions.invalidate();
+      } else {
+        toast.success("Meal logged successfully!");
+      }
+      utils.stats.getDailySummary.invalidate();
+      router.push("/dashboard");
+    },
+    onError: (error) => {
+      toast.error(error.message || "Failed to log meal");
+    },
+  });
+
+  // Handle log meal
+  const handleLogMeal = useCallback(() => {
+    // Generate name from matched ingredients (max 3, truncated)
+    const ingredientNames = resolvedIngredients
+      .filter((ing) => ing.matchedProduct)
+      .map((ing) => ing.ingredientName)
+      .slice(0, 3);
+    const name =
+      ingredientNames.length > 0
+        ? ingredientNames.join(", ") + (resolvedIngredients.filter((ing) => ing.matchedProduct).length > 3 ? "..." : "")
+        : "Meal Estimate";
+
+    // Calculate total serving size from all ingredients
+    const totalGrams = resolvedIngredients.reduce(
+      (sum, ing) => sum + (ing.normalizedGrams || 0),
+      0
+    );
+
+    logMutation.mutate({
+      name,
+      calories: totalNutrition.calories,
+      protein: totalNutrition.protein,
+      carbs: totalNutrition.carbs,
+      fat: totalNutrition.fat,
+      servingSize: Math.round(totalGrams),
+      servingUnit: "g",
+      mealType: mealType as "BREAKFAST" | "LUNCH" | "DINNER" | "SNACK",
+      consumedAt: format(new Date(), "yyyy-MM-dd"),
+      isManualEntry: true,
+      dataSource: "MANUAL",
+      forPartnerId: logForPartner ? user?.partner?.id : undefined,
+    });
+  }, [resolvedIngredients, totalNutrition, mealType, logForPartner, user?.partner?.id, logMutation]);
 
   return (
     <div className="space-y-4">
@@ -218,6 +290,70 @@ export function MealCalculator() {
                   </div>
                 </CardContent>
               </Card>
+            )}
+
+            {/* Log controls */}
+            {matchedCount > 0 && (
+              <div className="space-y-3">
+                {/* Meal Type Selector */}
+                <div className="space-y-2">
+                  <Label>Log as</Label>
+                  <Select value={mealType} onValueChange={setMealType}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="BREAKFAST">Breakfast</SelectItem>
+                      <SelectItem value="LUNCH">Lunch</SelectItem>
+                      <SelectItem value="DINNER">Dinner</SelectItem>
+                      <SelectItem value="SNACK">Snack</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {/* Partner Toggle */}
+                {hasPartner && (
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between p-3 bg-muted/50 rounded-xl">
+                      <div className="flex items-center gap-2">
+                        <Users className="w-4 h-4 text-muted-foreground" />
+                        <Label htmlFor="log-for-partner" className="text-sm font-normal cursor-pointer">
+                          Log for {user?.partner?.name}
+                        </Label>
+                      </div>
+                      <Switch
+                        id="log-for-partner"
+                        checked={logForPartner}
+                        onCheckedChange={setLogForPartner}
+                      />
+                    </div>
+                    {logForPartner && (
+                      <p className="text-xs text-muted-foreground text-center">
+                        {user?.partner?.name} will need to approve this entry
+                      </p>
+                    )}
+                  </div>
+                )}
+
+                {/* Log Button */}
+                <Button
+                  onClick={handleLogMeal}
+                  disabled={logMutation.isPending}
+                  className="w-full"
+                >
+                  {logMutation.isPending ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      Logging...
+                    </>
+                  ) : (
+                    <>
+                      <Plus className="w-4 h-4 mr-2" />
+                      Log {totalNutrition.calories} kcal
+                    </>
+                  )}
+                </Button>
+              </div>
             )}
           </motion.div>
         )}
