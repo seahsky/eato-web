@@ -9,10 +9,34 @@ import { BarcodeScannerSheet } from "@/components/barcode";
 import { FoodQuickAccess } from "./food-quick-access";
 import { QuickEnergyForm } from "./quick-energy-form";
 import { trpc } from "@/trpc/react";
-import { Search, Plus, Loader2, ScanBarcode, Zap } from "lucide-react";
+import { Search, Plus, Loader2, ScanBarcode, Zap, Globe } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useDebounce } from "@/hooks/use-debounce";
 import type { FoodProduct, QuickAccessFood } from "@/types/food";
+
+function getLanguageName(code: string): string {
+  const languages: Record<string, string> = {
+    zh: "Chinese",
+    "zh-CN": "Chinese",
+    "zh-TW": "Chinese",
+    ja: "Japanese",
+    ko: "Korean",
+    es: "Spanish",
+    fr: "French",
+    de: "German",
+    pt: "Portuguese",
+    it: "Italian",
+    ru: "Russian",
+    ar: "Arabic",
+    hi: "Hindi",
+    th: "Thai",
+    vi: "Vietnamese",
+    id: "Indonesian",
+    ms: "Malay",
+    tl: "Filipino",
+  };
+  return languages[code] || code.toUpperCase();
+}
 
 interface FoodSearchProps {
   onSelect: (product: FoodProduct) => void;
@@ -73,6 +97,9 @@ export function FoodSearch({ onSelect, defaultMealType = "LUNCH" }: FoodSearchPr
 
   // Check if results came from cache (instant)
   const isFromCache = (fastData as { fromCache?: boolean })?.fromCache;
+
+  // Get translation info if query was translated
+  const translationInfo = displayData?.translationInfo;
 
   return (
     <div className="space-y-4">
@@ -175,13 +202,27 @@ export function FoodSearch({ onSelect, defaultMealType = "LUNCH" }: FoodSearchPr
             exit={{ opacity: 0 }}
             className="space-y-2"
           >
-            {/* Cache indicator */}
-            {isFromCache && (
-              <div className="flex items-center gap-1 text-[10px] text-emerald-600 dark:text-emerald-400">
-                <Zap className="w-3 h-3" />
-                <span>Instant results</span>
-              </div>
-            )}
+            {/* Cache and translation indicators */}
+            <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+              {isFromCache && (
+                <div className="flex items-center gap-1 text-[10px] text-emerald-600 dark:text-emerald-400">
+                  <Zap className="w-3 h-3" />
+                  <span>Instant results</span>
+                </div>
+              )}
+              {translationInfo && (
+                <div className="flex items-center gap-1 text-[10px] text-blue-600 dark:text-blue-400">
+                  <Globe className="w-3 h-3" />
+                  <span>
+                    Translated: &ldquo;{translationInfo.originalQuery}&rdquo; →
+                    &ldquo;{translationInfo.translatedQuery}&rdquo;
+                    <span className="text-muted-foreground ml-1">
+                      ({getLanguageName(translationInfo.detectedLanguage)})
+                    </span>
+                  </span>
+                </div>
+              )}
+            </div>
             {displayData.products.map((product, index) => (
               <motion.div
                 key={product.id}
