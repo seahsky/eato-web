@@ -212,10 +212,27 @@ export function IngredientSearch({ onSelect, onClose }: IngredientSearchProps) {
                     className="w-10 h-10 rounded object-cover bg-muted shrink-0"
                   />
                 ) : (
-                  <div className="w-10 h-10 rounded bg-muted shrink-0" />
+                  <div className="w-10 h-10 rounded bg-muted shrink-0 flex items-center justify-center">
+                    {product.dataSource === "USDA" ? (
+                      <span className="text-[10px] font-medium text-green-600">USDA</span>
+                    ) : (
+                      <span className="text-[10px] text-muted-foreground">No img</span>
+                    )}
+                  </div>
                 )}
                 <div className="flex-1 min-w-0">
-                  <p className="font-medium text-xs truncate">{product.name}</p>
+                  <div className="flex items-center gap-1.5">
+                    <p className="font-medium text-xs truncate">{product.name}</p>
+                    <span
+                      className={`text-[9px] px-1.5 py-0.5 rounded font-medium shrink-0 ${
+                        product.dataSource === "USDA"
+                          ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400"
+                          : "bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400"
+                      }`}
+                    >
+                      {product.dataSource === "USDA" ? "USDA" : "OFF"}
+                    </span>
+                  </div>
                   <p className="text-[10px] text-primary">
                     <EnergyValue kcal={product.caloriesPer100g} toggleable /> / 100g
                   </p>
