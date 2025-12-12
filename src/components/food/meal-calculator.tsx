@@ -22,6 +22,7 @@ import { useRouter } from "next/navigation";
 import { format } from "date-fns";
 import { MealIngredientRow, type ResolvedMealIngredient } from "./meal-ingredient-row";
 import { MealSwapSheet } from "./meal-swap-sheet";
+import { MealEstimationHistory } from "@/components/meal-estimation/meal-estimation-history";
 import type { FoodProduct } from "@/types/food";
 
 const PLACEHOLDER = `Enter ingredients, one per line:
@@ -41,6 +42,7 @@ export function MealCalculator() {
   const [swapIngredient, setSwapIngredient] = useState<ResolvedMealIngredient | null>(null);
   const [mealType, setMealType] = useState("LUNCH");
   const [logForPartner, setLogForPartner] = useState(false);
+  const [currentEstimationId, setCurrentEstimationId] = useState<string | null>(null);
 
   // Get user info for partner feature
   const { data: user } = trpc.auth.getMe.useQuery();
@@ -68,11 +70,23 @@ export function MealCalculator() {
     }
   );
 
+  // Create estimation mutation (must be defined before handleCalculate)
+  const createEstimationMutation = trpc.mealEstimation.create.useMutation({
+    onSuccess: (data) => {
+      setCurrentEstimationId(data.id);
+      utils.mealEstimation.list.invalidate();
+    },
+  });
+
+  // Link food entry to estimation mutation
+  const linkEstimationMutation = trpc.mealEstimation.linkFoodEntry.useMutation();
+
   // Calculate button handler
   const handleCalculate = useCallback(async () => {
     if (validIngredients.length === 0) return;
 
     setIsEditing(false);
+    setCurrentEstimationId(null);
 
     // Trigger the batch search
     const result = await batchSearchQuery.refetch();
@@ -96,8 +110,72 @@ export function MealCalculator() {
       });
 
       setResolvedIngredients(resolved);
+
+      // Save estimation to history
+      const ingredientNames = resolved
+        .filter((ing) => ing.matchedProduct)
+        .map((ing) => ing.ingredientName)
+        .slice(0, 3);
+      const name =
+        ingredientNames.length > 0
+          ? ingredientNames.join(", ") + (resolved.filter((ing) => ing.matchedProduct).length > 3 ? "..." : "")
+          : "Meal Estimate";
+
+      // Calculate totals
+      const totals = { calories: 0, protein: 0, carbs: 0, fat: 0, grams: 0 };
+      for (const ing of resolved) {
+        if (ing.matchedProduct) {
+          const ratio = ing.normalizedGrams / 100;
+          totals.calories += ing.matchedProduct.caloriesPer100g * ratio;
+          totals.protein += ing.matchedProduct.proteinPer100g * ratio;
+          totals.carbs += ing.matchedProduct.carbsPer100g * ratio;
+          totals.fat += ing.matchedProduct.fatPer100g * ratio;
+        }
+        totals.grams += ing.normalizedGrams;
+      }
+
+      // Create estimation
+      createEstimationMutation.mutate({
+        rawInputText: inputText,
+        name,
+        totalCalories: Math.round(totals.calories),
+        totalProtein: Math.round(totals.protein),
+        totalCarbs: Math.round(totals.carbs),
+        totalFat: Math.round(totals.fat),
+        totalGrams: Math.round(totals.grams),
+        ingredients: resolved.map((ing, index) => ({
+          rawLine: ing.rawLine,
+          ingredientName: ing.ingredientName,
+          quantity: ing.quantity,
+          unit: ing.unit,
+          normalizedGrams: ing.normalizedGrams,
+          matchedProductId: ing.matchedProduct?.id ?? null,
+          matchedProductName: ing.matchedProduct?.name ?? null,
+          matchedProductBrand: ing.matchedProduct?.brand ?? null,
+          dataSource: ing.matchedProduct?.dataSource ?? null,
+          caloriesPer100g: ing.matchedProduct?.caloriesPer100g ?? null,
+          proteinPer100g: ing.matchedProduct?.proteinPer100g ?? null,
+          carbsPer100g: ing.matchedProduct?.carbsPer100g ?? null,
+          fatPer100g: ing.matchedProduct?.fatPer100g ?? null,
+          calories: ing.matchedProduct
+            ? Math.round((ing.matchedProduct.caloriesPer100g * ing.normalizedGrams) / 100)
+            : 0,
+          protein: ing.matchedProduct
+            ? Math.round((ing.matchedProduct.proteinPer100g * ing.normalizedGrams) / 100)
+            : 0,
+          carbs: ing.matchedProduct
+            ? Math.round((ing.matchedProduct.carbsPer100g * ing.normalizedGrams) / 100)
+            : 0,
+          fat: ing.matchedProduct
+            ? Math.round((ing.matchedProduct.fatPer100g * ing.normalizedGrams) / 100)
+            : 0,
+          hasMatch: !!ing.matchedProduct,
+          parseError: ing.parseError ?? null,
+          sortOrder: index,
+        })),
+      });
     }
-  }, [validIngredients, parsedIngredients, batchSearchQuery]);
+  }, [validIngredients, parsedIngredients, batchSearchQuery, inputText, createEstimationMutation]);
 
   // Handle swap selection
   const handleSwapSelect = useCallback(
@@ -156,7 +234,7 @@ export function MealCalculator() {
   });
 
   // Handle log meal
-  const handleLogMeal = useCallback(() => {
+  const handleLogMeal = useCallback(async () => {
     // Generate name from matched ingredients (max 3, truncated)
     const ingredientNames = resolvedIngredients
       .filter((ing) => ing.matchedProduct)
@@ -173,7 +251,7 @@ export function MealCalculator() {
       0
     );
 
-    logMutation.mutate({
+    const entry = await logMutation.mutateAsync({
       name,
       calories: totalNutrition.calories,
       protein: totalNutrition.protein,
@@ -187,7 +265,15 @@ export function MealCalculator() {
       dataSource: "MANUAL",
       forPartnerId: logForPartner ? user?.partner?.id : undefined,
     });
-  }, [resolvedIngredients, totalNutrition, mealType, logForPartner, user?.partner?.id, logMutation]);
+
+    // Link food entry to estimation if we have one
+    if (currentEstimationId && entry) {
+      linkEstimationMutation.mutate({
+        estimationId: currentEstimationId,
+        foodEntryId: entry.id,
+      });
+    }
+  }, [resolvedIngredients, totalNutrition, mealType, logForPartner, user?.partner?.id, logMutation, currentEstimationId, linkEstimationMutation]);
 
   return (
     <div className="space-y-4">
@@ -366,6 +452,9 @@ export function MealCalculator() {
         onOpenChange={(open) => !open && setSwapIngredient(null)}
         onSelect={handleSwapSelect}
       />
+
+      {/* History section */}
+      {isEditing && <MealEstimationHistory />}
     </div>
   );
 }
