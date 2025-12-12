@@ -12,13 +12,18 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
 import { useEnergyUnit } from "@/contexts/energy-context";
 import { convertToKcal, formatEnergy, getEnergyLabel, convertEnergy, getOppositeUnit } from "@/lib/energy";
 import type { EnergyUnit } from "@/lib/energy";
 import { trpc } from "@/trpc/react";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
-import { Loader2, Users } from "lucide-react";
+import { ChevronDown, Loader2, Users } from "lucide-react";
 import { format } from "date-fns";
 import { Switch } from "@/components/ui/switch";
 
@@ -40,6 +45,7 @@ export function QuickEnergyForm({
   const [description, setDescription] = useState("");
   const [mealType, setMealType] = useState(defaultMealType);
   const [logForPartner, setLogForPartner] = useState(false);
+  const [isOpen, setIsOpen] = useState(false);
 
   // Get user info to check for partner
   const { data: user } = trpc.auth.getMe.useQuery();
@@ -84,11 +90,22 @@ export function QuickEnergyForm({
   };
 
   return (
-    <Card className="border-0 shadow-lg">
-      <CardHeader className="pb-4">
-        <CardTitle className="text-lg font-serif">Quick Energy</CardTitle>
-      </CardHeader>
-      <CardContent>
+    <Collapsible open={isOpen} onOpenChange={setIsOpen}>
+      <Card className="border-0 shadow-lg">
+        <CollapsibleTrigger asChild>
+          <CardHeader className="pb-4 cursor-pointer select-none">
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-lg font-serif">Quick Energy</CardTitle>
+              <ChevronDown
+                className={`h-5 w-5 text-muted-foreground transition-transform duration-200 ${
+                  isOpen ? "rotate-180" : ""
+                }`}
+              />
+            </div>
+          </CardHeader>
+        </CollapsibleTrigger>
+        <CollapsibleContent>
+          <CardContent>
         <form onSubmit={handleSubmit} className="space-y-5">
           {/* Energy Input */}
           <div className="space-y-2">
@@ -191,7 +208,9 @@ export function QuickEnergyForm({
             )}
           </Button>
         </form>
-      </CardContent>
-    </Card>
+          </CardContent>
+        </CollapsibleContent>
+      </Card>
+    </Collapsible>
   );
 }
