@@ -31,6 +31,8 @@ export function NotificationSettings() {
     subscribe,
     unsubscribe,
     isLoading: hookLoading,
+    iosRequiresPWA,
+    iosVersionTooOld,
   } = usePushNotifications();
 
   const { data: settings, isLoading: settingsLoading } =
@@ -110,6 +112,14 @@ export function NotificationSettings() {
   };
 
   if (!isSupported) {
+    let message = "Push notifications are not supported in this browser";
+
+    if (iosRequiresPWA) {
+      message = "To enable notifications, add Eato to your home screen first. Tap the share button and select 'Add to Home Screen'.";
+    } else if (iosVersionTooOld) {
+      message = "Push notifications require iOS 16.4 or later. Please update your device.";
+    }
+
     return (
       <Card>
         <CardHeader>
@@ -117,9 +127,7 @@ export function NotificationSettings() {
             <BellOff className="w-4 h-4" />
             Notifications
           </CardTitle>
-          <CardDescription>
-            Push notifications are not supported in this browser
-          </CardDescription>
+          <CardDescription>{message}</CardDescription>
         </CardHeader>
       </Card>
     );

@@ -2,8 +2,17 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { trpc } from "@/trpc/react";
+import { isIOS, isIOSPWA, supportsIOSWebPush } from "@/lib/device-detection";
 
 type PermissionState = NotificationPermission | "unsupported";
+
+// Timeout wrapper to prevent hanging promises
+function withTimeout<T>(promise: Promise<T>, ms: number, errorMessage: string): Promise<T> {
+  const timeout = new Promise<never>((_, reject) =>
+    setTimeout(() => reject(new Error(errorMessage)), ms)
+  );
+  return Promise.race([promise, timeout]);
+}
 
 // Convert base64 VAPID key to Uint8Array
 function urlBase64ToUint8Array(base64String: string): Uint8Array<ArrayBuffer> {
@@ -48,11 +57,22 @@ export function usePushNotifications() {
   });
 
   // Check if push notifications are supported
+  // On iOS, Web Push only works in installed PWAs on iOS 16+
+  const isIOSDevice = typeof window !== "undefined" && isIOS();
+  const isIOSPWAInstalled = typeof window !== "undefined" && isIOSPWA();
+  const hasIOSWebPushSupport = typeof window !== "undefined" && supportsIOSWebPush();
+
   const isSupported =
     typeof window !== "undefined" &&
     "serviceWorker" in navigator &&
     "PushManager" in window &&
-    "Notification" in window;
+    "Notification" in window &&
+    // iOS-specific: must be installed as PWA and on iOS 16+
+    (!isIOSDevice || (isIOSPWAInstalled && hasIOSWebPushSupport));
+
+  // Expose iOS-specific state for UI messaging
+  const iosRequiresPWA = isIOSDevice && !isIOSPWAInstalled;
+  const iosVersionTooOld = isIOSDevice && !hasIOSWebPushSupport;
 
   // Initialize state on mount
   useEffect(() => {
@@ -102,8 +122,12 @@ export function usePushNotifications() {
         return false;
       }
 
-      // Get service worker registration
-      const registration = await navigator.serviceWorker.ready;
+      // Get service worker registration with timeout to prevent hanging on iOS
+      const registration = await withTimeout(
+        navigator.serviceWorker.ready,
+        10000, // 10 second timeout
+        "Service worker registration timed out. Please try again or restart the app."
+      );
 
       // Get VAPID public key from environment
       const vapidPublicKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
@@ -111,11 +135,15 @@ export function usePushNotifications() {
         throw new Error("VAPID public key not configured");
       }
 
-      // Subscribe to push notifications
-      const subscription = await registration.pushManager.subscribe({
-        userVisibleOnly: true,
-        applicationServerKey: urlBase64ToUint8Array(vapidPublicKey),
-      });
+      // Subscribe to push notifications with timeout
+      const subscription = await withTimeout(
+        registration.pushManager.subscribe({
+          userVisibleOnly: true,
+          applicationServerKey: urlBase64ToUint8Array(vapidPublicKey),
+        }),
+        10000, // 10 second timeout
+        "Push subscription timed out. Please try again."
+      );
 
       // Get subscription details
       const subscriptionJSON = subscription.toJSON();
@@ -180,5 +208,8 @@ export function usePushNotifications() {
     error,
     subscribe,
     unsubscribe,
+    // iOS-specific states for UI messaging
+    iosRequiresPWA,
+    iosVersionTooOld,
   };
 }
