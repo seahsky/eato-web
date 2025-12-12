@@ -125,7 +125,7 @@ function LogPageContent() {
               </TabsList>
 
               <TabsContent value="search" className="mt-0">
-                <FoodSearch onSelect={handleProductSelect} />
+                <FoodSearch onSelect={handleProductSelect} defaultMealType={mealParam} />
               </TabsContent>
 
               <TabsContent value="recipes" className="mt-0">

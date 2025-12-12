@@ -7,6 +7,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { EnergyValue } from "@/components/ui/energy-value";
 import { BarcodeScannerSheet } from "@/components/barcode";
 import { FoodQuickAccess } from "./food-quick-access";
+import { QuickEnergyForm } from "./quick-energy-form";
 import { trpc } from "@/trpc/react";
 import { Search, Plus, Loader2, ScanBarcode, Zap } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -15,9 +16,10 @@ import type { FoodProduct, QuickAccessFood } from "@/types/food";
 
 interface FoodSearchProps {
   onSelect: (product: FoodProduct) => void;
+  defaultMealType?: string;
 }
 
-export function FoodSearch({ onSelect }: FoodSearchProps) {
+export function FoodSearch({ onSelect, defaultMealType = "LUNCH" }: FoodSearchProps) {
   const [query, setQuery] = useState("");
   const [scannerOpen, setScannerOpen] = useState(false);
   const debouncedQuery = useDebounce(query, 300);
@@ -117,7 +119,9 @@ export function FoodSearch({ onSelect }: FoodSearchProps) {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -10 }}
             transition={{ duration: 0.15 }}
+            className="space-y-4"
           >
+            <QuickEnergyForm defaultMealType={defaultMealType} />
             <FoodQuickAccess onSelect={(food) => onSelect(food as FoodProduct)} />
           </motion.div>
         ) : showPreviousResults ? (
