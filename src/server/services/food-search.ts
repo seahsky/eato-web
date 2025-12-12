@@ -26,10 +26,194 @@ const BRANDED_FOOD_PATTERNS = [
   // Packaged foods
   /\b(bar|cereal|chips|cookie|cracker|snack|candy|chocolate|soda|drink|juice|protein powder|supplement|granola|muesli)\b/i,
   // Brand indicators
-  /\b(brand|organic|gluten.?free|vegan|keto|low.?fat|sugar.?free|diet)\b/i,
+  /\b(brand|gluten.?free|vegan|keto|low.?fat|sugar.?free|diet)\b/i,
   // Processed foods
   /\b(frozen|canned|instant|ready.?to.?eat|microwave|packaged)\b/i,
 ];
+
+// Known brand names - queries containing these should show branded results
+const KNOWN_BRANDS = [
+  // Major food conglomerates
+  "nestle",
+  "kraft",
+  "heinz",
+  "kellogg",
+  "general mills",
+  "post",
+  "quaker",
+  "nabisco",
+  "mondelez",
+  "unilever",
+  "pepsico",
+  "frito-lay",
+  "campbells",
+  "conagra",
+  // Beverage brands
+  "coca-cola",
+  "coke",
+  "pepsi",
+  "sprite",
+  "fanta",
+  "gatorade",
+  "tropicana",
+  "minute maid",
+  "snapple",
+  "lipton",
+  "starbucks",
+  "dunkin",
+  "red bull",
+  "monster",
+  // Snack brands
+  "doritos",
+  "lays",
+  "pringles",
+  "cheetos",
+  "ruffles",
+  "tostitos",
+  "oreo",
+  "chips ahoy",
+  "ritz",
+  "triscuit",
+  // Candy/chocolate
+  "hershey",
+  "mars",
+  "snickers",
+  "twix",
+  "m&m",
+  "reese",
+  "kit kat",
+  "milky way",
+  "skittles",
+  "haribo",
+  "ferrero",
+  "lindt",
+  "ghirardelli",
+  "godiva",
+  // Cereal brands
+  "cheerios",
+  "frosted flakes",
+  "froot loops",
+  "lucky charms",
+  "cinnamon toast crunch",
+  "honey bunches",
+  "special k",
+  "raisin bran",
+  "grape nuts",
+  "life cereal",
+  // Dairy brands
+  "yoplait",
+  "dannon",
+  "chobani",
+  "oikos",
+  "fage",
+  "activia",
+  "philadelphia",
+  "velveeta",
+  "sargento",
+  "babybel",
+  // Meat/protein brands
+  "tyson",
+  "perdue",
+  "oscar mayer",
+  "hillshire",
+  "jimmy dean",
+  "hormel",
+  "spam",
+  "ball park",
+  "hebrew national",
+  "johnsonville",
+  "smithfield",
+  "butterball",
+  // Bread/bakery brands
+  "wonder bread",
+  "sara lee",
+  "pepperidge farm",
+  "arnold",
+  "thomas",
+  "entenmann",
+  "little debbie",
+  "hostess",
+  // Frozen food brands
+  "stouffer",
+  "lean cuisine",
+  "marie callender",
+  "banquet",
+  "hungry man",
+  "hot pocket",
+  "totino",
+  "digiorno",
+  "eggo",
+  "birds eye",
+  "green giant",
+  // Condiment/sauce brands
+  "hellmann",
+  "best foods",
+  "french's",
+  "hidden valley",
+  "ranch",
+  "tabasco",
+  "sriracha",
+  "frank's",
+  "a1",
+  "lea & perrins",
+  // Produce brands
+  "dole",
+  "del monte",
+  "sunkist",
+  "driscoll",
+  "chiquita",
+  "ocean spray",
+  // Fast food (in case people search)
+  "mcdonald",
+  "burger king",
+  "wendy",
+  "subway",
+  "taco bell",
+  "kfc",
+  "chick-fil-a",
+  "popeye",
+  "domino",
+  "pizza hut",
+  "papa john",
+  // Health/organic brands
+  "clif",
+  "kind bar",
+  "rxbar",
+  "larabar",
+  "think thin",
+  "quest",
+  "garden of life",
+  "nature valley",
+  "kashi",
+  "annie's",
+  "amy's",
+  "earth's best",
+  // International brands
+  "barilla",
+  "san pellegrino",
+  "evian",
+  "perrier",
+  "nutella",
+  "bonne maman",
+  "president",
+  "laughing cow",
+];
+
+// Check if query explicitly mentions a known brand
+function isBrandedQuery(query: string): boolean {
+  const queryLower = query.toLowerCase();
+  return KNOWN_BRANDS.some((brand) => queryLower.includes(brand));
+}
+
+// Filter out products with brand names (for whole food queries)
+function filterBrandedProducts(products: FoodProduct[]): FoodProduct[] {
+  return products.filter((product) => {
+    // Keep products without a brand name
+    if (!product.brand) return true;
+    // Filter out products with brand names
+    return false;
+  });
+}
 
 type QueryClassification = "whole_food" | "branded" | "unknown";
 
@@ -126,6 +310,12 @@ export async function searchFoods(
     offError = offResult.reason?.message || "Open Food Facts search failed";
   }
 
+  // Filter out branded products for whole food queries (unless user searched for a brand)
+  const isExplicitBrandSearch = isBrandedQuery(query);
+  if (!isExplicitBrandSearch && classification !== "branded") {
+    offProducts = filterBrandedProducts(offProducts);
+  }
+
   // Merge results based on priority
   let mergedProducts: FoodProduct[];
 
@@ -199,6 +389,9 @@ export async function searchFoodsFast(
   let totalCount: number;
   let sources: FoodSearchResult["sources"];
 
+  // Check if user explicitly searched for a brand
+  const isExplicitBrandSearch = isBrandedQuery(query);
+
   if (fastestResult.source === "usda") {
     products = fastestResult.foods.map(normalizeUSDAProduct);
     totalCount = fastestResult.totalHits;
@@ -213,6 +406,12 @@ export async function searchFoodsFast(
       dataSource: "OPEN_FOOD_FACTS" as const,
       fdcId: null,
     }));
+
+    // Filter out branded products for whole food queries
+    if (!isExplicitBrandSearch && classification !== "branded") {
+      products = filterBrandedProducts(products);
+    }
+
     totalCount = fastestResult.count;
     sources = {
       usda: { count: 0, error: "Pending..." },
