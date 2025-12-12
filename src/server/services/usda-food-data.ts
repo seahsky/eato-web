@@ -7,6 +7,7 @@ const NUTRIENT_IDS = {
   ENERGY: "208", // Energy (kcal) - SR Legacy
   ENERGY_ATWATER_GENERAL: "957", // Energy (Atwater General Factors) - Foundation
   ENERGY_ATWATER_SPECIFIC: "958", // Energy (Atwater Specific Factors) - Foundation
+  ENERGY_KJ: "268", // Energy (kJ) - fallback if kcal not available
   PROTEIN: "203", // Protein
   FAT: "204", // Total lipid (fat)
   CARBS: "205", // Carbohydrate
@@ -14,6 +15,9 @@ const NUTRIENT_IDS = {
   SUGAR: "269", // Sugars, total
   SODIUM: "307", // Sodium (in mg)
 };
+
+// Conversion factor: 1 kcal = 4.184 kJ
+const KJ_TO_KCAL = 1 / 4.184;
 
 interface USDANutrient {
   nutrientId: number;
@@ -134,7 +138,14 @@ function getEnergyValue(nutrients: USDANutrient[]): number {
   if (energy > 0) return energy;
 
   // Fall back to Atwater Specific (Foundation foods)
-  return getNutrientValue(nutrients, NUTRIENT_IDS.ENERGY_ATWATER_SPECIFIC);
+  energy = getNutrientValue(nutrients, NUTRIENT_IDS.ENERGY_ATWATER_SPECIFIC);
+  if (energy > 0) return energy;
+
+  // Final fallback: convert from kJ if only kJ is available
+  const energyKj = getNutrientValue(nutrients, NUTRIENT_IDS.ENERGY_KJ);
+  if (energyKj > 0) return Math.round(energyKj * KJ_TO_KCAL);
+
+  return 0;
 }
 
 export function normalizeUSDAProduct(food: USDAFood): FoodProduct {
