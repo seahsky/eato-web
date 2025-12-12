@@ -2,6 +2,17 @@ import webpush from "web-push";
 import { prisma } from "@/lib/prisma";
 import type { NotificationPayload, PushSubscriptionJSON } from "./types";
 
+// Type for PushSubscription from database
+interface DbPushSubscription {
+  id: string;
+  userId: string;
+  endpoint: string;
+  p256dh: string;
+  auth: string;
+  userAgent: string | null;
+  createdAt: Date;
+}
+
 // Initialize web-push with VAPID details
 const vapidPublicKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
 const vapidPrivateKey = process.env.VAPID_PRIVATE_KEY;
@@ -24,7 +35,7 @@ export async function sendPushNotification(
   // Get all subscriptions for this user
   const subscriptions = await prisma.pushSubscription.findMany({
     where: { userId },
-  });
+  }) as DbPushSubscription[];
 
   if (subscriptions.length === 0) {
     return { success: true, sent: 0, failed: 0 };

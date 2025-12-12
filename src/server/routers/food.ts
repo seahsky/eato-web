@@ -155,6 +155,18 @@ export const foodRouter = router({
     const dayStart = new Date(input.consumedAt + "T00:00:00.000Z");
     const consumedAt = new Date(input.consumedAt + "T12:00:00.000Z");
 
+    // Log backdated entries for debugging/auditing
+    const today = new Date();
+    today.setUTCHours(0, 0, 0, 0);
+    const isBackdated = dayStart.getTime() < today.getTime();
+    if (isBackdated) {
+      const daysAgo = Math.round((today.getTime() - dayStart.getTime()) / (1000 * 60 * 60 * 24));
+      console.log(
+        `[BACKDATE] User ${ctx.user.id} logging entry "${input.name}" for ${input.consumedAt} (${daysAgo} day${daysAgo !== 1 ? "s" : ""} ago)` +
+        (isLoggingForPartner ? ` [for partner ${forPartnerId}]` : "")
+      );
+    }
+
     // Get or create daily log for target user
     let dailyLog = await ctx.prisma.dailyLog.findUnique({
       where: {
@@ -411,7 +423,7 @@ export const foodRouter = router({
         loggedByUserId: { not: null },
       },
       orderBy: { loggedAt: "desc" },
-    });
+    }) as Array<{ id: string; name: string; brand: string | null; imageUrl: string | null; calories: number; loggedByUserId: string | null; loggedAt: Date; consumedAt: Date; mealType: string; servingSize: number; servingUnit: string; approvalStatus: string }>;
 
     // Get logger names
     const loggerIds = [...new Set(entries.map((e) => e.loggedByUserId).filter(Boolean))] as string[];
@@ -419,7 +431,7 @@ export const foodRouter = router({
       where: { id: { in: loggerIds } },
       select: { id: true, name: true },
     });
-    const loggerMap = new Map(loggers.map((l) => [l.id, l.name]));
+    const loggerMap = new Map(loggers.map((l: { id: string; name: string | null }) => [l.id, l.name]));
 
     return entries.map((e) => ({
       ...e,

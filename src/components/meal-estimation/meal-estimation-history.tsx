@@ -43,7 +43,7 @@ export function MealEstimationHistory({ onLoadEstimation }: MealEstimationHistor
     { staleTime: 30000 }
   );
 
-  const estimations = data?.items ?? [];
+  const estimations: MealEstimationListItem[] = data?.items ?? [];
   const displayedEstimations = isExpanded ? estimations : estimations.slice(0, 3);
   const hasMore = estimations.length > 3;
 

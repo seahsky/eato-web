@@ -14,7 +14,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { FoodEntryEditSheet } from "@/components/food/food-entry-edit-sheet";
 import Link from "next/link";
-import type { FoodEntry } from "@prisma/client";
+import type { FoodEntry } from "@/types/food";
 import { cn } from "@/lib/utils";
 import { trpc } from "@/trpc/react";
 import { toast } from "sonner";

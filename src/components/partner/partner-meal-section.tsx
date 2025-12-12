@@ -2,7 +2,7 @@
 
 import { Coffee, Sun, Moon, Cookie } from "lucide-react";
 import { EnergyValue } from "@/components/ui/energy-value";
-import type { FoodEntry } from "@prisma/client";
+import type { FoodEntry } from "@/types/food";
 
 const mealConfig = {
   BREAKFAST: { icon: Coffee, label: "Breakfast", color: "text-chart-3" },

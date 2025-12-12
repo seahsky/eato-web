@@ -1,4 +1,4 @@
-import type { FoodDataSource } from "@prisma/client";
+import type { FoodDataSource } from "@/types/food";
 
 export interface MealEstimationIngredient {
   id: string;

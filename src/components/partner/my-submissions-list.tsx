@@ -9,10 +9,14 @@ import { RefreshCw, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { Skeleton } from "@/components/ui/skeleton";
+import type { FoodEntry } from "@/types/food";
 
 export function MySubmissionsList() {
   const utils = trpc.useUtils();
-  const { data: entries, isLoading } = trpc.food.getMyPendingSubmissions.useQuery();
+  const { data: entries, isLoading } = trpc.food.getMyPendingSubmissions.useQuery() as {
+    data: (FoodEntry & { user: { name: string | null } })[] | undefined;
+    isLoading: boolean;
+  };
 
   const resubmitMutation = trpc.food.resubmitEntry.useMutation({
     onSuccess: () => {

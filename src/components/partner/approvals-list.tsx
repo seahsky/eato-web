@@ -9,10 +9,14 @@ import { Check, X, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { Skeleton } from "@/components/ui/skeleton";
+import type { FoodEntry } from "@/types/food";
 
 export function ApprovalsList() {
   const utils = trpc.useUtils();
-  const { data: entries, isLoading } = trpc.food.getPendingApprovals.useQuery();
+  const { data: entries, isLoading } = trpc.food.getPendingApprovals.useQuery() as {
+    data: (FoodEntry & { loggedByUser?: { name: string | null }; loggedByName?: string | null })[] | undefined;
+    isLoading: boolean;
+  };
 
   const approveMutation = trpc.food.approveEntry.useMutation({
     onMutate: async ({ entryId }) => {
@@ -23,8 +27,9 @@ export function ApprovalsList() {
       const previousEntries = utils.food.getPendingApprovals.getData();
 
       // Optimistically remove from the list
-      utils.food.getPendingApprovals.setData(undefined, (old) =>
-        old?.filter((e) => e.id !== entryId)
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      utils.food.getPendingApprovals.setData(undefined, (old: any) =>
+        old?.filter((e: any) => e.id !== entryId)
       );
 
       return { previousEntries };
@@ -54,8 +59,9 @@ export function ApprovalsList() {
       const previousEntries = utils.food.getPendingApprovals.getData();
 
       // Optimistically remove from the list
-      utils.food.getPendingApprovals.setData(undefined, (old) =>
-        old?.filter((e) => e.id !== entryId)
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      utils.food.getPendingApprovals.setData(undefined, (old: any) =>
+        old?.filter((e: any) => e.id !== entryId)
       );
 
       return { previousEntries };

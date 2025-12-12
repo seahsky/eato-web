@@ -19,8 +19,9 @@ import { trpc } from "@/trpc/react";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 import { Loader2, Minus, Plus, Users } from "lucide-react";
-import { format } from "date-fns";
+import { format, isToday, startOfDay } from "date-fns";
 import { motion } from "framer-motion";
+import { DateSelector } from "@/components/ui/date-selector";
 import { Switch } from "@/components/ui/switch";
 import type { FoodProduct } from "@/types/food";
 
@@ -43,6 +44,7 @@ export function FoodEntryForm({
   const [servingSize, setServingSize] = useState(product?.servingSize ?? 100);
   const [mealType, setMealType] = useState(defaultMealType);
   const [logForPartner, setLogForPartner] = useState(false);
+  const [consumedDate, setConsumedDate] = useState(() => startOfDay(new Date()));
 
   // Get user info to check for partner
   const { data: user } = trpc.auth.getMe.useQuery();
@@ -101,7 +103,7 @@ export function FoodEntryForm({
       servingSize,
       servingUnit: product?.servingUnit ?? "g",
       mealType: mealType as "BREAKFAST" | "LUNCH" | "DINNER" | "SNACK",
-      consumedAt: format(new Date(), "yyyy-MM-dd"),
+      consumedAt: format(consumedDate, "yyyy-MM-dd"),
       isManualEntry: !product,
       dataSource: product?.dataSource ?? "MANUAL",
       openFoodFactsId: product?.dataSource === "OPEN_FOOD_FACTS" ? product.barcode ?? undefined : undefined,
@@ -221,10 +223,11 @@ export function FoodEntryForm({
             </div>
           )}
 
-          {/* Meal Type */}
-          <div className="space-y-2">
-            <Label>Meal</Label>
-            <Select value={mealType} onValueChange={setMealType}>
+          {/* Date and Meal Type */}
+          <div className="flex gap-4">
+            <div className="space-y-2 flex-1">
+              <Label>Meal</Label>
+              <Select value={mealType} onValueChange={setMealType}>
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
@@ -235,6 +238,11 @@ export function FoodEntryForm({
                 <SelectItem value="SNACK">Snack</SelectItem>
               </SelectContent>
             </Select>
+            </div>
+            <div className="space-y-2">
+              <Label>Date</Label>
+              <DateSelector value={consumedDate} onChange={setConsumedDate} />
+            </div>
           </div>
 
           {/* Log for Partner Toggle */}

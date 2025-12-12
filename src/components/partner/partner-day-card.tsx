@@ -7,7 +7,7 @@ import { format, isToday, isYesterday, parseISO } from "date-fns";
 import { Progress } from "@/components/ui/progress";
 import { EnergyValue } from "@/components/ui/energy-value";
 import { PartnerMealSection } from "./partner-meal-section";
-import type { FoodEntry } from "@prisma/client";
+import type { FoodEntry } from "@/types/food";
 import { cn } from "@/lib/utils";
 
 interface PartnerDayCardProps {

@@ -76,7 +76,7 @@ export default function RecipeDetailPage() {
   }
 
   // Transform ingredients for the form
-  const transformedIngredients: IngredientData[] = recipe.ingredients.map((ing) => ({
+  const transformedIngredients: IngredientData[] = recipe.ingredients.map((ing: typeof recipe.ingredients[number]) => ({
     id: ing.id,
     name: ing.name,
     quantity: ing.quantity,
@@ -214,7 +214,7 @@ export default function RecipeDetailPage() {
                 <div className="space-y-2">
                   <h3 className="font-medium text-sm">Ingredients</h3>
                   <div className="space-y-1.5">
-                    {recipe.ingredients.map((ing) => (
+                    {recipe.ingredients.map((ing: typeof recipe.ingredients[number]) => (
                       <div
                         key={ing.id}
                         className="flex items-center justify-between py-1.5 px-3 bg-muted/50 rounded-lg text-sm"

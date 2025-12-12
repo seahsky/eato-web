@@ -51,9 +51,9 @@ export function FoodQuickAccess({ onSelect }: FoodQuickAccessProps) {
       ]);
 
       // Snapshot the previous values
-      const previousRecent = utils.food.getRecentFoods.getData();
-      const previousFavorites = utils.food.getFavoriteFoods.getData();
-      const previousFrequent = utils.food.getFrequentFoods.getData();
+      const previousRecent = utils.food.getRecentFoods.getData() ?? [];
+      const previousFavorites = utils.food.getFavoriteFoods.getData() ?? [];
+      const previousFrequent = utils.food.getFrequentFoods.getData() ?? [];
 
       // Find if the food is currently a favorite (by checking any list)
       const isCurrentlyFavorite = [...(previousRecent ?? []), ...(previousFavorites ?? []), ...(previousFrequent ?? [])]
@@ -62,8 +62,9 @@ export function FoodQuickAccess({ onSelect }: FoodQuickAccessProps) {
       const newIsFavorite = !isCurrentlyFavorite;
 
       // Optimistically update recent foods
-      utils.food.getRecentFoods.setData(undefined, (old) =>
-        old?.map((f) =>
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      utils.food.getRecentFoods.setData(undefined, (old: any) =>
+        old?.map((f: any) =>
           f.name === variables.name && f.brand === variables.brand
             ? { ...f, isFavorite: newIsFavorite }
             : f
@@ -73,24 +74,27 @@ export function FoodQuickAccess({ onSelect }: FoodQuickAccessProps) {
       // Optimistically update favorites
       if (newIsFavorite) {
         // Adding to favorites - find the food and add it
-        const foodToAdd = previousRecent?.find(f => f.name === variables.name && f.brand === variables.brand)
-          ?? previousFrequent?.find(f => f.name === variables.name && f.brand === variables.brand);
+        const foodToAdd = previousRecent.find(f => f.name === variables.name && f.brand === variables.brand)
+          ?? previousFrequent.find(f => f.name === variables.name && f.brand === variables.brand);
         if (foodToAdd) {
-          utils.food.getFavoriteFoods.setData(undefined, (old) => [
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          utils.food.getFavoriteFoods.setData(undefined, (old: any) => [
             { ...foodToAdd, isFavorite: true },
             ...(old ?? []),
           ]);
         }
       } else {
         // Removing from favorites
-        utils.food.getFavoriteFoods.setData(undefined, (old) =>
-          old?.filter((f) => !(f.name === variables.name && f.brand === variables.brand))
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        utils.food.getFavoriteFoods.setData(undefined, (old: any) =>
+          old?.filter((f: any) => !(f.name === variables.name && f.brand === variables.brand))
         );
       }
 
       // Optimistically update frequent foods
-      utils.food.getFrequentFoods.setData(undefined, (old) =>
-        old?.map((f) =>
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      utils.food.getFrequentFoods.setData(undefined, (old: any) =>
+        old?.map((f: any) =>
           f.name === variables.name && f.brand === variables.brand
             ? { ...f, isFavorite: newIsFavorite }
             : f

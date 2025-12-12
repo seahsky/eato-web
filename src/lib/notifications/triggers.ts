@@ -1,5 +1,5 @@
 import { sendPushNotification, isNotificationEnabled, userHasPushSubscription } from "./web-push";
-import type { MealType } from "@prisma/client";
+import type { MealType } from "@/types/food";
 
 const MEAL_TYPE_LABELS: Record<MealType, string> = {
   BREAKFAST: "breakfast",

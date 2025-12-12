@@ -10,6 +10,14 @@ import { Bell, BellOff, Smartphone, Trash2, Loader2 } from "lucide-react";
 import { trpc } from "@/trpc/react";
 import { toast } from "sonner";
 import { usePushNotifications } from "@/hooks/use-push-notifications";
+
+// Type for push subscription entries
+interface PushSubscriptionEntry {
+  id: string;
+  userAgent: string | null;
+  createdAt: Date | string;
+}
+
 import {
   AlertDialog,
   AlertDialogAction,
@@ -38,7 +46,7 @@ export function NotificationSettings() {
   const { data: settings, isLoading: settingsLoading } =
     trpc.notification.getSettings.useQuery();
   const { data: subscriptions, isLoading: subscriptionsLoading } =
-    trpc.notification.getSubscriptions.useQuery();
+    trpc.notification.getSubscriptions.useQuery() as { data: PushSubscriptionEntry[] | undefined; isLoading: boolean };
 
   const updateSettingsMutation = trpc.notification.updateSettings.useMutation({
     onSuccess: () => {

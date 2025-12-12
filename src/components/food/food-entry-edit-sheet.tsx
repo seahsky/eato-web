@@ -36,7 +36,7 @@ import { trpc } from "@/trpc/react";
 import { toast } from "sonner";
 import { Loader2, Minus, Plus, Trash2 } from "lucide-react";
 import { motion } from "framer-motion";
-import type { FoodEntry } from "@prisma/client";
+import type { FoodEntry } from "@/types/food";
 
 interface FoodEntryEditSheetProps {
   entry: FoodEntry | null;
