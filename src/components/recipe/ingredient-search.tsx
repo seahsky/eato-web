@@ -201,7 +201,7 @@ export function IngredientSearch({ onSelect, onClose }: IngredientSearchProps) {
                 initial={{ opacity: 0, y: 5 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: index * 0.03 }}
-                className="bg-muted/50 rounded-lg p-2 flex items-center gap-2"
+                className="bg-muted/50 rounded-lg p-2 flex items-center gap-2 overflow-hidden"
               >
                 {product.imageUrl ? (
                   <img
