@@ -5,7 +5,7 @@ import type { FoodProduct, FoodSearchResult } from "@/types/food";
 
 const CACHE_TTL_MS = 24 * 60 * 60 * 1000; // 24 hours
 
-function hashQuery(query: string): string {
+export function hashQuery(query: string): string {
   return crypto.createHash("sha256").update(query.toLowerCase().trim()).digest("hex");
 }
 

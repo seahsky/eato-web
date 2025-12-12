@@ -11,6 +11,9 @@ export interface OpenFoodFactsProduct {
   nutriments: {
     "energy-kcal_100g"?: number;
     "energy-kcal_serving"?: number;
+    "energy-kcal"?: number; // Some products use this instead
+    energy_100g?: number; // Energy in kJ per 100g
+    energy?: number; // Energy in kJ
     proteins_100g?: number;
     proteins_serving?: number;
     carbohydrates_100g?: number;
@@ -104,6 +107,24 @@ export async function getProductByBarcode(
   return data.status === 1 ? data.product : null;
 }
 
+// Conversion factor: 1 kcal = 4.184 kJ
+const KJ_TO_KCAL = 1 / 4.184;
+
+// Extract energy in kcal with fallback chain
+function getEnergyKcal(
+  nutriments: OpenFoodFactsProduct["nutriments"]
+): number {
+  // Try kcal fields first (preferred)
+  if (nutriments["energy-kcal_100g"]) return nutriments["energy-kcal_100g"];
+  if (nutriments["energy-kcal"]) return nutriments["energy-kcal"];
+
+  // Convert from kJ if only kJ is available
+  const energyKj = nutriments.energy_100g ?? nutriments.energy;
+  if (energyKj) return Math.round(energyKj * KJ_TO_KCAL);
+
+  return 0;
+}
+
 // Convert Open Food Facts product to our app's format
 export function normalizeProduct(product: OpenFoodFactsProduct) {
   const nutriments = product.nutriments;
@@ -115,7 +136,7 @@ export function normalizeProduct(product: OpenFoodFactsProduct) {
     brand: product.brands || null,
     imageUrl: product.image_small_url || product.image_url || null,
     // Per 100g values
-    caloriesPer100g: nutriments["energy-kcal_100g"] || 0,
+    caloriesPer100g: getEnergyKcal(nutriments),
     proteinPer100g: nutriments.proteins_100g || 0,
     carbsPer100g: nutriments.carbohydrates_100g || 0,
     fatPer100g: nutriments.fat_100g || 0,

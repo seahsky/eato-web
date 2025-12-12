@@ -4,6 +4,7 @@ import { TRPCError } from "@trpc/server";
 import { getProductByBarcode, normalizeProduct } from "../services/open-food-facts";
 import { getUSDAFoodById, normalizeUSDAProduct } from "../services/usda-food-data";
 import { searchFoods, searchFoodsFast } from "../services/food-search";
+import { hashQuery, cleanupExpiredCache } from "../services/search-cache";
 import { startOfDay, endOfDay } from "date-fns";
 import { notifyPartnerFoodLogged, notifyPartnerGoalReached } from "@/lib/notifications/triggers";
 
@@ -976,6 +977,33 @@ export const foodRouter = router({
           },
         });
         return { isFavorite: true };
+      }
+    }),
+
+  // Clear search cache for debugging
+  clearSearchCache: protectedProcedure
+    .input(
+      z.object({
+        query: z.string().optional(),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      if (input.query) {
+        // Clear specific query cache
+        const queryHash = hashQuery(input.query);
+        try {
+          await ctx.prisma.searchCache.delete({
+            where: { queryHash },
+          });
+          return { cleared: 1, query: input.query };
+        } catch {
+          // Entry not found, that's okay
+          return { cleared: 0, query: input.query };
+        }
+      } else {
+        // Clear all expired entries
+        const count = await cleanupExpiredCache();
+        return { cleared: count, query: null };
       }
     }),
 });
