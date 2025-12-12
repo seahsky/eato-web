@@ -196,21 +196,23 @@ export function IngredientSearch({ onSelect, onClose }: IngredientSearchProps) {
               </div>
             )}
             {displayData.products.slice(0, 5).map((product, index) => (
-              <motion.div
+              <motion.button
                 key={product.id || index}
+                type="button"
+                onClick={() => handleSelect(product)}
                 initial={{ opacity: 0, y: 5 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: index * 0.03 }}
-                className="bg-muted/50 rounded-lg p-2 flex items-center gap-2 overflow-hidden"
+                className="bg-muted/50 rounded-lg p-2 flex items-center gap-2 w-full text-left hover:bg-muted/70 active:bg-muted transition-colors"
               >
                 {product.imageUrl ? (
                   <img
                     src={product.imageUrl}
                     alt={product.name}
-                    className="w-10 h-10 rounded object-cover bg-muted"
+                    className="w-10 h-10 rounded object-cover bg-muted shrink-0"
                   />
                 ) : (
-                  <div className="w-10 h-10 rounded bg-muted" />
+                  <div className="w-10 h-10 rounded bg-muted shrink-0" />
                 )}
                 <div className="flex-1 min-w-0">
                   <p className="font-medium text-xs truncate">{product.name}</p>
@@ -218,16 +220,8 @@ export function IngredientSearch({ onSelect, onClose }: IngredientSearchProps) {
                     <EnergyValue kcal={product.caloriesPer100g} toggleable /> / 100g
                   </p>
                 </div>
-                <Button
-                  type="button"
-                  size="icon"
-                  variant="ghost"
-                  className="rounded-full shrink-0 h-8 w-8"
-                  onClick={() => handleSelect(product)}
-                >
-                  <Plus className="w-4 h-4" />
-                </Button>
-              </motion.div>
+                <Plus className="w-4 h-4 text-muted-foreground shrink-0" />
+              </motion.button>
             ))}
             {/* Loading indicator for full results */}
             {fullFetching && !fullData && (
