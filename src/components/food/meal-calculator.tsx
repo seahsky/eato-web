@@ -57,10 +57,13 @@ export function MealCalculator() {
   // Count valid ingredients (no parse errors)
   const validIngredients = parsedIngredients.filter((ing) => !ing.parseError);
 
+  // Searchable ingredients (exclude direct energy entries)
+  const searchableIngredients = validIngredients.filter((ing) => !ing.isDirectEnergy);
+
   // Batch search query
   const batchSearchQuery = trpc.food.batchSearch.useQuery(
     {
-      queries: validIngredients.map((ing) => ({
+      queries: searchableIngredients.map((ing) => ({
         id: ing.id,
         query: ing.ingredientName,
       })),
@@ -91,14 +94,24 @@ export function MealCalculator() {
     // Trigger the batch search
     const result = await batchSearchQuery.refetch();
 
-    if (result.data) {
+    if (result.data || searchableIngredients.length === 0) {
       // Merge search results with parsed ingredients
       const resolved: ResolvedMealIngredient[] = parsedIngredients.map((ing) => {
         if (ing.parseError) {
           return ing;
         }
 
-        const searchResult = result.data.find((r) => r.id === ing.id);
+        // Direct energy entries - no product search needed
+        if (ing.isDirectEnergy) {
+          return {
+            ...ing,
+            matchedProduct: undefined,
+            alternatives: undefined,
+            calculatedCalories: ing.directCalories,
+          };
+        }
+
+        const searchResult = result.data?.find((r) => r.id === ing.id);
         const matchedProduct = searchResult?.products[0];
         const alternatives = searchResult?.products.slice(1);
 
@@ -112,19 +125,22 @@ export function MealCalculator() {
       setResolvedIngredients(resolved);
 
       // Save estimation to history
-      const ingredientNames = resolved
-        .filter((ing) => ing.matchedProduct)
+      const matchedIngredients = resolved.filter((ing) => ing.isDirectEnergy || ing.matchedProduct);
+      const ingredientNames = matchedIngredients
         .map((ing) => ing.ingredientName)
         .slice(0, 3);
       const name =
         ingredientNames.length > 0
-          ? ingredientNames.join(", ") + (resolved.filter((ing) => ing.matchedProduct).length > 3 ? "..." : "")
+          ? ingredientNames.join(", ") + (matchedIngredients.length > 3 ? "..." : "")
           : "Meal Estimate";
 
       // Calculate totals
       const totals = { calories: 0, protein: 0, carbs: 0, fat: 0, grams: 0 };
       for (const ing of resolved) {
-        if (ing.matchedProduct) {
+        if (ing.isDirectEnergy && ing.directCalories) {
+          // Direct energy - only add calories, macros unknown
+          totals.calories += ing.directCalories;
+        } else if (ing.matchedProduct) {
           const ratio = ing.normalizedGrams / 100;
           totals.calories += ing.matchedProduct.caloriesPer100g * ratio;
           totals.protein += ing.matchedProduct.proteinPer100g * ratio;
@@ -157,9 +173,11 @@ export function MealCalculator() {
           proteinPer100g: ing.matchedProduct?.proteinPer100g ?? null,
           carbsPer100g: ing.matchedProduct?.carbsPer100g ?? null,
           fatPer100g: ing.matchedProduct?.fatPer100g ?? null,
-          calories: ing.matchedProduct
-            ? Math.round((ing.matchedProduct.caloriesPer100g * ing.normalizedGrams) / 100)
-            : 0,
+          calories: ing.isDirectEnergy
+            ? Math.round(ing.directCalories || 0)
+            : ing.matchedProduct
+              ? Math.round((ing.matchedProduct.caloriesPer100g * ing.normalizedGrams) / 100)
+              : 0,
           protein: ing.matchedProduct
             ? Math.round((ing.matchedProduct.proteinPer100g * ing.normalizedGrams) / 100)
             : 0,
@@ -169,7 +187,7 @@ export function MealCalculator() {
           fat: ing.matchedProduct
             ? Math.round((ing.matchedProduct.fatPer100g * ing.normalizedGrams) / 100)
             : 0,
-          hasMatch: !!ing.matchedProduct,
+          hasMatch: ing.isDirectEnergy || !!ing.matchedProduct,
           parseError: ing.parseError ?? null,
           sortOrder: index,
         })),
@@ -196,7 +214,10 @@ export function MealCalculator() {
     const totals = { calories: 0, protein: 0, carbs: 0, fat: 0 };
 
     for (const ing of resolvedIngredients) {
-      if (ing.matchedProduct) {
+      if (ing.isDirectEnergy && ing.directCalories) {
+        // Direct energy - only add calories
+        totals.calories += ing.directCalories;
+      } else if (ing.matchedProduct) {
         const ratio = ing.normalizedGrams / 100;
         totals.calories += ing.matchedProduct.caloriesPer100g * ratio;
         totals.protein += ing.matchedProduct.proteinPer100g * ratio;
@@ -213,8 +234,8 @@ export function MealCalculator() {
     };
   }, [resolvedIngredients]);
 
-  // Count matched ingredients
-  const matchedCount = resolvedIngredients.filter((ing) => ing.matchedProduct).length;
+  // Count matched ingredients (includes direct energy entries)
+  const matchedCount = resolvedIngredients.filter((ing) => ing.isDirectEnergy || ing.matchedProduct).length;
 
   // Log mutation
   const logMutation = trpc.food.log.useMutation({
@@ -236,13 +257,13 @@ export function MealCalculator() {
   // Handle log meal
   const handleLogMeal = useCallback(async () => {
     // Generate name from matched ingredients (max 3, truncated)
-    const ingredientNames = resolvedIngredients
-      .filter((ing) => ing.matchedProduct)
+    const matchedIngredients = resolvedIngredients.filter((ing) => ing.isDirectEnergy || ing.matchedProduct);
+    const ingredientNames = matchedIngredients
       .map((ing) => ing.ingredientName)
       .slice(0, 3);
     const name =
       ingredientNames.length > 0
-        ? ingredientNames.join(", ") + (resolvedIngredients.filter((ing) => ing.matchedProduct).length > 3 ? "..." : "")
+        ? ingredientNames.join(", ") + (matchedIngredients.length > 3 ? "..." : "")
         : "Meal Estimate";
 
     // Calculate total serving size from all ingredients

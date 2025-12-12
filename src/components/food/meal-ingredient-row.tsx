@@ -26,14 +26,17 @@ export function MealIngredientRow({
   onSwap,
 }: MealIngredientRowProps) {
   const hasError = !!ingredient.parseError;
-  const noMatch = !hasError && !ingredient.matchedProduct && !isLoading;
+  const isDirectEnergy = ingredient.isDirectEnergy;
+  const noMatch = !hasError && !isDirectEnergy && !ingredient.matchedProduct && !isLoading;
 
-  // Calculate calories from per-100g values
-  const calories = ingredient.matchedProduct
-    ? Math.round(
-        (ingredient.matchedProduct.caloriesPer100g * ingredient.normalizedGrams) / 100
-      )
-    : 0;
+  // Calculate calories from per-100g values or use direct energy
+  const calories = isDirectEnergy
+    ? ingredient.directCalories || 0
+    : ingredient.matchedProduct
+      ? Math.round(
+          (ingredient.matchedProduct.caloriesPer100g * ingredient.normalizedGrams) / 100
+        )
+      : 0;
 
   return (
     <motion.button
@@ -41,15 +44,17 @@ export function MealIngredientRow({
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: index * 0.05 }}
-      onClick={() => !hasError && onSwap(ingredient)}
-      disabled={hasError}
+      onClick={() => !hasError && !isDirectEnergy && onSwap(ingredient)}
+      disabled={hasError || isDirectEnergy}
       className={cn(
         "w-full text-left px-3 py-2.5 rounded-lg border transition-colors",
         hasError
           ? "border-destructive/30 bg-destructive/5 cursor-not-allowed"
-          : noMatch
-            ? "border-yellow-500/30 bg-yellow-500/5 hover:bg-yellow-500/10"
-            : "border-border hover:bg-muted/50"
+          : isDirectEnergy
+            ? "border-primary/30 bg-primary/5 cursor-default"
+            : noMatch
+              ? "border-yellow-500/30 bg-yellow-500/5 hover:bg-yellow-500/10"
+              : "border-border hover:bg-muted/50"
       )}
     >
       <div className="flex items-start justify-between gap-2">
@@ -65,6 +70,10 @@ export function MealIngredientRow({
             <p className="text-xs text-destructive flex items-center gap-1 mt-0.5">
               <AlertCircle className="w-3 h-3" />
               {ingredient.parseError}
+            </p>
+          ) : isDirectEnergy ? (
+            <p className="text-xs text-muted-foreground mt-0.5">
+              Direct energy entry
             </p>
           ) : isLoading ? (
             <p className="text-xs text-muted-foreground mt-0.5">Searching...</p>
@@ -83,10 +92,10 @@ export function MealIngredientRow({
 
         {/* Calories and swap indicator */}
         <div className="flex items-center gap-2 shrink-0">
-          {!hasError && ingredient.matchedProduct && (
+          {!hasError && (isDirectEnergy || ingredient.matchedProduct) && (
             <span className="text-sm font-semibold tabular-nums">{calories} kcal</span>
           )}
-          {!hasError && (
+          {!hasError && !isDirectEnergy && (
             <RefreshCw className="w-3.5 h-3.5 text-muted-foreground" />
           )}
         </div>

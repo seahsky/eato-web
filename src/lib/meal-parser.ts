@@ -1,23 +1,30 @@
 /**
  * Meal parser utilities
- * Parses ingredient lines from textarea input (e.g., "200g flour")
+ * Parses ingredient lines from textarea input (e.g., "200g flour" or "352kj salmon")
  */
 
 import { convertToGrams } from "./recipe-calculator";
+import { convertToKcal } from "./energy";
 
 export interface ParsedIngredient {
   id: string;
   rawLine: string;
   quantity: number;
-  unit: string; // "g", "kg", "ml", "l"
+  unit: string; // "g", "kg", "ml", "l", "kj", "kcal", "cal"
   normalizedGrams: number;
   ingredientName: string;
   parseError?: string;
+  isDirectEnergy?: boolean;
+  directCalories?: number; // Always stored in kcal
 }
 
 // Regex to match: number + optional unit + ingredient name
 // Examples: "200g flour", "1.5kg chicken", "100 ml oil", "50 sugar" (no unit = grams)
 const INGREDIENT_REGEX = /^(\d+(?:\.\d+)?)\s*(g|kg|ml|l)?\s+(.+)$/i;
+
+// Regex to match: number + energy unit + food name
+// Examples: "352kj canned salmon", "500kcal pizza", "200cal banana"
+const ENERGY_REGEX = /^(\d+(?:\.\d+)?)\s*(kj|kcal|cal)\s+(.+)$/i;
 
 /**
  * Parse a single ingredient line
@@ -30,46 +37,88 @@ function parseIngredientLine(line: string, index: number): ParsedIngredient | nu
     return null;
   }
 
-  const match = trimmed.match(INGREDIENT_REGEX);
+  // Try weight-based pattern first
+  const weightMatch = trimmed.match(INGREDIENT_REGEX);
 
-  if (!match) {
+  if (weightMatch) {
+    const quantity = parseFloat(weightMatch[1]);
+    const unit = (weightMatch[2] || "g").toLowerCase();
+    const ingredientName = weightMatch[3].trim();
+
+    // Validate quantity
+    if (isNaN(quantity) || quantity <= 0) {
+      return {
+        id: `ing-${index}`,
+        rawLine: trimmed,
+        quantity: 0,
+        unit: "g",
+        normalizedGrams: 0,
+        ingredientName,
+        parseError: "Invalid quantity",
+      };
+    }
+
+    const normalizedGrams = convertToGrams(quantity, unit);
+
     return {
       id: `ing-${index}`,
       rawLine: trimmed,
-      quantity: 0,
-      unit: "g",
-      normalizedGrams: 0,
-      ingredientName: trimmed,
-      parseError: "Invalid format. Use: 200g flour",
+      quantity,
+      unit,
+      normalizedGrams,
+      ingredientName,
     };
   }
 
-  const quantity = parseFloat(match[1]);
-  const unit = (match[2] || "g").toLowerCase();
-  const ingredientName = match[3].trim();
+  // Try energy-based pattern
+  const energyMatch = trimmed.match(ENERGY_REGEX);
 
-  // Validate quantity
-  if (isNaN(quantity) || quantity <= 0) {
+  if (energyMatch) {
+    const value = parseFloat(energyMatch[1]);
+    const energyUnit = energyMatch[2].toLowerCase();
+    const ingredientName = energyMatch[3].trim();
+
+    // Validate energy value
+    if (isNaN(value) || value <= 0) {
+      return {
+        id: `ing-${index}`,
+        rawLine: trimmed,
+        quantity: 0,
+        unit: energyUnit,
+        normalizedGrams: 0,
+        ingredientName,
+        parseError: "Invalid energy value",
+      };
+    }
+
+    // Convert to kcal (internal storage unit)
+    let kcal = value;
+    if (energyUnit === "kj") {
+      kcal = convertToKcal(value, "KJ");
+    }
+    // 'cal' and 'kcal' are treated as kcal
+
     return {
       id: `ing-${index}`,
       rawLine: trimmed,
-      quantity: 0,
-      unit: "g",
+      quantity: value,
+      unit: energyUnit,
       normalizedGrams: 0,
       ingredientName,
-      parseError: "Invalid quantity",
+      isDirectEnergy: true,
+      directCalories: kcal,
     };
   }
 
-  const normalizedGrams = convertToGrams(quantity, unit);
-
+  // No match - return error
   return {
     id: `ing-${index}`,
     rawLine: trimmed,
-    quantity,
-    unit,
-    normalizedGrams,
-    ingredientName,
+    quantity: 0,
+    unit: "g",
+    normalizedGrams: 0,
+    ingredientName: trimmed,
+    parseError: "Invalid format. Use: 200g flour or 352kj salmon",
   };
 }
 
