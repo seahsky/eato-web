@@ -14,6 +14,8 @@ import {
 import { Switch } from "@/components/ui/switch";
 import { IngredientSearch, type IngredientProduct } from "./ingredient-search";
 import { Search, Trash2, GripVertical, ChevronDown, ChevronUp } from "lucide-react";
+import { useEnergyUnit } from "@/contexts/energy-context";
+import { formatEnergy } from "@/lib/energy";
 import { motion, AnimatePresence } from "framer-motion";
 
 export interface IngredientData {
@@ -47,6 +49,7 @@ export function IngredientRow({
   onChange,
   onDelete,
 }: IngredientRowProps) {
+  const { energyUnit } = useEnergyUnit();
   const [isSearching, setIsSearching] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
 
@@ -215,7 +218,7 @@ export function IngredientRow({
               ) : (
                 <ChevronDown className="w-3 h-3" />
               )}
-              {isExpanded ? "Hide" : "Show"} nutrition ({Math.round(ingredient.caloriesPer100g)} kcal/100g)
+              {isExpanded ? "Hide" : "Show"} nutrition ({formatEnergy(ingredient.caloriesPer100g, energyUnit)}/100g)
             </button>
           </>
         )}

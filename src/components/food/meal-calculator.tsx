@@ -6,6 +6,9 @@ import { Calculator, Pencil, Loader2, Plus, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent } from "@/components/ui/card";
+import { EnergyValue } from "@/components/ui/energy-value";
+import { useEnergyUnit } from "@/contexts/energy-context";
+import { formatEnergy } from "@/lib/energy";
 import { Label } from "@/components/ui/label";
 import {
   Select,
@@ -35,6 +38,7 @@ const PLACEHOLDER = `Enter ingredients, one per line:
 export function MealCalculator() {
   const router = useRouter();
   const utils = trpc.useUtils();
+  const { energyUnit } = useEnergyUnit();
 
   const [inputText, setInputText] = useState("");
   const [isEditing, setIsEditing] = useState(true);
@@ -377,10 +381,12 @@ export function MealCalculator() {
                   </p>
                   <div className="grid grid-cols-4 gap-2 text-center">
                     <div>
-                      <p className="text-2xl font-bold text-primary">
-                        {totalNutrition.calories}
-                      </p>
-                      <p className="text-xs text-muted-foreground">kcal</p>
+                      <EnergyValue
+                        kcal={totalNutrition.calories}
+                        toggleable
+                        className="text-2xl font-bold text-primary"
+                        unitClassName="text-xs font-normal"
+                      />
                     </div>
                     <div>
                       <p className="text-lg font-semibold">{totalNutrition.protein}g</p>
@@ -456,7 +462,7 @@ export function MealCalculator() {
                   ) : (
                     <>
                       <Plus className="w-4 h-4 mr-2" />
-                      Log {totalNutrition.calories} kcal
+                      Log {formatEnergy(totalNutrition.calories, energyUnit)}
                     </>
                   )}
                 </Button>

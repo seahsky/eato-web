@@ -4,6 +4,7 @@ import { motion } from "framer-motion";
 import { AlertCircle, Minus, Plus, RefreshCw, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { EnergyValue } from "@/components/ui/energy-value";
 import { cn } from "@/lib/utils";
 import type { MealEstimationIngredient } from "@/types/meal-estimation";
 
@@ -108,10 +109,12 @@ export function MealEstimationIngredientRow({
 
       {/* Calories */}
       <div className="text-right shrink-0 w-14">
-        <p className="text-sm font-semibold tabular-nums">
-          {Math.round(ingredient.calories)}
-        </p>
-        <p className="text-[9px] text-muted-foreground">kcal</p>
+        <EnergyValue
+          kcal={ingredient.calories}
+          toggleable
+          className="text-sm font-semibold tabular-nums"
+          unitClassName="text-[9px]"
+        />
       </div>
 
       {/* Actions */}

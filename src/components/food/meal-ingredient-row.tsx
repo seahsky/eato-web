@@ -2,6 +2,7 @@
 
 import { motion } from "framer-motion";
 import { AlertCircle, RefreshCw } from "lucide-react";
+import { EnergyValue } from "@/components/ui/energy-value";
 import { cn } from "@/lib/utils";
 import type { FoodProduct } from "@/types/food";
 import type { ParsedIngredient } from "@/lib/meal-parser";
@@ -93,7 +94,11 @@ export function MealIngredientRow({
         {/* Calories and swap indicator */}
         <div className="flex items-center gap-2 shrink-0">
           {!hasError && (isDirectEnergy || ingredient.matchedProduct) && (
-            <span className="text-sm font-semibold tabular-nums">{calories} kcal</span>
+            <EnergyValue
+              kcal={calories}
+              toggleable
+              className="text-sm font-semibold tabular-nums"
+            />
           )}
           {!hasError && !isDirectEnergy && (
             <RefreshCw className="w-3.5 h-3.5 text-muted-foreground" />

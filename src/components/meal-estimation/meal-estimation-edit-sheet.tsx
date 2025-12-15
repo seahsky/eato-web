@@ -32,6 +32,8 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 import { EnergyValue } from "@/components/ui/energy-value";
+import { useEnergyUnit } from "@/contexts/energy-context";
+import { formatEnergy } from "@/lib/energy";
 import { trpc } from "@/trpc/react";
 import { toast } from "sonner";
 import { format } from "date-fns";
@@ -78,6 +80,7 @@ export function MealEstimationEditSheet({
 }: MealEstimationEditSheetProps) {
   const router = useRouter();
   const utils = trpc.useUtils();
+  const { energyUnit } = useEnergyUnit();
 
   // Local state for editing
   const [ingredients, setIngredients] = useState<MealEstimationIngredient[]>([]);
@@ -420,8 +423,8 @@ export function MealEstimationEditSheet({
                           kcal={totals.calories}
                           toggleable
                           className="text-xl font-bold text-primary"
+                          unitClassName="text-[10px] font-normal"
                         />
-                        <p className="text-[10px] text-muted-foreground">kcal</p>
                       </div>
                       <div>
                         <p className="text-lg font-semibold">{totals.protein}g</p>
@@ -517,7 +520,7 @@ export function MealEstimationEditSheet({
                   ) : (
                     <>
                       <Calculator className="mr-2 h-4 w-4" />
-                      Log {totals.calories} kcal
+                      Log {formatEnergy(totals.calories, energyUnit)}
                     </>
                   )}
                 </Button>
