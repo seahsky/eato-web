@@ -43,7 +43,7 @@ export default function ProfilePage() {
   // Track previous energy unit to detect changes
   const [prevEnergyUnit, setPrevEnergyUnit] = useState<EnergyUnit>(energyUnit);
 
-  // Populate form when profile loads
+  // Populate form when profile loads (only on profile change, not on energyUnit change)
   useEffect(() => {
     if (profile) {
       setAge(profile.age.toString());
@@ -56,7 +56,11 @@ export default function ProfilePage() {
       setCalorieGoal(displayGoal.toString());
       setPrevEnergyUnit(energyUnit);
     }
-  }, [profile, energyUnit]);
+    // Note: energyUnit is intentionally excluded from deps to prevent resetting
+    // form fields when user changes energy unit. calorieGoal conversion on unit
+    // change is handled by the separate effect below.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [profile]);
 
   // Convert goal when energy unit changes (without profile reload)
   useEffect(() => {
@@ -222,7 +226,9 @@ export default function ProfilePage() {
           <div className="grid grid-cols-2 gap-2">
             {calorieSuggestions.map((suggestion) => {
               const Icon = suggestion.icon;
-              const selected = parseInt(calorieGoal) === suggestion.kcal;
+              // Convert displayed goal (in user's unit) back to kcal for comparison
+              const goalInKcal = calorieGoal ? convertToKcal(parseInt(calorieGoal), energyUnit) : 0;
+              const selected = goalInKcal === suggestion.kcal;
 
               return (
                 <motion.button

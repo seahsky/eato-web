@@ -10,9 +10,10 @@ export function DashboardProviders({ children }: { children: ReactNode }) {
 
   // Default to KCAL if no profile or energyUnit not set
   const initialUnit: EnergyUnit = (profile?.energyUnit as EnergyUnit) ?? "KCAL";
+  const hasProfile = !!profile;
 
   return (
-    <EnergyProvider initialUnit={initialUnit}>
+    <EnergyProvider initialUnit={initialUnit} hasProfile={hasProfile}>
       {children}
     </EnergyProvider>
   );

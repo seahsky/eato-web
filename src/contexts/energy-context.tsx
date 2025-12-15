@@ -22,17 +22,25 @@ const EnergyContext = createContext<EnergyContextValue>({
 export function EnergyProvider({
   children,
   initialUnit = "KCAL",
+  hasProfile = false,
 }: {
   children: ReactNode;
   initialUnit?: EnergyUnit;
+  hasProfile?: boolean;
 }) {
   const [energyUnit, setEnergyUnitState] = useState<EnergyUnit>(initialUnit);
+  const [profileExists, setProfileExists] = useState(hasProfile);
   const utils = trpc.useUtils();
 
   // Sync with initialUnit when it changes (e.g., profile loads)
   useEffect(() => {
     setEnergyUnitState(initialUnit);
   }, [initialUnit]);
+
+  // Sync hasProfile prop changes
+  useEffect(() => {
+    setProfileExists(hasProfile);
+  }, [hasProfile]);
 
   const updateMutation = trpc.profile.updateEnergyUnit.useMutation({
     onSuccess: () => {
@@ -42,8 +50,11 @@ export function EnergyProvider({
 
   const setEnergyUnit = useCallback((unit: EnergyUnit) => {
     setEnergyUnitState(unit);
-    updateMutation.mutate({ energyUnit: unit });
-  }, [updateMutation]);
+    // Only persist to database if profile exists
+    if (profileExists) {
+      updateMutation.mutate({ energyUnit: unit });
+    }
+  }, [updateMutation, profileExists]);
 
   const toggleUnit = useCallback(() => {
     const newUnit = getOppositeUnit(energyUnit);
