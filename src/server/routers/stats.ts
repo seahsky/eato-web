@@ -142,6 +142,14 @@ export const statsRouter = router({
             date: dayStart,
           },
         },
+        include: {
+          entries: {
+            where: {
+              approvalStatus: "APPROVED",
+            },
+            orderBy: { consumedAt: "asc" },
+          },
+        },
       });
 
       const profile = await ctx.prisma.profile.findUnique({
@@ -153,16 +161,27 @@ export const statsRouter = router({
         select: { name: true },
       });
 
+      const entries = dailyLog?.entries ?? [];
+
       return {
         partnerName: partner?.name ?? "Partner",
         date: dayStart,
         totalCalories: dailyLog?.totalCalories ?? 0,
+        totalProtein: dailyLog?.totalProtein ?? 0,
+        totalCarbs: dailyLog?.totalCarbs ?? 0,
+        totalFat: dailyLog?.totalFat ?? 0,
         calorieGoal: profile?.calorieGoal ?? 2000,
         goalProgress: dailyLog
           ? Math.round(
               (dailyLog.totalCalories / (profile?.calorieGoal ?? 2000)) * 100
             )
           : 0,
+        entriesByMeal: {
+          BREAKFAST: entries.filter((e) => e.mealType === "BREAKFAST"),
+          LUNCH: entries.filter((e) => e.mealType === "LUNCH"),
+          DINNER: entries.filter((e) => e.mealType === "DINNER"),
+          SNACK: entries.filter((e) => e.mealType === "SNACK"),
+        },
       };
     }),
 

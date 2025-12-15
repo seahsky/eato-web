@@ -4,13 +4,14 @@ import { motion } from "framer-motion";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Progress } from "@/components/ui/progress";
 import { EnergyValue } from "@/components/ui/energy-value";
-import { Heart } from "lucide-react";
+import { Heart, ChevronRight } from "lucide-react";
 
 interface PartnerCardProps {
   partnerName: string;
   partnerImage?: string | null;
   totalCalories: number;
   calorieGoal: number;
+  onClick?: () => void;
 }
 
 export function PartnerCard({
@@ -18,16 +19,18 @@ export function PartnerCard({
   partnerImage,
   totalCalories,
   calorieGoal,
+  onClick,
 }: PartnerCardProps) {
   const progress = Math.min((totalCalories / calorieGoal) * 100, 100);
   const isOnTrack = totalCalories <= calorieGoal;
 
   return (
-    <motion.div
+    <motion.button
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: 0.4, duration: 0.4 }}
-      className="bg-gradient-to-br from-secondary/30 to-secondary/10 rounded-2xl p-4 border border-secondary/50"
+      className="w-full text-left bg-gradient-to-br from-secondary/30 to-secondary/10 rounded-2xl p-4 border border-secondary/50 cursor-pointer hover:bg-secondary/20 transition-colors active:scale-[0.99]"
+      onClick={onClick}
     >
       <div className="flex items-center gap-3">
         <Avatar className="h-10 w-10 border-2 border-secondary">
@@ -50,6 +53,7 @@ export function PartnerCard({
             </span>
           </div>
         </div>
+        <ChevronRight className="w-4 h-4 text-muted-foreground flex-shrink-0" />
       </div>
       <p className="text-xs text-muted-foreground mt-2 text-center">
         {isOnTrack ? (
@@ -60,6 +64,6 @@ export function PartnerCard({
           </span>
         )}
       </p>
-    </motion.div>
+    </motion.button>
   );
 }

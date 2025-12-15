@@ -4,6 +4,7 @@ import { ProgressRing } from "@/components/dashboard/progress-ring";
 import { MacroCard } from "@/components/dashboard/macro-card";
 import { MealSection } from "@/components/dashboard/meal-section";
 import { PartnerCard } from "@/components/dashboard/partner-card";
+import { PartnerDaySheet } from "@/components/partner/partner-day-sheet";
 import { NotificationPermissionBanner } from "@/components/notifications/notification-permission-banner";
 import { trpc } from "@/trpc/react";
 import { format } from "date-fns";
@@ -18,6 +19,7 @@ import { Card, CardContent } from "@/components/ui/card";
 
 export default function DashboardPage() {
   const [selectedDate, setSelectedDate] = useState(new Date());
+  const [partnerSheetOpen, setPartnerSheetOpen] = useState(false);
 
   const { data: user } = trpc.auth.getMe.useQuery();
 
@@ -191,11 +193,26 @@ export default function DashboardPage() {
 
       {/* Partner Progress */}
       {partnerSummary && (
-        <PartnerCard
-          partnerName={partnerSummary.partnerName}
-          totalCalories={partnerSummary.totalCalories}
-          calorieGoal={partnerSummary.calorieGoal}
-        />
+        <>
+          <PartnerCard
+            partnerName={partnerSummary.partnerName}
+            totalCalories={partnerSummary.totalCalories}
+            calorieGoal={partnerSummary.calorieGoal}
+            onClick={() => setPartnerSheetOpen(true)}
+          />
+          <PartnerDaySheet
+            open={partnerSheetOpen}
+            onOpenChange={setPartnerSheetOpen}
+            partnerName={partnerSummary.partnerName}
+            date={format(selectedDate, "yyyy-MM-dd")}
+            totalCalories={partnerSummary.totalCalories}
+            totalProtein={partnerSummary.totalProtein}
+            totalCarbs={partnerSummary.totalCarbs}
+            totalFat={partnerSummary.totalFat}
+            calorieGoal={partnerSummary.calorieGoal}
+            entriesByMeal={partnerSummary.entriesByMeal}
+          />
+        </>
       )}
 
       {/* Meals */}
