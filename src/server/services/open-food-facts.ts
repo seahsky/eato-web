@@ -12,8 +12,10 @@ export interface OpenFoodFactsProduct {
     "energy-kcal_100g"?: number;
     "energy-kcal_serving"?: number;
     "energy-kcal"?: number; // Some products use this instead
-    energy_100g?: number; // Energy in kJ per 100g
-    energy?: number; // Energy in kJ
+    "energy-kj_100g"?: number; // Energy in kJ per 100g (specific field)
+    "energy-kj"?: number; // Energy in kJ (specific field)
+    energy_100g?: number; // Energy in kJ per 100g (generic)
+    energy?: number; // Energy in kJ (generic)
     proteins_100g?: number;
     proteins_serving?: number;
     carbohydrates_100g?: number;
@@ -114,13 +116,26 @@ const KJ_TO_KCAL = 1 / 4.184;
 function getEnergyKcal(
   nutriments: OpenFoodFactsProduct["nutriments"]
 ): number {
-  // Try kcal fields first (preferred)
-  if (nutriments["energy-kcal_100g"]) return nutriments["energy-kcal_100g"];
-  if (nutriments["energy-kcal"]) return nutriments["energy-kcal"];
+  // Try kcal fields first (preferred) - use proper type checks to handle 0 values
+  const kcal100g = nutriments["energy-kcal_100g"];
+  if (typeof kcal100g === "number") return kcal100g;
 
-  // Convert from kJ if only kJ is available
-  const energyKj = nutriments.energy_100g ?? nutriments.energy;
-  if (energyKj) return Math.round(energyKj * KJ_TO_KCAL);
+  const kcal = nutriments["energy-kcal"];
+  if (typeof kcal === "number") return kcal;
+
+  // Try kJ-specific fields first, then generic kJ fields
+  const kj100g = nutriments["energy-kj_100g"];
+  if (typeof kj100g === "number") return Math.round(kj100g * KJ_TO_KCAL);
+
+  const kj = nutriments["energy-kj"];
+  if (typeof kj === "number") return Math.round(kj * KJ_TO_KCAL);
+
+  // Fallback to generic energy fields (usually kJ)
+  const energy100g = nutriments.energy_100g;
+  if (typeof energy100g === "number") return Math.round(energy100g * KJ_TO_KCAL);
+
+  const energy = nutriments.energy;
+  if (typeof energy === "number") return Math.round(energy * KJ_TO_KCAL);
 
   return 0;
 }
