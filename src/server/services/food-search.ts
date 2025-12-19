@@ -2,6 +2,13 @@ import { searchProducts, normalizeProduct } from "./open-food-facts";
 import { searchUSDA, normalizeUSDAProduct } from "./usda-food-data";
 import { getCachedResults, cacheResults } from "./search-cache";
 import { translateToEnglish, mightNeedTranslation } from "./translation";
+import {
+  searchLocalDatabase,
+  updatePopularity,
+  trackSearchDemand,
+  isLocalSearchEnabled,
+  getMinLocalResults,
+} from "./local-food-search";
 import type { FoodProduct, FoodSearchResult, TranslationInfo } from "@/types/food";
 
 // Keywords that indicate whole/fresh foods (prioritize USDA)
@@ -272,7 +279,39 @@ export async function searchFoods(
     }
   }
 
-  // Check cache first (only for page 1, using translated query)
+  const classification = classifyQuery(searchQuery);
+
+  // Step 2: Try local database first (if enabled)
+  if (isLocalSearchEnabled()) {
+    const localResult = await searchLocalDatabase(searchQuery, page, pageSize, {
+      wholeFoodsOnly: classification === "whole_food",
+    });
+
+    // If we have enough local results, use them
+    if (localResult.products.length >= getMinLocalResults()) {
+      // Update popularity for returned products
+      const sourceIds = localResult.products.map((p) => p.id);
+      updatePopularity(sourceIds).catch(console.error);
+
+      return {
+        products: localResult.products,
+        totalCount: localResult.totalCount,
+        page,
+        hasMore: localResult.totalCount > page * pageSize,
+        sources: {
+          usda: { count: 0 },
+          openFoodFacts: { count: 0 },
+        },
+        translationInfo,
+        fromLocal: true,
+      } as FoodSearchResult & { fromLocal?: boolean };
+    }
+
+    // Track this query for demand-based scraping
+    trackSearchDemand(searchQuery).catch(console.error);
+  }
+
+  // Step 3: Check cache (only for page 1, using translated query)
   if (page === 1) {
     const cached = await getCachedResults(searchQuery);
     if (cached) {
@@ -285,7 +324,7 @@ export async function searchFoods(
     }
   }
 
-  const classification = classifyQuery(searchQuery);
+  // Step 4: Fall back to live APIs
 
   // Determine which source to prioritize
   const prioritizeUSDA = classification === "whole_food";

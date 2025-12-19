@@ -428,3 +428,112 @@ model MealEstimationIngredient {
   @@index([estimationId])
 }
 
+// ============================================
+// Food Product Cache & Scraping Infrastructure
+// ============================================
+
+// Locally cached food products from external APIs
+model FoodProductCache {
+  id               String         @id @default(auto()) @map("_id") @db.ObjectId
+  sourceId         String         @unique // "off_{barcode}" or "usda_{fdcId}"
+  dataSource       FoodDataSource
+  barcode          String?
+  fdcId            Int?
+
+  // Product identification
+  name             String
+  nameLower        String // For case-insensitive search
+  brand            String?
+  brandLower       String?
+  imageUrl         String?
+  categories       String[]
+  isWholeFood      Boolean        @default(false)
+
+  // Per 100g nutritional data
+  caloriesPer100g  Float
+  proteinPer100g   Float
+  carbsPer100g     Float
+  fatPer100g       Float
+  fiberPer100g     Float          @default(0)
+  sugarPer100g     Float          @default(0)
+  sodiumPer100g    Float          @default(0)
+
+  // Serving info
+  servingSize      Float          @default(100)
+  servingUnit      String         @default("g")
+  servingSizeText  String         @default("100g")
+
+  // Metadata
+  popularity       Int            @default(0)
+  lastSearchedAt   DateTime?
+  scrapedAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+  hasCompleteNutrition Boolean    @default(false)
+  qualityScore     Int            @default(0)
+
+  @@index([nameLower])
+  @@index([brandLower])
+  @@index([dataSource])
+  @@index([popularity])
+  @@index([isWholeFood])
+  @@index([scrapedAt])
+}
+
+// Scraping job tracking
+model ScrapeJob {
+  id              String          @id @default(auto()) @map("_id") @db.ObjectId
+  dataSource      FoodDataSource
+  jobType         ScrapeJobType
+  status          ScrapeJobStatus
+  startedAt       DateTime        @default(now())
+  completedAt     DateTime?
+  lastCursor      String? // OFF: page number; USDA: last fdcId
+  productsScraped Int             @default(0)
+  productsUpdated Int             @default(0)
+  errorCount      Int             @default(0)
+  lastError       String?
+
+  @@index([dataSource, status])
+  @@index([startedAt])
+}
+
+// Scraping configuration per data source
+model ScrapeConfig {
+  id                   String         @id @default(auto()) @map("_id") @db.ObjectId
+  dataSource           FoodDataSource @unique
+  lastIncrementalSync  DateTime?
+  lastFullSync         DateTime?
+  enabled              Boolean        @default(true)
+  maxProductsPerRun    Int            @default(5000)
+  totalProducts        Int            @default(0)
+  updatedAt            DateTime       @updatedAt
+}
+
+// Track search queries that didn't find local results
+model SearchDemand {
+  id                  String   @id @default(auto()) @map("_id") @db.ObjectId
+  query               String
+  queryHash           String   @unique
+  hitCount            Int      @default(1)
+  lastSearched        DateTime @default(now())
+  scrapeAttempted     Boolean  @default(false)
+  scrapeFoundResults  Boolean?
+
+  @@index([hitCount])
+  @@index([scrapeAttempted])
+}
+
+enum ScrapeJobType {
+  INCREMENTAL
+  FULL
+  POPULAR
+  DEMAND
+}
+
+enum ScrapeJobStatus {
+  PENDING
+  RUNNING
+  COMPLETED
+  FAILED
+}
+
