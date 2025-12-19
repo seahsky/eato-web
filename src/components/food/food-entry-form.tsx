@@ -27,12 +27,14 @@ import type { FoodProduct } from "@/types/food";
 interface FoodEntryFormProps {
   product?: FoodProduct | null;
   defaultMealType?: string;
+  date?: string;
   onSuccess?: () => void;
 }
 
 export function FoodEntryForm({
   product,
   defaultMealType = "LUNCH",
+  date,
   onSuccess,
 }: FoodEntryFormProps) {
   const router = useRouter();
@@ -101,7 +103,7 @@ export function FoodEntryForm({
       servingSize,
       servingUnit: product?.servingUnit ?? "g",
       mealType: mealType as "BREAKFAST" | "LUNCH" | "DINNER" | "SNACK",
-      consumedAt: format(new Date(), "yyyy-MM-dd"),
+      consumedAt: date || format(new Date(), "yyyy-MM-dd"),
       isManualEntry: !product,
       dataSource: product?.dataSource ?? "MANUAL",
       openFoodFactsId: product?.dataSource === "OPEN_FOOD_FACTS" ? product.barcode ?? undefined : undefined,

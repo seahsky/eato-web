@@ -126,7 +126,7 @@ export function MealSection({
               </DropdownMenuContent>
             </DropdownMenu>
           )}
-          <Link href={`/log?meal=${mealType.toLowerCase()}`}>
+          <Link href={`/log?meal=${mealType.toLowerCase()}&date=${format(selectedDate, "yyyy-MM-dd")}`}>
             <Button size="icon" variant="ghost" className="h-8 w-8 rounded-full">
               <Plus className="w-4 h-4" />
             </Button>

@@ -40,12 +40,14 @@ interface Recipe {
 interface RecipeLogFormProps {
   recipe: Recipe;
   defaultMealType?: string;
+  date?: string;
   onSuccess?: () => void;
 }
 
 export function RecipeLogForm({
   recipe,
   defaultMealType = "LUNCH",
+  date,
   onSuccess,
 }: RecipeLogFormProps) {
   const router = useRouter();
@@ -90,7 +92,7 @@ export function RecipeLogForm({
       recipeId: recipe.id,
       consumedWeight,
       mealType: mealType as "BREAKFAST" | "LUNCH" | "DINNER" | "SNACK",
-      consumedAt: format(new Date(), "yyyy-MM-dd"),
+      consumedAt: date || format(new Date(), "yyyy-MM-dd"),
     });
   };
 

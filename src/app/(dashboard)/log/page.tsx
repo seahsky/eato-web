@@ -30,6 +30,7 @@ interface Recipe {
 function LogPageContent() {
   const searchParams = useSearchParams();
   const mealParam = searchParams.get("meal")?.toUpperCase() ?? "LUNCH";
+  const dateParam = searchParams.get("date") ?? undefined;
   const [selectedProduct, setSelectedProduct] = useState<FoodProduct | null>(null);
   const [selectedRecipe, setSelectedRecipe] = useState<Recipe | null>(null);
   const [activeTab, setActiveTab] = useState("search");
@@ -76,6 +77,7 @@ function LogPageContent() {
           <RecipeLogForm
             recipe={selectedRecipe}
             defaultMealType={mealParam}
+            date={dateParam}
             onSuccess={handleSuccess}
           />
         </motion.div>
@@ -107,6 +109,7 @@ function LogPageContent() {
             <FoodEntryForm
               product={selectedProduct}
               defaultMealType={mealParam}
+              date={dateParam}
               onSuccess={handleSuccess}
             />
           </motion.div>
