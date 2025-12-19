@@ -122,11 +122,11 @@ function CenterContent({
       >
         {over > 0 ? (
           <span className="text-xs font-medium text-destructive bg-destructive/10 px-2 py-1 rounded-full">
-            +{convertEnergy(over, energyUnit)} over
+            +{convertEnergy(over, energyUnit)} {getEnergyLabel(energyUnit)} over
           </span>
         ) : (
           <span className="text-xs font-medium text-success bg-success/10 px-2 py-1 rounded-full">
-            {convertEnergy(remaining, energyUnit)} remaining
+            {convertEnergy(remaining, energyUnit)} {getEnergyLabel(energyUnit)} remaining
           </span>
         )}
       </motion.div>

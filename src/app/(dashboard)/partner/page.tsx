@@ -59,7 +59,7 @@ function PartnerWeeklyStats({
           toggleable
           className="text-2xl font-bold"
         />
-        <p className="text-xs text-muted-foreground">Daily goal</p>
+        <p className="text-xs text-muted-foreground">Daily goal ({getEnergyLabel(energyUnit)})</p>
       </div>
     </div>
   );
