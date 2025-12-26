@@ -14,7 +14,7 @@ import {
 } from "@/components/ui/select";
 import { trpc } from "@/trpc/react";
 import { toast } from "sonner";
-import { Loader2, LogOut, Calculator, Target, Activity, Check, TrendingDown, TrendingUp, Minus } from "lucide-react";
+import { Loader2, LogOut, Calculator, Target, Activity, Check, TrendingDown, TrendingUp, Minus, Trophy, ChevronRight } from "lucide-react";
 import { motion } from "framer-motion";
 import { useClerk } from "@clerk/nextjs";
 import { ACTIVITY_LABELS } from "@/lib/bmr";
@@ -24,13 +24,21 @@ import { EnergyValue } from "@/components/ui/energy-value";
 import { useEnergyUnit } from "@/contexts/energy-context";
 import { getEnergyLabel, convertEnergy, convertToKcal, type EnergyUnit } from "@/lib/energy";
 import { NotificationSettings } from "@/components/notifications/notification-settings";
+import { StreakCounter } from "@/components/gamification/StreakCounter";
+import { BadgeShowcaseByCategory } from "@/components/gamification/BadgeShowcase";
 import type { ActivityLevel, Gender } from "@/lib/bmr";
+import type { BadgeCategory } from "@/lib/gamification/badges";
 
 export default function ProfilePage() {
   const { signOut } = useClerk();
   const utils = trpc.useUtils();
   const { data: profile, isLoading } = trpc.profile.get.useQuery();
   const { data: user } = trpc.auth.getMe.useQuery();
+  const { data: streakData } = trpc.stats.getStreakData.useQuery();
+  const { data: badgesByCategory } = trpc.achievements.getByCategory.useQuery();
+  const { data: achievementSummary } = trpc.achievements.getSummary.useQuery();
+
+  const [showAllBadges, setShowAllBadges] = useState(false);
   const { energyUnit, setEnergyUnit } = useEnergyUnit();
 
   const [age, setAge] = useState("");
@@ -203,6 +211,91 @@ export default function ProfilePage() {
                   <p className="text-xs text-muted-foreground">Goal ({getEnergyLabel(energyUnit)})</p>
                 </div>
               </div>
+            </CardContent>
+          </Card>
+        </motion.div>
+      )}
+
+      {/* Streak & Achievements Section */}
+      {(streakData || achievementSummary) && (
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.12 }}
+        >
+          <Card>
+            <CardHeader className="pb-3">
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <Trophy className="w-5 h-5 text-amber-500" />
+                  Achievements
+                </CardTitle>
+                {achievementSummary && (
+                  <span className="text-sm text-muted-foreground">
+                    {achievementSummary.badgeCount} / {achievementSummary.totalBadges}
+                  </span>
+                )}
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {/* Streak Display */}
+              {streakData && (
+                <div className="flex justify-center py-2">
+                  <StreakCounter
+                    currentStreak={streakData.currentStreak}
+                    flameSize={streakData.flameSize}
+                    streakFreezes={streakData.streakFreezes}
+                    nextMilestone={streakData.nextMilestone}
+                    milestoneProgress={streakData.milestoneProgress}
+                    streakAtRisk={streakData.streakAtRisk}
+                  />
+                </div>
+              )}
+
+              {/* Best Streaks */}
+              {achievementSummary && achievementSummary.longestStreak > 0 && (
+                <div className="flex justify-center gap-6 text-center text-sm">
+                  <div>
+                    <div className="font-semibold">{achievementSummary.currentStreak}</div>
+                    <div className="text-xs text-muted-foreground">Current</div>
+                  </div>
+                  <div>
+                    <div className="font-semibold">{achievementSummary.longestStreak}</div>
+                    <div className="text-xs text-muted-foreground">Best</div>
+                  </div>
+                </div>
+              )}
+
+              {/* Badges Preview / Full Display */}
+              {badgesByCategory && (
+                <>
+                  {showAllBadges ? (
+                    <div className="space-y-4">
+                      <BadgeShowcaseByCategory
+                        badgesByCategory={badgesByCategory as Record<BadgeCategory, Array<{ id: string; name: string; description: string; icon: string; requirement: string; rarity: string; category: BadgeCategory; unlocked: boolean; unlockedAt?: Date }>>}
+                      />
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="w-full"
+                        onClick={() => setShowAllBadges(false)}
+                      >
+                        Show Less
+                      </Button>
+                    </div>
+                  ) : (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="w-full flex items-center justify-center gap-1"
+                      onClick={() => setShowAllBadges(true)}
+                    >
+                      View All Badges
+                      <ChevronRight className="w-4 h-4" />
+                    </Button>
+                  )}
+                </>
+              )}
             </CardContent>
           </Card>
         </motion.div>

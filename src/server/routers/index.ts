@@ -6,6 +6,7 @@ import { statsRouter } from "./stats";
 import { recipeRouter } from "./recipe";
 import { notificationRouter } from "./notification";
 import { mealEstimationRouter } from "./meal-estimation";
+import { achievementsRouter } from "./achievements";
 
 export const appRouter = router({
   auth: authRouter,
@@ -15,6 +16,7 @@ export const appRouter = router({
   recipe: recipeRouter,
   notification: notificationRouter,
   mealEstimation: mealEstimationRouter,
+  achievements: achievementsRouter,
 });
 
 export type AppRouter = typeof appRouter;

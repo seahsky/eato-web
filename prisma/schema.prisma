@@ -42,6 +42,21 @@ model User {
 
   // Meal estimations
   mealEstimations      MealEstimation[]
+
+  // Gamification - Streak tracking
+  currentStreak        Int       @default(0)
+  longestStreak        Int       @default(0)
+  goalStreak           Int       @default(0)   // Consecutive days on goal
+  longestGoalStreak    Int       @default(0)
+  lastLogDate          DateTime?
+  streakFreezes        Int       @default(0)   // Max 2
+
+  // Gamification - Unlockables
+  unlockedTheme        String    @default("default")
+  avatarFrame          String    @default("none")
+
+  // Achievements
+  achievements         Achievement[]
 }
 
 // Profile for BMR calculation
@@ -535,5 +550,21 @@ enum ScrapeJobStatus {
   RUNNING
   COMPLETED
   FAILED
+}
+
+// ============================================
+// Gamification - Achievements
+// ============================================
+
+// User's unlocked achievements/badges
+model Achievement {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId      String   @db.ObjectId
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  badgeId     String   // e.g., "week_warrior", "first_bite", "meal_prepper"
+  unlockedAt  DateTime @default(now())
+
+  @@unique([userId, badgeId])
+  @@index([userId])
 }
 

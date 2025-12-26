@@ -6,6 +6,7 @@ import { MealSection } from "@/components/dashboard/meal-section";
 import { PartnerCard } from "@/components/dashboard/partner-card";
 import { PartnerDaySheet } from "@/components/partner/partner-day-sheet";
 import { NotificationPermissionBanner } from "@/components/notifications/notification-permission-banner";
+import { StreakCounter } from "@/components/gamification/StreakCounter";
 import { trpc } from "@/trpc/react";
 import { format } from "date-fns";
 import { motion } from "framer-motion";
@@ -32,6 +33,8 @@ export default function DashboardPage() {
   });
 
   const { data: pendingCount } = trpc.food.getPendingApprovalCount.useQuery();
+
+  const { data: streakData } = trpc.stats.getStreakData.useQuery();
 
   const isToday = format(selectedDate, "yyyy-MM-dd") === format(new Date(), "yyyy-MM-dd");
 
@@ -71,7 +74,7 @@ export default function DashboardPage() {
 
   return (
     <div className="p-4 space-y-6">
-      {/* Date Header */}
+      {/* Date Header with Streak */}
       <motion.div
         initial={{ opacity: 0, y: -10 }}
         animate={{ opacity: 1, y: 0 }}
@@ -85,16 +88,30 @@ export default function DashboardPage() {
         >
           <ChevronLeft className="w-5 h-5" />
         </Button>
-        <div className="text-center">
-          <button
-            onClick={goToToday}
-            className="flex items-center gap-2 hover:opacity-70 transition-opacity"
-          >
-            <CalendarDays className="w-4 h-4 text-muted-foreground" />
-            <h1 className="text-lg font-semibold font-serif">
-              {isToday ? "Today" : format(selectedDate, "EEE, MMM d")}
-            </h1>
-          </button>
+        <div className="text-center flex-1">
+          <div className="flex items-center justify-center gap-3">
+            <button
+              onClick={goToToday}
+              className="flex items-center gap-2 hover:opacity-70 transition-opacity"
+            >
+              <CalendarDays className="w-4 h-4 text-muted-foreground" />
+              <h1 className="text-lg font-semibold font-serif">
+                {isToday ? "Today" : format(selectedDate, "EEE, MMM d")}
+              </h1>
+            </button>
+            {streakData && streakData.currentStreak > 0 && (
+              <div className="flex items-center gap-1 bg-orange-500/10 px-2 py-0.5 rounded-full">
+                <StreakCounter
+                  currentStreak={streakData.currentStreak}
+                  flameSize={streakData.flameSize}
+                  streakFreezes={streakData.streakFreezes}
+                  nextMilestone={streakData.nextMilestone}
+                  milestoneProgress={streakData.milestoneProgress}
+                  compact
+                />
+              </div>
+            )}
+          </div>
           {!isToday && (
             <p className="text-xs text-muted-foreground">Tap to go to today</p>
           )}

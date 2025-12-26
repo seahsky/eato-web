@@ -1,6 +1,12 @@
 import { z } from "zod";
 import { router, protectedProcedure } from "../trpc";
 import { startOfDay, endOfDay, subDays, startOfWeek, endOfWeek } from "date-fns";
+import {
+  getFlameSize,
+  getNextMilestone,
+  getMilestoneProgress,
+  isStreakAtRisk,
+} from "@/lib/gamification/streaks";
 
 export const statsRouter = router({
   // Get daily summary
@@ -335,4 +341,79 @@ export const statsRouter = router({
         days,
       };
     }),
+
+  // Get user's streak data
+  getStreakData: protectedProcedure.query(async ({ ctx }) => {
+    const user = await ctx.prisma.user.findUnique({
+      where: { id: ctx.user.id },
+      select: {
+        currentStreak: true,
+        longestStreak: true,
+        goalStreak: true,
+        longestGoalStreak: true,
+        lastLogDate: true,
+        streakFreezes: true,
+      },
+    });
+
+    if (!user) {
+      return {
+        currentStreak: 0,
+        longestStreak: 0,
+        goalStreak: 0,
+        longestGoalStreak: 0,
+        streakFreezes: 0,
+        flameSize: "none" as const,
+        nextMilestone: 7,
+        milestoneProgress: 0,
+        streakAtRisk: false,
+      };
+    }
+
+    return {
+      currentStreak: user.currentStreak,
+      longestStreak: user.longestStreak,
+      goalStreak: user.goalStreak,
+      longestGoalStreak: user.longestGoalStreak,
+      streakFreezes: user.streakFreezes,
+      flameSize: getFlameSize(user.currentStreak),
+      nextMilestone: getNextMilestone(user.currentStreak),
+      milestoneProgress: getMilestoneProgress(user.currentStreak),
+      streakAtRisk: isStreakAtRisk(user.lastLogDate, user.currentStreak),
+    };
+  }),
+
+  // Get partner's streak data (for mutual achievements)
+  getPartnerStreakData: protectedProcedure.query(async ({ ctx }) => {
+    const user = await ctx.prisma.user.findUnique({
+      where: { id: ctx.user.id },
+      select: { partnerId: true },
+    });
+
+    if (!user?.partnerId) {
+      return null;
+    }
+
+    const partner = await ctx.prisma.user.findUnique({
+      where: { id: user.partnerId },
+      select: {
+        name: true,
+        currentStreak: true,
+        longestStreak: true,
+        goalStreak: true,
+      },
+    });
+
+    if (!partner) {
+      return null;
+    }
+
+    return {
+      partnerName: partner.name ?? "Partner",
+      currentStreak: partner.currentStreak,
+      longestStreak: partner.longestStreak,
+      goalStreak: partner.goalStreak,
+      flameSize: getFlameSize(partner.currentStreak),
+    };
+  }),
 });

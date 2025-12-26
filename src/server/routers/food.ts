@@ -7,6 +7,8 @@ import { searchFoods, searchFoodsFast } from "../services/food-search";
 import { hashQuery, cleanupExpiredCache } from "../services/search-cache";
 import { startOfDay, endOfDay } from "date-fns";
 import { notifyPartnerFoodLogged, notifyPartnerGoalReached } from "@/lib/notifications/triggers";
+import { calculateStreakUpdate } from "@/lib/gamification/streaks";
+import { getStreakBadgesToUnlock } from "@/lib/gamification/badges";
 
 const foodEntrySchema = z.object({
   name: z.string().min(1),
@@ -207,14 +209,67 @@ export const foodRouter = router({
         },
       });
 
-      // Send push notifications (async, don't block the response)
-      const userWithPartner = await ctx.prisma.user.findUnique({
+      // Update user's streak (async, don't block the response)
+      const userData = await ctx.prisma.user.findUnique({
         where: { id: ctx.user.id },
         select: {
+          currentStreak: true,
+          longestStreak: true,
+          goalStreak: true,
+          longestGoalStreak: true,
+          lastLogDate: true,
+          streakFreezes: true,
+          achievements: { select: { badgeId: true } },
           name: true,
           partnerId: true,
         },
       });
+
+      if (userData) {
+        const streakResult = calculateStreakUpdate(
+          {
+            currentStreak: userData.currentStreak,
+            longestStreak: userData.longestStreak,
+            goalStreak: userData.goalStreak,
+            longestGoalStreak: userData.longestGoalStreak,
+            lastLogDate: userData.lastLogDate,
+            streakFreezes: userData.streakFreezes,
+          },
+          consumedAt
+        );
+
+        // Update user streak data
+        await ctx.prisma.user.update({
+          where: { id: ctx.user.id },
+          data: {
+            currentStreak: streakResult.newStreak,
+            longestStreak: streakResult.longestStreak,
+            streakFreezes: streakResult.freezesRemaining,
+            lastLogDate: consumedAt,
+          },
+        });
+
+        // Check for new badges to unlock based on streak
+        const unlockedBadgeIds = userData.achievements.map((a) => a.badgeId);
+        const newBadges = getStreakBadgesToUnlock(streakResult.newStreak, unlockedBadgeIds);
+
+        // Create achievement records for new badges (one at a time to handle duplicates)
+        for (const badgeId of newBadges) {
+          try {
+            await ctx.prisma.achievement.create({
+              data: {
+                userId: ctx.user.id,
+                badgeId,
+              },
+            });
+          } catch {
+            // Ignore duplicate key errors
+          }
+        }
+      }
+
+      // Send push notifications (async, don't block the response)
+      const userWithPartner = userData;
 
       if (userWithPartner?.partnerId) {
         // Notify partner about food logged (fire and forget)
