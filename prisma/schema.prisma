@@ -380,7 +380,7 @@ model MealEstimation {
   totalGrams      Float
 
   // Optional link to logged FoodEntry
-  foodEntryId     String?   @db.ObjectId @unique
+  foodEntryId     String?   @db.ObjectId
 
   ingredients     MealEstimationIngredient[]
 

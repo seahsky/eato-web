@@ -7,7 +7,12 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "generate-icons": "node scripts/generate-icons.mjs"
+    "generate-icons": "node scripts/generate-icons.mjs",
+    "prisma": "dotenv -e .env.local -- npx prisma",
+    "prisma:generate": "dotenv -e .env.local -- npx prisma generate",
+    "prisma:push": "dotenv -e .env.local -- npx prisma db push",
+    "prisma:studio": "dotenv -e .env.local -- npx prisma studio",
+    "postinstall": "prisma generate"
   },
   "dependencies": {
     "@clerk/nextjs": "^6.36.1",
@@ -60,6 +65,7 @@
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "@types/web-push": "^3.6.4",
+    "dotenv-cli": "^11.0.0",
     "eslint": "^9",
     "eslint-config-next": "16.0.8",
     "prisma": "^5.22.0",
