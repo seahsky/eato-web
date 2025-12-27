@@ -63,13 +63,11 @@ interface FatSecretSearchFood {
 }
 
 interface FatSecretSearchResponse {
-  foods_search?: {
+  foods?: {
     max_results: string;
     total_results: string;
     page_number: string;
-    results?: {
-      food: FatSecretSearchFood | FatSecretSearchFood[];
-    };
+    food?: FatSecretSearchFood | FatSecretSearchFood[];
   };
 }
 
@@ -353,24 +351,24 @@ export async function searchProducts(
   pageSize = 20
 ): Promise<SearchResult> {
   try {
-    const response = await fatSecretRequest<FatSecretSearchResponse>("foods.search.v3", {
+    const response = await fatSecretRequest<FatSecretSearchResponse>("foods.search", {
       search_expression: query,
       page_number: String(page - 1), // FatSecret uses 0-based pagination
       max_results: String(Math.min(pageSize, 50)), // Max 50 per API docs
     });
 
-    if (!response.foods_search?.results?.food) {
+    if (!response.foods?.food) {
       return { products: [], totalCount: 0, page };
     }
 
-    const foods = response.foods_search.results.food;
+    const foods = response.foods.food;
     const foodArray = Array.isArray(foods) ? foods : [foods];
 
     const products = foodArray.map(normalizeSearchFood);
 
     return {
       products,
-      totalCount: parseInt(response.foods_search.total_results, 10) || 0,
+      totalCount: parseInt(response.foods.total_results, 10) || 0,
       page,
     };
   } catch (error) {
