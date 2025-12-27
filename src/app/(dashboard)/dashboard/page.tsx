@@ -1,6 +1,7 @@
 "use client";
 
 import { ProgressRing } from "@/components/dashboard/progress-ring";
+import { DualProgressRing } from "@/components/dashboard/dual-progress-ring";
 import { MacroCard } from "@/components/dashboard/macro-card";
 import { MealSection } from "@/components/dashboard/meal-section";
 import { PartnerCard } from "@/components/dashboard/partner-card";
@@ -35,6 +36,10 @@ export default function DashboardPage() {
   const { data: pendingCount } = trpc.food.getPendingApprovalCount.useQuery();
 
   const { data: streakData } = trpc.stats.getStreakData.useQuery();
+
+  const { data: partnerStreakData } = trpc.stats.getPartnerStreakData.useQuery(undefined, {
+    enabled: !!partnerSummary,
+  });
 
   const isToday = format(selectedDate, "yyyy-MM-dd") === format(new Date(), "yyyy-MM-dd");
 
@@ -107,6 +112,8 @@ export default function DashboardPage() {
                   streakFreezes={streakData.streakFreezes}
                   nextMilestone={streakData.nextMilestone}
                   milestoneProgress={streakData.milestoneProgress}
+                  partnerStreak={partnerStreakData?.currentStreak}
+                  showDuoMode={!!partnerStreakData}
                   compact
                 />
               </div>
@@ -152,17 +159,31 @@ export default function DashboardPage() {
       {/* Notification Permission Banner */}
       <NotificationPermissionBanner />
 
-      {/* Progress Ring */}
+      {/* Progress Ring - Dual when partner exists */}
       <motion.div
         className="flex justify-center py-4"
         initial={{ scale: 0.8, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
         transition={{ duration: 0.5 }}
       >
-        <ProgressRing
-          current={summary?.totalCalories ?? 0}
-          goal={summary?.calorieGoal ?? 2000}
-        />
+        {partnerSummary ? (
+          <DualProgressRing
+            userProgress={{
+              current: summary?.totalCalories ?? 0,
+              goal: summary?.calorieGoal ?? 2000,
+            }}
+            partnerProgress={{
+              current: partnerSummary.totalCalories,
+              goal: partnerSummary.calorieGoal,
+              name: partnerSummary.partnerName,
+            }}
+          />
+        ) : (
+          <ProgressRing
+            current={summary?.totalCalories ?? 0}
+            goal={summary?.calorieGoal ?? 2000}
+          />
+        )}
       </motion.div>
 
       {/* Setup Profile Reminder */}
@@ -215,6 +236,13 @@ export default function DashboardPage() {
             partnerName={partnerSummary.partnerName}
             totalCalories={partnerSummary.totalCalories}
             calorieGoal={partnerSummary.calorieGoal}
+            userCalories={summary?.totalCalories ?? 0}
+            userGoal={summary?.calorieGoal ?? 2000}
+            partnerLoggedToday={
+              Object.values(partnerSummary.entriesByMeal).some(
+                (entries) => entries.length > 0
+              )
+            }
             onClick={() => setPartnerSheetOpen(true)}
           />
           <PartnerDaySheet

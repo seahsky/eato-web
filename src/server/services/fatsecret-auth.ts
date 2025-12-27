@@ -40,14 +40,21 @@ export async function getAccessToken(): Promise<string> {
   // Encode credentials for Basic auth
   const credentials = Buffer.from(`${clientId}:${clientSecret}`).toString("base64");
 
+  // Use URLSearchParams for proper encoding
+  // Default to "basic" scope; Premier users can set FATSECRET_SCOPE="basic barcode"
+  const scope = process.env.FATSECRET_SCOPE || "basic";
+  const body = new URLSearchParams({
+    grant_type: "client_credentials",
+    scope,
+  });
+
   const response = await fetch(TOKEN_ENDPOINT, {
     method: "POST",
     headers: {
       Authorization: `Basic ${credentials}`,
       "Content-Type": "application/x-www-form-urlencoded",
     },
-    // Request both basic and barcode scopes
-    body: "grant_type=client_credentials&scope=basic barcode",
+    body: body.toString(),
   });
 
   if (!response.ok) {

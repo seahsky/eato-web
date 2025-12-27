@@ -15,6 +15,9 @@ interface StreakCounterProps {
   streakAtRisk?: boolean;
   compact?: boolean;
   className?: string;
+  // Partner props for duo mode
+  partnerStreak?: number;
+  showDuoMode?: boolean;
 }
 
 const flameSizeConfig: Record<
@@ -28,6 +31,21 @@ const flameSizeConfig: Record<
   epic: { scale: 1.6, glowIntensity: 1, colors: ["#a855f7", "#ec4899", "#f97316"] },
 };
 
+// Duo flame colors (terracotta to sage gradient)
+const duoFlameConfig = {
+  small: { scale: 1.1, glowIntensity: 0.4, colors: ["#c9553d", "#4d8b6f"] },
+  medium: { scale: 1.3, glowIntensity: 0.6, colors: ["#c9553d", "#dc7a3d", "#4d8b6f"] },
+  large: { scale: 1.5, glowIntensity: 0.8, colors: ["#c9553d", "#f97316", "#22c55e", "#4d8b6f"] },
+  epic: { scale: 1.7, glowIntensity: 1, colors: ["#a855f7", "#c9553d", "#22c55e", "#4d8b6f"] },
+};
+
+function getDuoConfig(duoStreak: number): { scale: number; glowIntensity: number; colors: string[] } {
+  if (duoStreak < 7) return duoFlameConfig.small;
+  if (duoStreak < 30) return duoFlameConfig.medium;
+  if (duoStreak < 90) return duoFlameConfig.large;
+  return duoFlameConfig.epic;
+}
+
 export function StreakCounter({
   currentStreak,
   flameSize,
@@ -37,23 +55,33 @@ export function StreakCounter({
   streakAtRisk = false,
   compact = false,
   className,
+  partnerStreak,
+  showDuoMode = false,
 }: StreakCounterProps) {
   const config = flameSizeConfig[flameSize];
   const hasStreak = currentStreak > 0;
+  const hasDuoStreak = showDuoMode && partnerStreak !== undefined && partnerStreak > 0 && currentStreak > 0;
+  const duoStreak = hasDuoStreak ? Math.min(currentStreak, partnerStreak!) : 0;
 
   if (compact) {
     return (
       <div className={cn("flex items-center gap-1.5", className)}>
         <FlameIcon
           flameSize={flameSize}
-          config={config}
+          config={hasDuoStreak ? getDuoConfig(duoStreak) : config}
           hasStreak={hasStreak}
           streakAtRisk={streakAtRisk}
           size={20}
+          isDuo={hasDuoStreak}
         />
         <span className="font-semibold text-sm tabular-nums">
           {currentStreak}
         </span>
+        {hasDuoStreak && (
+          <span className="text-xs text-muted-foreground">
+            (duo: {duoStreak})
+          </span>
+        )}
       </div>
     );
   }
@@ -146,14 +174,16 @@ function FlameIcon({
   hasStreak,
   streakAtRisk,
   size,
+  isDuo = false,
 }: {
   flameSize: FlameSize;
-  config: typeof flameSizeConfig[FlameSize];
+  config: { scale: number; glowIntensity: number; colors: string[] };
   hasStreak: boolean;
   streakAtRisk: boolean;
   size: number;
+  isDuo?: boolean;
 }) {
-  const gradientId = `flame-gradient-${flameSize}`;
+  const gradientId = `flame-gradient-${flameSize}${isDuo ? "-duo" : ""}`;
 
   return (
     <motion.div
