@@ -26,6 +26,8 @@ import { getEnergyLabel, convertEnergy, convertToKcal, type EnergyUnit } from "@
 import { NotificationSettings } from "@/components/notifications/notification-settings";
 import { StreakCounter } from "@/components/gamification/StreakCounter";
 import { BadgeShowcaseByCategory } from "@/components/gamification/BadgeShowcase";
+import { JointBadgeConstellation, JointBadgePreview } from "@/components/gamification/JointBadgeConstellation";
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import type { ActivityLevel, Gender } from "@/lib/bmr";
 import type { BadgeCategory } from "@/lib/gamification/badges";
 
@@ -37,8 +39,10 @@ export default function ProfilePage() {
   const { data: streakData } = trpc.stats.getStreakData.useQuery();
   const { data: badgesByCategory } = trpc.achievements.getByCategory.useQuery();
   const { data: achievementSummary } = trpc.achievements.getSummary.useQuery();
+  const { data: partnerAchievements } = trpc.achievements.getPartnerAchievements.useQuery();
 
   const [showAllBadges, setShowAllBadges] = useState(false);
+  const [showJointBadges, setShowJointBadges] = useState(false);
   const { energyUnit, setEnergyUnit } = useEnergyUnit();
 
   const [age, setAge] = useState("");
@@ -264,6 +268,17 @@ export default function ProfilePage() {
                     <div className="text-xs text-muted-foreground">Best</div>
                   </div>
                 </div>
+              )}
+
+              {/* Joint Badge Preview (only if partner exists) */}
+              {partnerAchievements && (
+                <JointBadgePreview
+                  userCount={partnerAchievements.userCount}
+                  partnerCount={partnerAchievements.partnerCount}
+                  sharedCount={partnerAchievements.sharedCount}
+                  partnerName={partnerAchievements.partnerName}
+                  onClick={() => setShowJointBadges(true)}
+                />
               )}
 
               {/* Badges Preview / Full Display */}
@@ -511,6 +526,24 @@ export default function ProfilePage() {
       >
         <NotificationSettings />
       </motion.div>
+
+      {/* Joint Badge Constellation Sheet */}
+      {partnerAchievements && (
+        <Sheet open={showJointBadges} onOpenChange={setShowJointBadges}>
+          <SheetContent side="bottom" className="h-[85vh] rounded-t-3xl">
+            <SheetHeader className="pb-4">
+              <SheetTitle className="text-center">Joint Achievements</SheetTitle>
+            </SheetHeader>
+            <div className="overflow-y-auto h-[calc(100%-60px)] pb-8">
+              <JointBadgeConstellation
+                userAchievements={partnerAchievements.userAchievements}
+                partnerAchievements={partnerAchievements.partnerAchievements}
+                partnerName={partnerAchievements.partnerName}
+              />
+            </div>
+          </SheetContent>
+        </Sheet>
+      )}
     </div>
   );
 }

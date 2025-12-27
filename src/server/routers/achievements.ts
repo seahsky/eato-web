@@ -128,4 +128,55 @@ export const achievementsRouter = router({
       longestStreak: user?.longestStreak ?? 0,
     };
   }),
+
+  // Get partner's achievements for joint badge view
+  getPartnerAchievements: protectedProcedure.query(async ({ ctx }) => {
+    // Get current user to find partner
+    const user = await ctx.prisma.user.findUnique({
+      where: { id: ctx.user.id },
+      select: { partnerId: true },
+    });
+
+    if (!user?.partnerId) {
+      return null;
+    }
+
+    // Get partner info
+    const partner = await ctx.prisma.user.findUnique({
+      where: { id: user.partnerId },
+      select: { name: true },
+    });
+
+    // Get partner's achievements
+    const partnerAchievements = await ctx.prisma.achievement.findMany({
+      where: { userId: user.partnerId },
+      orderBy: { unlockedAt: "desc" },
+    });
+
+    // Get user's achievements for comparison
+    const userAchievements = await ctx.prisma.achievement.findMany({
+      where: { userId: ctx.user.id },
+      orderBy: { unlockedAt: "desc" },
+    });
+
+    // Calculate shared count
+    const userBadgeIds = new Set(userAchievements.map((a) => a.badgeId));
+    const partnerBadgeIds = new Set(partnerAchievements.map((a) => a.badgeId));
+    const sharedCount = [...userBadgeIds].filter((id) => partnerBadgeIds.has(id)).length;
+
+    return {
+      partnerName: partner?.name ?? "Partner",
+      userAchievements: userAchievements.map((a) => ({
+        badgeId: a.badgeId,
+        unlockedAt: a.unlockedAt,
+      })),
+      partnerAchievements: partnerAchievements.map((a) => ({
+        badgeId: a.badgeId,
+        unlockedAt: a.unlockedAt,
+      })),
+      userCount: userAchievements.length,
+      partnerCount: partnerAchievements.length,
+      sharedCount,
+    };
+  }),
 });

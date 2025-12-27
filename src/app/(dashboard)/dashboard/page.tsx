@@ -8,13 +8,14 @@ import { PartnerCard } from "@/components/dashboard/partner-card";
 import { PartnerDaySheet } from "@/components/partner/partner-day-sheet";
 import { NotificationPermissionBanner } from "@/components/notifications/notification-permission-banner";
 import { StreakCounter } from "@/components/gamification/StreakCounter";
+import { JointCelebration, useJointCelebration } from "@/components/gamification/JointCelebration";
 import { trpc } from "@/trpc/react";
 import { format } from "date-fns";
 import { motion } from "framer-motion";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ChevronLeft, ChevronRight, CalendarDays, Bell } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { calculateMacroTargets } from "@/lib/bmr";
 import Link from "next/link";
 import { Card, CardContent } from "@/components/ui/card";
@@ -22,6 +23,13 @@ import { Card, CardContent } from "@/components/ui/card";
 export default function DashboardPage() {
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [partnerSheetOpen, setPartnerSheetOpen] = useState(false);
+
+  // Joint celebration hook
+  const {
+    showCelebration,
+    setShowCelebration,
+    checkAndShowCelebration,
+  } = useJointCelebration();
 
   const { data: user } = trpc.auth.getMe.useQuery();
 
@@ -42,6 +50,21 @@ export default function DashboardPage() {
   });
 
   const isToday = format(selectedDate, "yyyy-MM-dd") === format(new Date(), "yyyy-MM-dd");
+
+  // Check for joint celebration trigger (only on today's data)
+  useEffect(() => {
+    if (!isToday || !summary || !partnerSummary) return;
+
+    const userOnGoal = summary.totalCalories > 0 && summary.totalCalories <= summary.calorieGoal;
+    const partnerOnGoal =
+      partnerSummary.totalCalories > 0 &&
+      partnerSummary.totalCalories <= partnerSummary.calorieGoal;
+
+    // Only trigger if both have logged something and are on goal
+    if (userOnGoal && partnerOnGoal) {
+      checkAndShowCelebration(userOnGoal, partnerOnGoal);
+    }
+  }, [summary, partnerSummary, isToday, checkAndShowCelebration]);
 
   const goToPrevDay = () => {
     setSelectedDate(new Date(selectedDate.getTime() - 24 * 60 * 60 * 1000));
@@ -298,6 +321,16 @@ export default function DashboardPage() {
           currentUserId={user?.id}
         />
       </div>
+
+      {/* Joint Celebration Dialog */}
+      {partnerSummary && (
+        <JointCelebration
+          open={showCelebration}
+          onOpenChange={setShowCelebration}
+          userName={user?.name ?? "You"}
+          partnerName={partnerSummary.partnerName}
+        />
+      )}
     </div>
   );
 }
