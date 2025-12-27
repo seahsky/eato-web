@@ -6,6 +6,9 @@ import type { FoodProductCache } from "@prisma/client";
 // Minimum local results before falling back to API
 const MIN_LOCAL_RESULTS = parseInt(process.env.LOCAL_SEARCH_MIN_RESULTS || "10", 10);
 
+// Track if we've attempted to set up the text index (lazy initialization)
+let indexSetupAttempted = false;
+
 export interface LocalSearchResult {
   products: FoodProduct[];
   totalCount: number;
@@ -111,6 +114,24 @@ export async function searchLocalDatabase(
       fromLocal: true,
     };
   } catch (error) {
+    // Check if this is a text index error and we haven't tried to create it yet
+    if (
+      !indexSetupAttempted &&
+      error instanceof Error &&
+      error.message.includes("text index required")
+    ) {
+      indexSetupAttempted = true;
+      console.log("[LocalSearch] Text index missing, creating it now...");
+
+      try {
+        await setupTextIndexes();
+        // Retry the search after creating the index
+        return searchLocalDatabase(query, page, pageSize, options);
+      } catch (setupError) {
+        console.error("[LocalSearch] Failed to create text index:", setupError);
+      }
+    }
+
     console.error("[LocalSearch] Text search failed:", error);
     // Return empty result on error
     return { products: [], totalCount: 0, fromLocal: true };
