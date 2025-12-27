@@ -15,6 +15,10 @@ export interface RateLimitConfig {
 }
 
 const RATE_LIMITS: Record<FoodDataSource, RateLimitConfig> = {
+  FATSECRET: {
+    requestsPerSecond: 10,
+    delayBetweenRequests: 100,
+  },
   OPEN_FOOD_FACTS: {
     requestsPerSecond: 5,
     delayBetweenRequests: 200,

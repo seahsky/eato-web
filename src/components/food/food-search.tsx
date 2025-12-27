@@ -239,11 +239,7 @@ export function FoodSearch({ onSelect, defaultMealType = "LUNCH" }: FoodSearchPr
                   />
                 ) : (
                   <div className="w-14 h-14 rounded-lg bg-muted flex items-center justify-center">
-                    {product.dataSource === "USDA" ? (
-                      <span className="text-[10px] font-medium text-green-600">USDA</span>
-                    ) : (
-                      <span className="text-xs text-muted-foreground">No img</span>
-                    )}
+                    <span className="text-xs text-muted-foreground">No img</span>
                   </div>
                 )}
                 <div className="flex-1 min-w-0">
@@ -254,15 +250,11 @@ export function FoodSearch({ onSelect, defaultMealType = "LUNCH" }: FoodSearchPr
                         {product.brand}
                       </span>
                     )}
-                    <span
-                      className={`text-[9px] px-1.5 py-0.5 rounded font-medium shrink-0 ${
-                        product.dataSource === "USDA"
-                          ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400"
-                          : "bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400"
-                      }`}
-                    >
-                      {product.dataSource === "USDA" ? "USDA" : "OFF"}
-                    </span>
+                    {product.dataSource === "FATSECRET" && (
+                      <span className="text-[9px] px-1.5 py-0.5 rounded font-medium shrink-0 bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400">
+                        FS
+                      </span>
+                    )}
                   </div>
                   <p className="text-xs text-primary font-medium mt-0.5">
                     <EnergyValue kcal={product.caloriesPer100g} toggleable /> / 100g

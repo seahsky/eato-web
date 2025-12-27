@@ -1,8 +1,7 @@
 import { z } from "zod";
 import { router, protectedProcedure } from "../trpc";
 import { TRPCError } from "@trpc/server";
-import { getProductByBarcode, normalizeProduct } from "../services/open-food-facts";
-import { getUSDAFoodById, normalizeUSDAProduct } from "../services/usda-food-data";
+import { getProductByBarcode, getProductById } from "../services/fatsecret";
 import { searchFoods, searchFoodsFast } from "../services/food-search";
 import { hashQuery, cleanupExpiredCache } from "../services/search-cache";
 import { startOfDay, endOfDay } from "date-fns";
@@ -27,7 +26,9 @@ const foodEntrySchema = z.object({
   mealType: z.enum(["BREAKFAST", "LUNCH", "DINNER", "SNACK"]),
   consumedAt: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Date must be in YYYY-MM-DD format"),
   isManualEntry: z.boolean().default(false),
-  dataSource: z.enum(["OPEN_FOOD_FACTS", "USDA", "MANUAL"]).default("MANUAL"),
+  dataSource: z.enum(["FATSECRET", "MANUAL", "OPEN_FOOD_FACTS", "USDA"]).default("MANUAL"),
+  fatSecretId: z.string().optional(),
+  // Legacy fields for backward compatibility
   openFoodFactsId: z.string().optional(),
   usdaFdcId: z.number().optional(),
   forPartnerId: z.string().optional(),
@@ -97,7 +98,7 @@ export const foodRouter = router({
       });
     }),
 
-  // Get product by barcode (Open Food Facts only)
+  // Get product by barcode (FatSecret)
   getByBarcode: protectedProcedure
     .input(z.object({ barcode: z.string() }))
     .query(async ({ input }) => {
@@ -108,27 +109,21 @@ export const foodRouter = router({
           message: "Product not found",
         });
       }
-      const normalized = normalizeProduct(product);
-      return {
-        ...normalized,
-        id: `off_${product.code}`,
-        dataSource: "OPEN_FOOD_FACTS" as const,
-        fdcId: null,
-      };
+      return product;
     }),
 
-  // Get USDA food by FDC ID
-  getByFdcId: protectedProcedure
-    .input(z.object({ fdcId: z.number() }))
+  // Get FatSecret food by food_id
+  getByFatSecretId: protectedProcedure
+    .input(z.object({ foodId: z.string() }))
     .query(async ({ input }) => {
-      const food = await getUSDAFoodById(input.fdcId);
+      const food = await getProductById(input.foodId);
       if (!food) {
         throw new TRPCError({
           code: "NOT_FOUND",
-          message: "USDA food not found",
+          message: "Food not found",
         });
       }
-      return normalizeUSDAProduct(food);
+      return food;
     }),
 
   // Log food entry
@@ -712,7 +707,10 @@ export const foodRouter = router({
           mealType: entry.mealType,
           consumedAt: entry.consumedAt,
           isManualEntry: entry.isManualEntry,
+          dataSource: entry.dataSource,
+          fatSecretId: entry.fatSecretId,
           openFoodFactsId: entry.openFoodFactsId,
+          usdaFdcId: entry.usdaFdcId,
           recipeId: entry.recipeId,
         })),
       });
@@ -752,6 +750,7 @@ export const foodRouter = router({
         servingUnit: true,
         consumedAt: true,
         dataSource: true,
+        fatSecretId: true,
         openFoodFactsId: true,
         usdaFdcId: true,
       },
@@ -781,12 +780,15 @@ export const foodRouter = router({
         const caloriesPer100g =
           entry.servingSize > 0 ? (entry.calories / entry.servingSize) * 100 : entry.calories;
         return {
-          id: entry.openFoodFactsId
-            ? `off_${entry.openFoodFactsId}`
-            : entry.usdaFdcId
-              ? `usda_${entry.usdaFdcId}`
-              : `manual_${entry.name}`,
+          id: entry.fatSecretId
+            ? `fs_${entry.fatSecretId}`
+            : entry.openFoodFactsId
+              ? `off_${entry.openFoodFactsId}`
+              : entry.usdaFdcId
+                ? `usda_${entry.usdaFdcId}`
+                : `manual_${entry.name}`,
           dataSource: entry.dataSource,
+          fatSecretId: entry.fatSecretId,
           barcode: entry.barcode,
           fdcId: entry.usdaFdcId,
           name: entry.name,
@@ -852,6 +854,7 @@ export const foodRouter = router({
         servingUnit: true,
         consumedAt: true,
         dataSource: true,
+        fatSecretId: true,
         openFoodFactsId: true,
         usdaFdcId: true,
       },
@@ -889,12 +892,15 @@ export const foodRouter = router({
         const caloriesPer100g =
           entry.servingSize > 0 ? (entry.calories / entry.servingSize) * 100 : entry.calories;
         return {
-          id: entry.openFoodFactsId
-            ? `off_${entry.openFoodFactsId}`
-            : entry.usdaFdcId
-              ? `usda_${entry.usdaFdcId}`
-              : `manual_${entry.name}`,
+          id: entry.fatSecretId
+            ? `fs_${entry.fatSecretId}`
+            : entry.openFoodFactsId
+              ? `off_${entry.openFoodFactsId}`
+              : entry.usdaFdcId
+                ? `usda_${entry.usdaFdcId}`
+                : `manual_${entry.name}`,
           dataSource: entry.dataSource,
+          fatSecretId: entry.fatSecretId,
           barcode: entry.barcode,
           fdcId: entry.usdaFdcId,
           name: entry.name,
@@ -941,12 +947,15 @@ export const foodRouter = router({
     });
 
     return favorites.map((fav) => ({
-      id: fav.openFoodFactsId
-        ? `off_${fav.openFoodFactsId}`
-        : fav.usdaFdcId
-          ? `usda_${fav.usdaFdcId}`
-          : `manual_${fav.name}`,
+      id: fav.fatSecretId
+        ? `fs_${fav.fatSecretId}`
+        : fav.openFoodFactsId
+          ? `off_${fav.openFoodFactsId}`
+          : fav.usdaFdcId
+            ? `usda_${fav.usdaFdcId}`
+            : `manual_${fav.name}`,
       dataSource: fav.dataSource,
+      fatSecretId: fav.fatSecretId,
       barcode: fav.barcode,
       fdcId: fav.usdaFdcId,
       name: fav.name,
@@ -983,9 +992,10 @@ export const foodRouter = router({
         fiberPer100g: z.number().default(0),
         sugarPer100g: z.number().default(0),
         sodiumPer100g: z.number().default(0),
-        dataSource: z.enum(["OPEN_FOOD_FACTS", "USDA", "MANUAL"]),
-        openFoodFactsId: z.string().nullable(),
-        usdaFdcId: z.number().nullable(),
+        dataSource: z.enum(["FATSECRET", "MANUAL", "OPEN_FOOD_FACTS", "USDA"]),
+        fatSecretId: z.string().nullable().optional(),
+        openFoodFactsId: z.string().nullable().optional(),
+        usdaFdcId: z.number().nullable().optional(),
         defaultServingSize: z.number().default(100),
         defaultServingUnit: z.string().default("g"),
       })
@@ -1025,6 +1035,7 @@ export const foodRouter = router({
             sugarPer100g: input.sugarPer100g,
             sodiumPer100g: input.sodiumPer100g,
             dataSource: input.dataSource,
+            fatSecretId: input.fatSecretId,
             openFoodFactsId: input.openFoodFactsId,
             usdaFdcId: input.usdaFdcId,
             defaultServingSize: input.defaultServingSize,

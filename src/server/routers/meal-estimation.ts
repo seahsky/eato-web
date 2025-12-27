@@ -12,7 +12,7 @@ const ingredientSchema = z.object({
   matchedProductId: z.string().nullable(),
   matchedProductName: z.string().nullable(),
   matchedProductBrand: z.string().nullable(),
-  dataSource: z.enum(["OPEN_FOOD_FACTS", "USDA", "MANUAL"]).nullable(),
+  dataSource: z.enum(["FATSECRET", "MANUAL", "OPEN_FOOD_FACTS", "USDA"]).nullable(),
   caloriesPer100g: z.number().nullable(),
   proteinPer100g: z.number().nullable(),
   carbsPer100g: z.number().nullable(),

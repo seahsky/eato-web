@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from "next/server";
-import { OFFScraper, USDAcraper } from "@/server/services/scrapers";
 import { getLocalCacheStats, setupTextIndexes } from "@/server/services/local-food-search";
 import { prisma } from "@/lib/prisma";
 
@@ -7,20 +6,16 @@ import { prisma } from "@/lib/prisma";
 const CRON_SECRET = process.env.CRON_SECRET;
 
 /**
- * Manual trigger for scraping operations
+ * Cache status and management endpoint
  *
- * GET /api/cron/scrape - Get scrape status and stats
- * POST /api/cron/scrape - Trigger a scrape job
+ * Note: With FatSecret as the primary API, scraping is no longer needed.
+ * This endpoint now handles cache stats and text index setup.
+ *
+ * GET /api/cron/scrape - Get cache status and stats
+ * POST /api/cron/scrape - Administrative actions (setup-indexes)
  *
  * Headers:
  *   Authorization: Bearer <CRON_SECRET>
- *
- * POST body:
- *   {
- *     "source": "off" | "usda" | "both",
- *     "maxProducts": number (optional, default 5000),
- *     "jobType": "INCREMENTAL" | "FULL" (optional, default "INCREMENTAL")
- *   }
  */
 export async function GET(req: NextRequest) {
   // Verify authorization
@@ -58,13 +53,11 @@ export async function GET(req: NextRequest) {
       recentJobs,
       config: {
         localSearchEnabled: process.env.ENABLE_LOCAL_SEARCH === "true",
-        offEnabled: process.env.SCRAPE_OFF_ENABLED !== "false",
-        usdaEnabled: process.env.SCRAPE_USDA_ENABLED !== "false",
-        maxProductsPerRun: process.env.SCRAPE_MAX_PRODUCTS_PER_RUN || "5000",
+        primaryAPI: "FatSecret",
       },
     });
   } catch (error) {
-    console.error("[Scrape API] Error getting stats:", error);
+    console.error("[Cache API] Error getting stats:", error);
     return NextResponse.json(
       { error: error instanceof Error ? error.message : "Internal error" },
       { status: 500 }
@@ -83,55 +76,36 @@ export async function POST(req: NextRequest) {
 
   try {
     const body = await req.json();
-    const { source, maxProducts, jobType, action } = body as {
-      source?: "off" | "usda" | "both";
-      maxProducts?: number;
-      jobType?: "INCREMENTAL" | "FULL";
-      action?: "setup-indexes" | "scrape";
+    const { action } = body as {
+      action?: "setup-indexes" | "cleanup";
     };
 
-    // Handle special actions
     if (action === "setup-indexes") {
       await setupTextIndexes();
       return NextResponse.json({ success: true, message: "Text indexes created" });
     }
 
-    // Default to scrape action
-    const selectedSource = source || "both";
-    const selectedMaxProducts = maxProducts || 5000;
-    const selectedJobType = jobType || "INCREMENTAL";
-
-    const results: Record<string, unknown> = {};
-
-    // Run scrapers (not in parallel to avoid rate limit issues)
-    if (selectedSource === "off" || selectedSource === "both") {
-      const offEnabled = process.env.SCRAPE_OFF_ENABLED !== "false";
-      if (offEnabled) {
-        console.log("[Scrape API] Starting OFF scrape...");
-        const offScraper = new OFFScraper(selectedMaxProducts);
-        results.off = await offScraper.run(selectedJobType);
-      } else {
-        results.off = { skipped: true, reason: "OFF scraping disabled" };
-      }
+    if (action === "cleanup") {
+      // Clean up old search demands
+      const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+      const result = await prisma.searchDemand.deleteMany({
+        where: {
+          scrapeAttempted: true,
+          lastSearched: { lt: sevenDaysAgo },
+        },
+      });
+      return NextResponse.json({
+        success: true,
+        message: `Cleaned up ${result.count} old search demands`,
+      });
     }
 
-    if (selectedSource === "usda" || selectedSource === "both") {
-      const usdaEnabled = process.env.SCRAPE_USDA_ENABLED !== "false";
-      if (usdaEnabled) {
-        console.log("[Scrape API] Starting USDA scrape...");
-        const usdaScraper = new USDAcraper(selectedMaxProducts);
-        results.usda = await usdaScraper.run(selectedJobType);
-      } else {
-        results.usda = { skipped: true, reason: "USDA scraping disabled" };
-      }
-    }
-
-    return NextResponse.json({
-      success: true,
-      results,
-    });
+    return NextResponse.json(
+      { error: "Unknown action. Supported actions: setup-indexes, cleanup" },
+      { status: 400 }
+    );
   } catch (error) {
-    console.error("[Scrape API] Error running scrape:", error);
+    console.error("[Cache API] Error:", error);
     return NextResponse.json(
       { error: error instanceof Error ? error.message : "Internal error" },
       { status: 500 }
@@ -139,5 +113,5 @@ export async function POST(req: NextRequest) {
   }
 }
 
-// Allow long-running requests (up to 5 minutes for VPS)
-export const maxDuration = 300;
+// Allow requests up to 30 seconds
+export const maxDuration = 30;

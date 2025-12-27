@@ -138,6 +138,7 @@ export function FoodQuickAccess({ onSelect }: FoodQuickAccessProps) {
       sugarPer100g: food.sugarPer100g,
       sodiumPer100g: food.sodiumPer100g,
       dataSource: food.dataSource,
+      fatSecretId: food.fatSecretId,
       openFoodFactsId: food.barcode,
       usdaFdcId: food.fdcId,
       defaultServingSize: food.defaultServingSize,
@@ -288,7 +289,7 @@ function FoodGrid({
           ) : (
             <div className="w-full h-12 rounded-lg bg-muted flex items-center justify-center mb-1.5">
               <span className="text-[10px] font-medium text-muted-foreground">
-                {food.dataSource === "USDA" ? "USDA" : food.dataSource === "OPEN_FOOD_FACTS" ? "OFF" : ""}
+                {food.dataSource === "FATSECRET" ? "FS" : food.dataSource === "USDA" ? "USDA" : food.dataSource === "OPEN_FOOD_FACTS" ? "OFF" : ""}
               </span>
             </div>
           )}

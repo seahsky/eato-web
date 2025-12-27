@@ -1,10 +1,13 @@
-export type FoodDataSource = "OPEN_FOOD_FACTS" | "USDA" | "MANUAL";
+// Primary sources: FATSECRET for API, MANUAL for user entries
+// Legacy sources kept for backward compatibility with existing data
+export type FoodDataSource = "FATSECRET" | "MANUAL" | "OPEN_FOOD_FACTS" | "USDA";
 
 export interface FoodProduct {
-  id: string; // Unique: "usda_123" or "off_barcode"
+  id: string; // Unique: "fs_{food_id}" for FatSecret, "manual_{name}" for manual
   dataSource: FoodDataSource;
-  barcode: string | null; // OFF only
-  fdcId: number | null; // USDA only
+  fatSecretId: string | null; // FatSecret food_id
+  barcode: string | null; // For barcode lookups
+  fdcId: number | null; // USDA only (deprecated, kept for existing data)
   name: string;
   brand: string | null;
   imageUrl: string | null;
@@ -33,8 +36,7 @@ export interface FoodSearchResult {
   page: number;
   hasMore: boolean;
   sources: {
-    usda: { count: number; error?: string };
-    openFoodFacts: { count: number; error?: string };
+    fatsecret: { count: number; error?: string };
   };
   translationInfo?: TranslationInfo;
 }

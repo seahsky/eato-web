@@ -141,6 +141,8 @@ model FoodEntry {
   // Source tracking
   isManualEntry   Boolean        @default(false)
   dataSource      FoodDataSource @default(MANUAL)
+  fatSecretId     String?        // FatSecret food_id
+  // Legacy fields kept for backward compatibility
   openFoodFactsId String?
   usdaFdcId       Int?
 
@@ -167,9 +169,11 @@ enum ApprovalStatus {
 }
 
 enum FoodDataSource {
+  FATSECRET       // Primary API source
+  MANUAL          // User manual entries
+  // Legacy sources kept for backward compatibility with existing data
   OPEN_FOOD_FACTS
   USDA
-  MANUAL
 }
 
 // Aggregated daily totals
@@ -256,6 +260,8 @@ model RecipeIngredient {
   // Source tracking
   isManualEntry    Boolean            @default(false)
   dataSource       FoodDataSource     @default(MANUAL)
+  fatSecretId      String?            // FatSecret food_id
+  // Legacy fields kept for backward compatibility
   openFoodFactsId  String?
   usdaFdcId        Int?
 
@@ -286,6 +292,8 @@ model FavoriteFood {
 
   // Source tracking
   dataSource      FoodDataSource
+  fatSecretId     String?        // FatSecret food_id
+  // Legacy fields kept for backward compatibility
   openFoodFactsId String?
   usdaFdcId       Int?
 
@@ -450,9 +458,11 @@ model MealEstimationIngredient {
 // Locally cached food products from external APIs
 model FoodProductCache {
   id               String         @id @default(auto()) @map("_id") @db.ObjectId
-  sourceId         String         @unique // "off_{barcode}" or "usda_{fdcId}"
+  sourceId         String         @unique // "fs_{food_id}" for FatSecret
   dataSource       FoodDataSource
+  fatSecretId      String?        // FatSecret food_id
   barcode          String?
+  // Legacy field kept for backward compatibility
   fdcId            Int?
 
   // Product identification

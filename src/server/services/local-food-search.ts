@@ -182,7 +182,8 @@ export function getMinLocalResults(): number {
 function normalizeLocalProduct(product: Partial<FoodProductCache>): FoodProduct {
   return {
     id: product.sourceId || "",
-    dataSource: product.dataSource as "USDA" | "OPEN_FOOD_FACTS" | "MANUAL",
+    dataSource: product.dataSource as "FATSECRET" | "MANUAL" | "OPEN_FOOD_FACTS" | "USDA",
+    fatSecretId: product.fatSecretId || null,
     barcode: product.barcode || null,
     fdcId: product.fdcId || null,
     name: product.name || "Unknown",
