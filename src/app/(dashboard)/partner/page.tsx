@@ -28,6 +28,7 @@ import { PartnerHistorySection } from "@/components/partner/partner-history-sect
 import { ApprovalsList } from "@/components/partner/approvals-list";
 import { MySubmissionsList } from "@/components/partner/my-submissions-list";
 import { PartnerProfileCard } from "@/components/partner/partner-profile-card";
+import { PartnerMacroCards } from "@/components/partner/partner-macro-cards";
 import { NudgePartnerButton } from "@/components/notifications/nudge-partner-button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
@@ -208,6 +209,15 @@ export default function PartnerPage() {
             transition={{ delay: 0.15 }}
           >
             <PartnerProfileCard />
+          </motion.div>
+
+          {/* Partner Macros Today */}
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2 }}
+          >
+            <PartnerMacroCards />
           </motion.div>
 
           {/* Partner Weekly Stats */}

@@ -8,6 +8,8 @@ import {
 } from "@/components/ui/sheet";
 import { Progress } from "@/components/ui/progress";
 import { EnergyValue } from "@/components/ui/energy-value";
+import { MacroCard } from "@/components/dashboard/macro-card";
+import { calculateMacroTargets } from "@/lib/bmr";
 import { PartnerMealSection } from "./partner-meal-section";
 import { Heart, Check, X } from "lucide-react";
 import { format, isToday, isYesterday, parseISO } from "date-fns";
@@ -100,21 +102,35 @@ export function PartnerDaySheet({
             <Progress value={progress} className="h-2" />
           </div>
 
-          {/* Macro Summary */}
-          <div className="grid grid-cols-3 gap-3">
-            <div className="bg-muted/30 rounded-xl p-3 text-center">
-              <p className="text-lg font-semibold">{totalProtein}g</p>
-              <p className="text-xs text-muted-foreground uppercase">Protein</p>
-            </div>
-            <div className="bg-muted/30 rounded-xl p-3 text-center">
-              <p className="text-lg font-semibold">{totalCarbs}g</p>
-              <p className="text-xs text-muted-foreground uppercase">Carbs</p>
-            </div>
-            <div className="bg-muted/30 rounded-xl p-3 text-center">
-              <p className="text-lg font-semibold">{totalFat}g</p>
-              <p className="text-xs text-muted-foreground uppercase">Fat</p>
-            </div>
-          </div>
+          {/* Macro Summary with Progress */}
+          {(() => {
+            const macroTargets = calculateMacroTargets(calorieGoal);
+            return (
+              <div className="grid grid-cols-3 gap-3">
+                <MacroCard
+                  label="Protein"
+                  current={totalProtein}
+                  goal={macroTargets.protein}
+                  color="var(--chart-1)"
+                  delay={0}
+                />
+                <MacroCard
+                  label="Carbs"
+                  current={totalCarbs}
+                  goal={macroTargets.carbs}
+                  color="var(--chart-3)"
+                  delay={0}
+                />
+                <MacroCard
+                  label="Fat"
+                  current={totalFat}
+                  goal={macroTargets.fat}
+                  color="var(--chart-4)"
+                  delay={0}
+                />
+              </div>
+            );
+          })()}
 
           {/* Meals Section */}
           {hasEntries ? (
