@@ -92,6 +92,9 @@ async function fatSecretRequest<T>(
   method: string,
   params: Record<string, string> = {}
 ): Promise<T> {
+  console.log("[FatSecret API] Calling method:", method);
+  console.log("[FatSecret API] Parameters:", JSON.stringify(params));
+
   const token = await getAccessToken();
 
   const body = new URLSearchParams({
@@ -99,6 +102,9 @@ async function fatSecretRequest<T>(
     format: "json",
     ...params,
   });
+
+  console.log("[FatSecret API] Request URL:", `${API_BASE_URL}/server.api`);
+  console.log("[FatSecret API] Request body:", body.toString());
 
   const response = await fetch(`${API_BASE_URL}/server.api`, {
     method: "POST",
@@ -109,13 +115,23 @@ async function fatSecretRequest<T>(
     body: body.toString(),
   });
 
+  console.log("[FatSecret API] Response status:", response.status);
+
+  const data = await response.json();
+  console.log("[FatSecret API] Response body:", JSON.stringify(data, null, 2));
+
   if (!response.ok) {
-    const errorText = await response.text();
-    console.error(`FatSecret API error (${method}):`, response.status, errorText);
+    console.error(`[FatSecret API] Error (${method}):`, response.status, JSON.stringify(data));
     throw new Error(`FatSecret API error: ${response.status}`);
   }
 
-  return response.json();
+  // Check for API-level errors (FatSecret returns 200 with error object)
+  if (data.error) {
+    console.error(`[FatSecret API] API Error:`, data.error.code, data.error.message);
+    throw new Error(`FatSecret API error: ${data.error.message} (code: ${data.error.code})`);
+  }
+
+  return data;
 }
 
 // ============================================

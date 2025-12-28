@@ -25,6 +25,7 @@ const REFRESH_BUFFER_MS = 5 * 60 * 1000;
 export async function getAccessToken(): Promise<string> {
   // Return cached token if still valid (with 5-min buffer)
   if (tokenCache && Date.now() < tokenCache.expiresAt - REFRESH_BUFFER_MS) {
+    console.log("[FatSecret Auth] Using cached token");
     return tokenCache.accessToken;
   }
 
@@ -48,6 +49,10 @@ export async function getAccessToken(): Promise<string> {
     scope,
   });
 
+  console.log("[FatSecret Auth] Requesting new token...");
+  console.log("[FatSecret Auth] Endpoint:", TOKEN_ENDPOINT);
+  console.log("[FatSecret Auth] Scope:", scope);
+
   const response = await fetch(TOKEN_ENDPOINT, {
     method: "POST",
     headers: {
@@ -57,13 +62,16 @@ export async function getAccessToken(): Promise<string> {
     body: body.toString(),
   });
 
+  console.log("[FatSecret Auth] Token response status:", response.status);
+
   if (!response.ok) {
     const errorText = await response.text();
-    console.error("FatSecret token error:", response.status, errorText);
+    console.error("[FatSecret Auth] Token error:", response.status, errorText);
     throw new Error(`Failed to get FatSecret access token: ${response.status}`);
   }
 
   const data = await response.json();
+  console.log("[FatSecret Auth] Token obtained successfully, expires in:", data.expires_in, "seconds");
 
   // Cache the token with expiry timestamp
   tokenCache = {
