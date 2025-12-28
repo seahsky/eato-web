@@ -17,6 +17,7 @@ import { trpc } from "@/trpc/react";
 import { Camera, Keyboard, Plus, Search, RefreshCw, AlertCircle } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
+import { DataSourceBadge } from "@/components/ui/data-source-badge";
 import type { FoodProduct } from "@/types/food";
 import type { BarcodeError } from "./use-barcode-scanner";
 
@@ -240,9 +241,7 @@ export function BarcodeScannerSheet({
                       <p className="text-sm text-primary font-medium mt-1">
                         <EnergyValue kcal={product.caloriesPer100g} toggleable /> / 100g
                       </p>
-                      <span className="inline-block mt-1 text-[9px] px-1.5 py-0.5 rounded font-medium bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400">
-                        OFF
-                      </span>
+                      <DataSourceBadge source={product.dataSource} size="sm" className="mt-1" />
                     </div>
                   </div>
                 </div>

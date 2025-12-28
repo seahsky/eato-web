@@ -8,6 +8,7 @@ import { trpc } from "@/trpc/react";
 import { Clock, Star, TrendingUp, StarOff } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
+import { DataSourceBadge } from "@/components/ui/data-source-badge";
 import type { QuickAccessFood } from "@/types/food";
 
 interface FoodQuickAccessProps {
@@ -294,8 +295,11 @@ function FoodGrid({
             </div>
           )}
 
-          {/* Food name */}
-          <p className="text-xs font-medium truncate pr-4">{food.name}</p>
+          {/* Food name and badge */}
+          <div className="flex items-center gap-1 pr-4">
+            <p className="text-xs font-medium truncate">{food.name}</p>
+            <DataSourceBadge source={food.dataSource} size="sm" />
+          </div>
 
           {/* Calories */}
           <p className="text-[10px] text-primary font-medium">

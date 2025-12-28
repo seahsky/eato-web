@@ -17,6 +17,7 @@ import { EnergyValue } from "@/components/ui/energy-value";
 import { trpc } from "@/trpc/react";
 import { cn } from "@/lib/utils";
 import { useDebounce } from "@/hooks/use-debounce";
+import { DataSourceBadge } from "@/components/ui/data-source-badge";
 import type { FoodProduct } from "@/types/food";
 import type { ResolvedMealIngredient } from "./meal-ingredient-row";
 
@@ -248,15 +249,7 @@ export function MealSwapSheet({
                                 {product.brand}
                               </span>
                             )}
-                            <span
-                              className={`text-[9px] px-1.5 py-0.5 rounded font-medium shrink-0 ${
-                                product.dataSource === "USDA"
-                                  ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400"
-                                  : "bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400"
-                              }`}
-                            >
-                              {product.dataSource === "USDA" ? "USDA" : "OFF"}
-                            </span>
+                            <DataSourceBadge source={product.dataSource} size="sm" />
                           </div>
                           <p className="text-xs text-muted-foreground mt-1">
                             <EnergyValue kcal={calories} toggleable />

@@ -3,6 +3,7 @@
 import { motion } from "framer-motion";
 import { AlertCircle, RefreshCw } from "lucide-react";
 import { EnergyValue } from "@/components/ui/energy-value";
+import { DataSourceBadge } from "@/components/ui/data-source-badge";
 import { cn } from "@/lib/utils";
 import type { FoodProduct } from "@/types/food";
 import type { ParsedIngredient } from "@/lib/meal-parser";
@@ -84,9 +85,12 @@ export function MealIngredientRow({
               No match found - tap to search
             </p>
           ) : ingredient.matchedProduct ? (
-            <p className="text-xs text-muted-foreground truncate mt-0.5">
-              {ingredient.matchedProduct.name}
-              {ingredient.matchedProduct.brand && ` (${ingredient.matchedProduct.brand})`}
+            <p className="text-xs text-muted-foreground truncate mt-0.5 flex items-center gap-1.5">
+              <span className="truncate">
+                {ingredient.matchedProduct.name}
+                {ingredient.matchedProduct.brand && ` (${ingredient.matchedProduct.brand})`}
+              </span>
+              <DataSourceBadge source={ingredient.matchedProduct.dataSource} size="sm" />
             </p>
           ) : null}
         </div>

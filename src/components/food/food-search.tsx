@@ -12,6 +12,7 @@ import { trpc } from "@/trpc/react";
 import { Search, Plus, Loader2, ScanBarcode, Zap, Globe } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useDebounce } from "@/hooks/use-debounce";
+import { DataSourceBadge } from "@/components/ui/data-source-badge";
 import type { FoodProduct, QuickAccessFood } from "@/types/food";
 
 function getLanguageName(code: string): string {
@@ -250,11 +251,7 @@ export function FoodSearch({ onSelect, defaultMealType = "LUNCH" }: FoodSearchPr
                         {product.brand}
                       </span>
                     )}
-                    {product.dataSource === "FATSECRET" && (
-                      <span className="text-[9px] px-1.5 py-0.5 rounded font-medium shrink-0 bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400">
-                        FS
-                      </span>
-                    )}
+                    <DataSourceBadge source={product.dataSource} size="sm" />
                   </div>
                   <p className="text-xs text-primary font-medium mt-0.5">
                     <EnergyValue kcal={product.caloriesPer100g} toggleable /> / 100g
