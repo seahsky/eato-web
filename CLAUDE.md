@@ -17,6 +17,13 @@
 - Trace the data flow and execution path to identify the actual source of the problem
 - Document your findings before implementing a fix
 
+## Git Workflow
+
+### Session Isolation
+- Use a new git worktree for every new session
+- This ensures clean separation between concurrent work streams
+- Prevents conflicts and maintains isolated development environments
+
 ---
 
 ## Project Overview
