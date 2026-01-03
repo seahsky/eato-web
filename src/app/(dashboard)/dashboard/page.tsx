@@ -41,9 +41,9 @@ export default function DashboardPage() {
   const utils = trpc.useUtils();
   const { data: user } = trpc.auth.getMe.useQuery();
 
-  // Show onboarding wizard for users without completed profile
+  // Show onboarding wizard for users without a profile
   useEffect(() => {
-    if (user && !user.profileCompleted && !onboardingDismissed) {
+    if (user && !user.profile && !onboardingDismissed) {
       setShowOnboarding(true);
     }
   }, [user, onboardingDismissed]);
