@@ -9,6 +9,41 @@ const MEAL_TYPE_LABELS: Record<MealType, string> = {
 };
 
 /**
+ * Notify partner that they have a pending approval for food logged by user
+ */
+export async function notifyPendingApproval(
+  partnerId: string,
+  loggerName: string,
+  entry: {
+    id: string;
+    name: string;
+    calories: number;
+    mealType: MealType;
+  }
+): Promise<void> {
+  const hasSubscription = await userHasPushSubscription(partnerId);
+  if (!hasSubscription) return;
+
+  const isEnabled = await isNotificationEnabled(partnerId, "partnerFoodLogged");
+  if (!isEnabled) return;
+
+  await sendPushNotification(partnerId, {
+    title: `${loggerName} logged food for you`,
+    body: `${entry.name} (${entry.calories} kcal) - Tap to review`,
+    tag: "pending-approval",
+    url: "/partner?tab=approvals",
+    data: {
+      type: "pending-approval",
+      entryId: entry.id,
+      entryName: entry.name,
+      calories: entry.calories,
+      mealType: entry.mealType,
+      loggerName,
+    },
+  });
+}
+
+/**
  * Notify partner that user logged food
  */
 export async function notifyPartnerFoodLogged(

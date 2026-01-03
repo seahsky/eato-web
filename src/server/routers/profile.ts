@@ -141,4 +141,66 @@ export const profileRouter = router({
       const tdee = calculateTDEE(bmr, input.activityLevel);
       return { bmr, tdee };
     }),
+
+  // Complete onboarding wizard - creates profile and marks user as onboarded
+  completeOnboarding: protectedProcedure
+    .input(
+      z.object({
+        age: z.number().min(13).max(120),
+        weight: z.number().min(20).max(500),
+        height: z.number().min(50).max(300),
+        gender: z.enum(["MALE", "FEMALE"]),
+        activityLevel: z.enum([
+          "SEDENTARY",
+          "LIGHTLY_ACTIVE",
+          "MODERATELY_ACTIVE",
+          "ACTIVE",
+          "VERY_ACTIVE",
+        ]),
+        calorieGoal: z.number().min(1000).max(10000),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      const bmr = calculateBMR(
+        input.weight,
+        input.height,
+        input.age,
+        input.gender
+      );
+      const tdee = calculateTDEE(bmr, input.activityLevel);
+
+      // Create or update profile
+      const profile = await ctx.prisma.profile.upsert({
+        where: { userId: ctx.user.id },
+        update: {
+          age: input.age,
+          weight: input.weight,
+          height: input.height,
+          gender: input.gender,
+          activityLevel: input.activityLevel,
+          bmr,
+          tdee,
+          calorieGoal: input.calorieGoal,
+        },
+        create: {
+          userId: ctx.user.id,
+          age: input.age,
+          weight: input.weight,
+          height: input.height,
+          gender: input.gender,
+          activityLevel: input.activityLevel,
+          bmr,
+          tdee,
+          calorieGoal: input.calorieGoal,
+        },
+      });
+
+      // Mark user as onboarded
+      await ctx.prisma.user.update({
+        where: { id: ctx.user.id },
+        data: { profileCompleted: true },
+      });
+
+      return { profile, bmr, tdee };
+    }),
 });

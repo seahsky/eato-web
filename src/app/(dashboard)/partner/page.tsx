@@ -25,6 +25,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { PartnerHistorySection } from "@/components/partner/partner-history-section";
+import { PartnerFeed } from "@/components/partner/partner-feed";
 import { ApprovalsList } from "@/components/partner/approvals-list";
 import { MySubmissionsList } from "@/components/partner/my-submissions-list";
 import { PartnerProfileCard } from "@/components/partner/partner-profile-card";
@@ -260,14 +261,15 @@ export default function PartnerPage() {
             </motion.div>
           ) : null}
 
-          {/* Tabs for History, Approvals, Submissions */}
+          {/* Tabs for Activity, History, Approvals, Submissions */}
           <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.35 }}
           >
-            <Tabs defaultValue="history" className="w-full">
-              <TabsList className="w-full grid grid-cols-3">
+            <Tabs defaultValue="activity" className="w-full">
+              <TabsList className="w-full grid grid-cols-4">
+                <TabsTrigger value="activity">Activity</TabsTrigger>
                 <TabsTrigger value="history">History</TabsTrigger>
                 <TabsTrigger value="approvals" className="relative">
                   Approvals
@@ -280,8 +282,11 @@ export default function PartnerPage() {
                     </Badge>
                   )}
                 </TabsTrigger>
-                <TabsTrigger value="submissions">Submissions</TabsTrigger>
+                <TabsTrigger value="submissions">Sent</TabsTrigger>
               </TabsList>
+              <TabsContent value="activity" className="mt-4">
+                <PartnerFeed />
+              </TabsContent>
               <TabsContent value="history" className="mt-4">
                 <PartnerHistorySection />
               </TabsContent>

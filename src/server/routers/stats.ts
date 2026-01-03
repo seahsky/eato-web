@@ -416,4 +416,188 @@ export const statsRouter = router({
       flameSize: getFlameSize(partner.currentStreak),
     };
   }),
+
+  // Get partner's recent activity for activity feed
+  getPartnerActivity: protectedProcedure
+    .input(
+      z.object({
+        limit: z.number().min(1).max(50).default(20),
+        cursor: z.string().optional(),
+      })
+    )
+    .query(async ({ ctx, input }) => {
+      const user = await ctx.prisma.user.findUnique({
+        where: { id: ctx.user.id },
+        select: { partnerId: true },
+      });
+
+      if (!user?.partnerId) {
+        return { items: [], nextCursor: undefined };
+      }
+
+      const thirtyDaysAgo = subDays(new Date(), 30);
+
+      // Fetch all activity types in parallel
+      const [foodEntries, dailyLogs, achievements, recipes, partner] = await Promise.all([
+        // Recent food entries
+        ctx.prisma.foodEntry.findMany({
+          where: {
+            userId: user.partnerId,
+            approvalStatus: "APPROVED",
+            loggedAt: { gte: thirtyDaysAgo },
+          },
+          orderBy: { loggedAt: "desc" },
+          take: input.limit,
+          select: {
+            id: true,
+            name: true,
+            calories: true,
+            mealType: true,
+            loggedAt: true,
+          },
+        }),
+
+        // Daily goal completions
+        ctx.prisma.dailyLog.findMany({
+          where: {
+            userId: user.partnerId,
+            goalMet: true,
+            date: { gte: thirtyDaysAgo },
+          },
+          orderBy: { date: "desc" },
+          take: input.limit,
+          select: {
+            id: true,
+            date: true,
+            totalCalories: true,
+            calorieGoal: true,
+          },
+        }),
+
+        // Badge unlocks
+        ctx.prisma.achievement.findMany({
+          where: {
+            userId: user.partnerId,
+            unlockedAt: { gte: thirtyDaysAgo },
+          },
+          orderBy: { unlockedAt: "desc" },
+          take: input.limit,
+          select: {
+            id: true,
+            badgeId: true,
+            unlockedAt: true,
+          },
+        }),
+
+        // Recipe creations
+        ctx.prisma.recipe.findMany({
+          where: {
+            userId: user.partnerId,
+            createdAt: { gte: thirtyDaysAgo },
+          },
+          orderBy: { createdAt: "desc" },
+          take: input.limit,
+          select: {
+            id: true,
+            name: true,
+            yieldWeight: true,
+            yieldUnit: true,
+            createdAt: true,
+          },
+        }),
+
+        // Partner name
+        ctx.prisma.user.findUnique({
+          where: { id: user.partnerId },
+          select: { name: true, currentStreak: true },
+        }),
+      ]);
+
+      // Import BADGES for badge details
+      const { BADGES } = await import("@/lib/gamification/badges");
+
+      // Transform into unified activity items
+      type ActivityItem = {
+        id: string;
+        type: "food_logged" | "daily_goal_hit" | "streak_milestone" | "badge_earned" | "recipe_created";
+        timestamp: Date;
+        data: Record<string, unknown>;
+      };
+
+      const activityItems: ActivityItem[] = [];
+
+      // Add food entries
+      for (const entry of foodEntries) {
+        activityItems.push({
+          id: `food-${entry.id}`,
+          type: "food_logged",
+          timestamp: entry.loggedAt,
+          data: {
+            entryId: entry.id,
+            foodName: entry.name,
+            calories: entry.calories,
+            mealType: entry.mealType,
+          },
+        });
+      }
+
+      // Add goal completions
+      for (const log of dailyLogs) {
+        activityItems.push({
+          id: `goal-${log.id}`,
+          type: "daily_goal_hit",
+          timestamp: log.date,
+          data: {
+            date: log.date,
+            calories: log.totalCalories,
+            goal: log.calorieGoal,
+          },
+        });
+      }
+
+      // Add badge unlocks
+      for (const achievement of achievements) {
+        const badge = BADGES[achievement.badgeId];
+        if (badge) {
+          activityItems.push({
+            id: `badge-${achievement.id}`,
+            type: "badge_earned",
+            timestamp: achievement.unlockedAt,
+            data: {
+              badgeId: badge.id,
+              badgeName: badge.name,
+              badgeIcon: badge.icon,
+              rarity: badge.rarity,
+            },
+          });
+        }
+      }
+
+      // Add recipe creations
+      for (const recipe of recipes) {
+        activityItems.push({
+          id: `recipe-${recipe.id}`,
+          type: "recipe_created",
+          timestamp: recipe.createdAt,
+          data: {
+            recipeId: recipe.id,
+            recipeName: recipe.name,
+            yieldWeight: recipe.yieldWeight,
+            yieldUnit: recipe.yieldUnit,
+          },
+        });
+      }
+
+      // Sort by timestamp descending
+      activityItems.sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
+
+      // Apply limit
+      const limitedItems = activityItems.slice(0, input.limit);
+
+      return {
+        items: limitedItems,
+        partnerName: partner?.name ?? "Partner",
+        nextCursor: limitedItems.length === input.limit ? limitedItems[limitedItems.length - 1]?.id : undefined,
+      };
+    }),
 });

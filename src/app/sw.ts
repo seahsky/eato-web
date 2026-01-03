@@ -47,7 +47,23 @@ sw.addEventListener("push", (event: PushEvent) => {
     vibrate: [100, 50, 100],
   } satisfies NotificationOptions & { vibrate?: number[] };
 
-  event.waitUntil(sw.registration.showNotification(data.title, options));
+  // Post message to all clients for foreground handling
+  event.waitUntil(
+    Promise.all([
+      sw.registration.showNotification(data.title, options),
+      sw.clients.matchAll({ type: "window" }).then((clients) => {
+        clients.forEach((client) => {
+          client.postMessage({
+            type: "push-notification",
+            title: data.title,
+            body: data.body,
+            tag: data.tag,
+            data: data.data,
+          });
+        });
+      }),
+    ])
+  );
 });
 
 // Notification click handler

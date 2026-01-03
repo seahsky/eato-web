@@ -5,7 +5,7 @@ import { getProductByBarcode, getProductById } from "../services/fatsecret";
 import { searchFoods, searchFoodsFast } from "../services/food-search";
 import { hashQuery, cleanupExpiredCache } from "../services/search-cache";
 import { startOfDay, endOfDay } from "date-fns";
-import { notifyPartnerFoodLogged, notifyPartnerGoalReached } from "@/lib/notifications/triggers";
+import { notifyPartnerFoodLogged, notifyPartnerGoalReached, notifyPendingApproval } from "@/lib/notifications/triggers";
 import { calculateStreakUpdate } from "@/lib/gamification/streaks";
 import { getStreakBadgesToUnlock } from "@/lib/gamification/badges";
 
@@ -291,6 +291,23 @@ export const foodRouter = router({
           ).catch(() => {});
         }
       }
+    } else {
+      // Logging for partner - send pending approval notification
+      const loggerName = await ctx.prisma.user.findUnique({
+        where: { id: ctx.user.id },
+        select: { name: true },
+      });
+
+      notifyPendingApproval(
+        targetUserId,
+        loggerName?.name || "Your partner",
+        {
+          id: entry.id,
+          name: input.name,
+          calories: input.calories,
+          mealType: input.mealType,
+        }
+      ).catch(() => {});
     }
 
     return entry;

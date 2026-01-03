@@ -11,6 +11,7 @@ import { PartnerDaySheet } from "@/components/partner/partner-day-sheet";
 import { NotificationPermissionBanner } from "@/components/notifications/notification-permission-banner";
 import { StreakCounter } from "@/components/gamification/StreakCounter";
 import { JointCelebration, useJointCelebration } from "@/components/gamification/JointCelebration";
+import { OnboardingWizard } from "@/components/onboarding/onboarding-wizard";
 import { trpc } from "@/trpc/react";
 import { format } from "date-fns";
 import { motion } from "framer-motion";
@@ -26,6 +27,8 @@ import { cn } from "@/lib/utils";
 export default function DashboardPage() {
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [partnerSheetOpen, setPartnerSheetOpen] = useState(false);
+  const [showOnboarding, setShowOnboarding] = useState(false);
+  const [onboardingDismissed, setOnboardingDismissed] = useState(false);
   const constraintsRef = useRef<HTMLDivElement>(null);
 
   // Joint celebration hook
@@ -35,7 +38,15 @@ export default function DashboardPage() {
     checkAndShowCelebration,
   } = useJointCelebration();
 
+  const utils = trpc.useUtils();
   const { data: user } = trpc.auth.getMe.useQuery();
+
+  // Show onboarding wizard for users without completed profile
+  useEffect(() => {
+    if (user && !user.profileCompleted && !onboardingDismissed) {
+      setShowOnboarding(true);
+    }
+  }, [user, onboardingDismissed]);
 
   const { data: summary, isLoading } = trpc.stats.getDailySummary.useQuery({
     date: format(selectedDate, "yyyy-MM-dd"),
@@ -402,6 +413,22 @@ export default function DashboardPage() {
           onOpenChange={setShowCelebration}
           userName={user?.name ?? "You"}
           partnerName={partnerSummary.partnerName}
+        />
+      )}
+
+      {/* Onboarding Wizard */}
+      {showOnboarding && (
+        <OnboardingWizard
+          onComplete={() => {
+            setShowOnboarding(false);
+            utils.auth.getMe.invalidate();
+            utils.stats.getDailySummary.invalidate();
+            utils.profile.get.invalidate();
+          }}
+          onSkip={() => {
+            setShowOnboarding(false);
+            setOnboardingDismissed(true);
+          }}
         />
       )}
       </motion.div>

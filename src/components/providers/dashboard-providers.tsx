@@ -4,6 +4,12 @@ import { type ReactNode } from "react";
 import { EnergyProvider } from "@/contexts/energy-context";
 import { trpc } from "@/trpc/react";
 import type { EnergyUnit } from "@/lib/energy";
+import { useApprovalToasts } from "@/hooks/use-approval-toasts";
+
+function ApprovalToastListener() {
+  useApprovalToasts();
+  return null;
+}
 
 export function DashboardProviders({ children }: { children: ReactNode }) {
   const { data: profile } = trpc.profile.get.useQuery();
@@ -14,6 +20,7 @@ export function DashboardProviders({ children }: { children: ReactNode }) {
 
   return (
     <EnergyProvider initialUnit={initialUnit} hasProfile={hasProfile}>
+      <ApprovalToastListener />
       {children}
     </EnergyProvider>
   );
