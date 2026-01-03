@@ -168,17 +168,6 @@ export function FoodSearch({ onSelect, defaultMealType = "LUNCH" }: FoodSearchPr
                 key={product.id}
                 className="bg-card rounded-xl p-3 border border-border/50 flex items-center gap-3 pointer-events-none"
               >
-                {product.imageUrl ? (
-                  <img
-                    src={product.imageUrl}
-                    alt={product.name}
-                    className="w-14 h-14 rounded-lg object-cover bg-muted grayscale"
-                  />
-                ) : (
-                  <div className="w-14 h-14 rounded-lg bg-muted flex items-center justify-center">
-                    <span className="text-xs text-muted-foreground">...</span>
-                  </div>
-                )}
                 <div className="flex-1 min-w-0">
                   <p className="font-medium text-sm truncate">{product.name}</p>
                   <Skeleton className="h-3 w-20 mt-1" />
@@ -232,17 +221,6 @@ export function FoodSearch({ onSelect, defaultMealType = "LUNCH" }: FoodSearchPr
                 transition={{ delay: index * 0.03 }}
                 className="bg-card rounded-xl p-3 border border-border/50 flex items-center gap-3"
               >
-                {product.imageUrl ? (
-                  <img
-                    src={product.imageUrl}
-                    alt={product.name}
-                    className="w-14 h-14 rounded-lg object-cover bg-muted"
-                  />
-                ) : (
-                  <div className="w-14 h-14 rounded-lg bg-muted flex items-center justify-center">
-                    <span className="text-xs text-muted-foreground">No img</span>
-                  </div>
-                )}
                 <div className="flex-1 min-w-0">
                   <p className="font-medium text-sm truncate">{product.name}</p>
                   <div className="flex items-center gap-1.5 mt-0.5">
