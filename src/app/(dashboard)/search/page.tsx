@@ -81,6 +81,8 @@ export default function SearchPage() {
           className="fixed bottom-24 right-4 z-40"
           initial={{ scale: 0, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.95 }}
           transition={{ delay: 0.3, type: "spring", stiffness: 200 }}
         >
           <Button
