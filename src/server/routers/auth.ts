@@ -2,7 +2,7 @@ import { z } from "zod";
 import { router, protectedProcedure } from "../trpc";
 import { TRPCError } from "@trpc/server";
 import { nanoid } from "nanoid";
-import { notifyPartnerLinked } from "@/lib/notifications/triggers";
+import { notifyPartnerLinked, sendCelebrationNotification } from "@/lib/notifications/triggers";
 
 export const authRouter = router({
   // Generate a partner link code
@@ -132,4 +132,33 @@ export const authRouter = router({
 
     return user;
   }),
+
+  // Send celebration to partner
+  sendCelebration: protectedProcedure
+    .input(
+      z.object({
+        reason: z.enum(["goal_hit", "streak_milestone", "badge_earned", "general"]),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      const user = await ctx.prisma.user.findUnique({
+        where: { id: ctx.user.id },
+        select: { name: true, partnerId: true },
+      });
+
+      if (!user?.partnerId) {
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: "You must have a linked partner to send celebrations",
+        });
+      }
+
+      const sent = await sendCelebrationNotification(
+        user.partnerId,
+        user.name || "Your partner",
+        input.reason
+      );
+
+      return { success: true, sent };
+    }),
 });

@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { motion } from "framer-motion";
 import { formatDistanceToNow } from "date-fns";
 import {
@@ -9,12 +10,14 @@ import {
   Trophy,
   BookOpen,
   Copy,
-  PartyPopper
+  PartyPopper,
+  Loader2
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { EnergyValue } from "@/components/ui/energy-value";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
+import { trpc } from "@/trpc/react";
 
 type ActivityType = "food_logged" | "daily_goal_hit" | "streak_milestone" | "badge_earned" | "recipe_created";
 
@@ -38,21 +41,56 @@ const RARITY_COLORS: Record<string, string> = {
 
 export function FeedItem({ item, partnerName }: FeedItemProps) {
   const timeAgo = formatDistanceToNow(new Date(item.timestamp), { addSuffix: true });
+  const [isCopying, setIsCopying] = useState(false);
+  const [isCelebrating, setIsCelebrating] = useState(false);
 
-  const handleCopyFood = () => {
-    // TODO: Implement copy food to your log
-    toast.success("Food copied to log!");
+  const utils = trpc.useUtils();
+
+  const copyFoodMutation = trpc.food.copyPartnerFood.useMutation({
+    onSuccess: (data) => {
+      toast.success(`"${data.foodName}" copied to your log!`);
+      utils.stats.getDailySummary.invalidate();
+      utils.food.getByDate.invalidate();
+    },
+    onError: (error) => {
+      toast.error(error.message || "Failed to copy food");
+    },
+    onSettled: () => {
+      setIsCopying(false);
+    },
+  });
+
+  const celebrateMutation = trpc.auth.sendCelebration.useMutation({
+    onSuccess: (data) => {
+      if (data.sent) {
+        toast.success(`Celebration sent to ${partnerName}!`);
+      } else {
+        toast.success("Celebration sent! (Partner may have notifications disabled)");
+      }
+    },
+    onError: (error) => {
+      toast.error(error.message || "Failed to send celebration");
+    },
+    onSettled: () => {
+      setIsCelebrating(false);
+    },
+  });
+
+  const handleCopyFood = (entryId: string) => {
+    setIsCopying(true);
+    copyFoodMutation.mutate({ entryId });
   };
 
-  const handleCelebrate = () => {
-    // TODO: Implement send celebration nudge
-    toast.success("Celebration sent!");
+  const handleCelebrate = (reason: "goal_hit" | "streak_milestone" | "badge_earned" | "general") => {
+    setIsCelebrating(true);
+    celebrateMutation.mutate({ reason });
   };
 
   const renderContent = () => {
     switch (item.type) {
       case "food_logged": {
-        const { foodName, calories, mealType } = item.data as {
+        const { entryId, foodName, calories, mealType } = item.data as {
+          entryId: string;
           foodName: string;
           calories: number;
           mealType: string;
@@ -77,9 +115,14 @@ export function FeedItem({ item, partnerName }: FeedItemProps) {
               size="sm"
               variant="ghost"
               className="shrink-0 h-8 w-8 p-0"
-              onClick={handleCopyFood}
+              onClick={() => handleCopyFood(entryId)}
+              disabled={isCopying}
             >
-              <Copy className="w-4 h-4" />
+              {isCopying ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <Copy className="w-4 h-4" />
+              )}
             </Button>
           </div>
         );
@@ -108,9 +151,14 @@ export function FeedItem({ item, partnerName }: FeedItemProps) {
               size="sm"
               variant="ghost"
               className="shrink-0 h-8 w-8 p-0"
-              onClick={handleCelebrate}
+              onClick={() => handleCelebrate("goal_hit")}
+              disabled={isCelebrating}
             >
-              <PartyPopper className="w-4 h-4 text-amber-500" />
+              {isCelebrating ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <PartyPopper className="w-4 h-4 text-amber-500" />
+              )}
             </Button>
           </div>
         );
@@ -135,6 +183,19 @@ export function FeedItem({ item, partnerName }: FeedItemProps) {
                 {flameSize} flame unlocked
               </p>
             </div>
+            <Button
+              size="sm"
+              variant="ghost"
+              className="shrink-0 h-8 w-8 p-0"
+              onClick={() => handleCelebrate("streak_milestone")}
+              disabled={isCelebrating}
+            >
+              {isCelebrating ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <PartyPopper className="w-4 h-4 text-amber-500" />
+              )}
+            </Button>
           </div>
         );
       }
@@ -165,6 +226,19 @@ export function FeedItem({ item, partnerName }: FeedItemProps) {
                 </span>
               </div>
             </div>
+            <Button
+              size="sm"
+              variant="ghost"
+              className="shrink-0 h-8 w-8 p-0"
+              onClick={() => handleCelebrate("badge_earned")}
+              disabled={isCelebrating}
+            >
+              {isCelebrating ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <PartyPopper className="w-4 h-4 text-amber-500" />
+              )}
+            </Button>
           </div>
         );
       }
@@ -204,7 +278,7 @@ export function FeedItem({ item, partnerName }: FeedItemProps) {
       className="p-3 bg-card rounded-xl border border-border/50"
     >
       {renderContent()}
-      <p className="text-[10px] text-muted-foreground mt-2 ml-13 pl-13">
+      <p className="text-[10px] text-muted-foreground mt-2 ml-[52px]">
         {timeAgo}
       </p>
     </motion.div>

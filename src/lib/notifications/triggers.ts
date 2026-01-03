@@ -152,3 +152,48 @@ export async function sendMealReminder(
     url: "/search",
   });
 }
+
+/**
+ * Send celebration notification to partner
+ */
+export async function sendCelebrationNotification(
+  toUserId: string,
+  fromUserName: string,
+  reason: "goal_hit" | "streak_milestone" | "badge_earned" | "general"
+): Promise<boolean> {
+  const hasSubscription = await userHasPushSubscription(toUserId);
+  if (!hasSubscription) return false;
+
+  const isEnabled = await isNotificationEnabled(toUserId, "receiveNudges");
+  if (!isEnabled) return false;
+
+  const messages: Record<typeof reason, { title: string; body: string }> = {
+    goal_hit: {
+      title: `🎉 ${fromUserName} is celebrating you!`,
+      body: "Congrats on hitting your daily goal!",
+    },
+    streak_milestone: {
+      title: `🔥 ${fromUserName} is celebrating you!`,
+      body: "Amazing streak! Keep it up!",
+    },
+    badge_earned: {
+      title: `🏆 ${fromUserName} is celebrating you!`,
+      body: "Awesome achievement unlocked!",
+    },
+    general: {
+      title: `🎊 ${fromUserName} sent you a celebration!`,
+      body: "Your partner is proud of you!",
+    },
+  };
+
+  const message = messages[reason];
+
+  const result = await sendPushNotification(toUserId, {
+    title: message.title,
+    body: message.body,
+    tag: "celebration",
+    url: "/partner",
+  });
+
+  return result.sent > 0;
+}

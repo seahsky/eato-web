@@ -1063,6 +1063,124 @@ export const foodRouter = router({
       }
     }),
 
+  // Copy a partner's food entry to your log
+  copyPartnerFood: protectedProcedure
+    .input(
+      z.object({
+        entryId: z.string(),
+        mealType: z.enum(["BREAKFAST", "LUNCH", "DINNER", "SNACK"]).optional(),
+        consumedAt: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Date must be in YYYY-MM-DD format").optional(),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      // Get partner relationship
+      const user = await ctx.prisma.user.findUnique({
+        where: { id: ctx.user.id },
+        select: { partnerId: true },
+      });
+
+      if (!user?.partnerId) {
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: "You must have a linked partner to copy food",
+        });
+      }
+
+      // Find the partner's food entry
+      const partnerEntry = await ctx.prisma.foodEntry.findFirst({
+        where: {
+          id: input.entryId,
+          userId: user.partnerId,
+          approvalStatus: "APPROVED",
+        },
+      });
+
+      if (!partnerEntry) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Food entry not found or not accessible",
+        });
+      }
+
+      // Use today's date if not specified
+      const dateStr = input.consumedAt ?? new Date().toISOString().split("T")[0];
+      const dayStart = new Date(dateStr + "T00:00:00.000Z");
+      const consumedAt = new Date(dateStr + "T12:00:00.000Z");
+      const mealType = input.mealType ?? partnerEntry.mealType;
+
+      // Get or create daily log for current user
+      const profile = await ctx.prisma.profile.findUnique({
+        where: { userId: ctx.user.id },
+      });
+      const calorieGoal = profile?.calorieGoal ?? 2000;
+
+      let dailyLog = await ctx.prisma.dailyLog.findUnique({
+        where: {
+          userId_date: {
+            userId: ctx.user.id,
+            date: dayStart,
+          },
+        },
+      });
+
+      if (!dailyLog) {
+        dailyLog = await ctx.prisma.dailyLog.create({
+          data: {
+            userId: ctx.user.id,
+            date: dayStart,
+            calorieGoal,
+          },
+        });
+      }
+
+      // Create the food entry copy
+      const newEntry = await ctx.prisma.foodEntry.create({
+        data: {
+          userId: ctx.user.id,
+          dailyLogId: dailyLog.id,
+          approvalStatus: "APPROVED",
+          name: partnerEntry.name,
+          barcode: partnerEntry.barcode,
+          brand: partnerEntry.brand,
+          imageUrl: partnerEntry.imageUrl,
+          calories: partnerEntry.calories,
+          protein: partnerEntry.protein,
+          carbs: partnerEntry.carbs,
+          fat: partnerEntry.fat,
+          fiber: partnerEntry.fiber,
+          sugar: partnerEntry.sugar,
+          sodium: partnerEntry.sodium,
+          servingSize: partnerEntry.servingSize,
+          servingUnit: partnerEntry.servingUnit,
+          mealType,
+          consumedAt,
+          isManualEntry: partnerEntry.isManualEntry,
+          dataSource: partnerEntry.dataSource,
+          fatSecretId: partnerEntry.fatSecretId,
+          openFoodFactsId: partnerEntry.openFoodFactsId,
+          usdaFdcId: partnerEntry.usdaFdcId,
+        },
+      });
+
+      // Update daily log totals
+      await ctx.prisma.dailyLog.update({
+        where: { id: dailyLog.id },
+        data: {
+          totalCalories: { increment: partnerEntry.calories },
+          totalProtein: { increment: partnerEntry.protein ?? 0 },
+          totalCarbs: { increment: partnerEntry.carbs ?? 0 },
+          totalFat: { increment: partnerEntry.fat ?? 0 },
+          totalFiber: { increment: partnerEntry.fiber ?? 0 },
+        },
+      });
+
+      return {
+        success: true,
+        entry: newEntry,
+        foodName: partnerEntry.name,
+      };
+    }),
+
   // Clear search cache for debugging
   clearSearchCache: protectedProcedure
     .input(

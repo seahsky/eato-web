@@ -588,6 +588,27 @@ export const statsRouter = router({
         });
       }
 
+      // Add streak milestones if partner has hit a milestone
+      const STREAK_MILESTONES = [7, 14, 30, 60, 90, 180, 365];
+      if (partner?.currentStreak && STREAK_MILESTONES.includes(partner.currentStreak)) {
+        // Get flame size for this streak
+        const flameSize = getFlameSize(partner.currentStreak);
+
+        // Find the most recent food entry or daily log to approximate when the streak was achieved
+        const mostRecentLog = dailyLogs[0];
+        const milestoneTimestamp = mostRecentLog?.date ?? new Date();
+
+        activityItems.push({
+          id: `streak-${partner.currentStreak}`,
+          type: "streak_milestone",
+          timestamp: milestoneTimestamp,
+          data: {
+            milestone: partner.currentStreak,
+            flameSize,
+          },
+        });
+      }
+
       // Sort by timestamp descending
       activityItems.sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
 
