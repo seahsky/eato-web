@@ -39,13 +39,27 @@ export function ProgressRing({
   const remaining = Math.max(goal - current, 0);
   const over = current > goal ? current - goal : 0;
 
+  // Accessibility label
+  const ariaLabel = over > 0
+    ? `You have consumed ${current} of ${goal} calories. ${over} calories over goal.`
+    : `You have consumed ${current} of ${goal} calories. ${remaining} calories remaining.`;
+
   return (
-    <div className="relative flex items-center justify-center" style={{ width: size, height: size }}>
+    <div
+      className="relative flex items-center justify-center"
+      style={{ width: size, height: size }}
+      role="progressbar"
+      aria-valuenow={current}
+      aria-valuemin={0}
+      aria-valuemax={goal}
+      aria-label={ariaLabel}
+    >
       {/* Background circle */}
       <svg
         className="absolute transform -rotate-90"
         width={size}
         height={size}
+        aria-hidden="true"
       >
         <circle
           cx={size / 2}

@@ -91,11 +91,20 @@ export function MealSection({
           </div>
           <div>
             <h3 className="font-semibold text-sm">{config.label}</h3>
-            <p className="text-xs text-muted-foreground">
-              {entries.length === 0
-                ? "No items yet"
-                : `${entries.length} item${entries.length > 1 ? "s" : ""}`}
-            </p>
+            {entries.length === 0 ? (
+              <Button asChild variant="ghost" size="sm" className="h-7 px-2 gap-1.5 -ml-2">
+                <Link
+                  href={`/log?meal=${mealType.toLowerCase()}&date=${format(selectedDate, "yyyy-MM-dd")}`}
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                  Add first {config.label.toLowerCase()}
+                </Link>
+              </Button>
+            ) : (
+              <p className="text-xs text-muted-foreground">
+                {entries.length} item{entries.length > 1 ? "s" : ""}
+              </p>
+            )}
           </div>
         </div>
         <div className="flex items-center gap-1">
@@ -107,7 +116,12 @@ export function MealSection({
           {hasPartner && approvedEntries.length > 0 && (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button size="icon" variant="ghost" className="h-8 w-8 rounded-full">
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  className="h-11 w-11 rounded-full"
+                  aria-label={`More options for ${config.label}`}
+                >
                   <MoreHorizontal className="w-4 h-4" />
                 </Button>
               </DropdownMenuTrigger>
@@ -127,7 +141,12 @@ export function MealSection({
             </DropdownMenu>
           )}
           <Link href={`/log?meal=${mealType.toLowerCase()}&date=${format(selectedDate, "yyyy-MM-dd")}`}>
-            <Button size="icon" variant="ghost" className="h-8 w-8 rounded-full">
+            <Button
+              size="icon"
+              variant="ghost"
+              className="h-11 w-11 rounded-full"
+              aria-label={`Add ${config.label.toLowerCase()}`}
+            >
               <Plus className="w-4 h-4" />
             </Button>
           </Link>
@@ -135,61 +154,64 @@ export function MealSection({
       </div>
 
       {entries.length > 0 && (
-        <div className="space-y-1 mt-3 pt-3 border-t border-border/50">
+        <ul role="list" className="space-y-1 mt-3 pt-3 border-t border-border/50">
           {(isExpanded ? entries : entries.slice(0, 3)).map((entry) => {
             const isPending = entry.approvalStatus === "PENDING";
             return (
-              <button
-                key={entry.id}
-                onClick={() => setEditEntry(entry)}
-                className="flex items-center justify-between text-sm w-full text-left p-2 -mx-2 rounded-lg hover:bg-muted/50 transition-colors"
-              >
-                <div className="flex items-center gap-2 flex-1 min-w-0">
-                  {entry.imageUrl && (
-                    <img
-                      src={entry.imageUrl}
-                      alt={entry.name}
-                      className={cn(
-                        "w-8 h-8 rounded-lg object-cover",
-                        isPending && "opacity-50"
-                      )}
-                    />
-                  )}
-                  <span
-                    className={cn(
-                      "truncate",
-                      isPending
-                        ? "text-muted-foreground/60 italic"
-                        : "text-muted-foreground"
+              <li key={entry.id}>
+                <button
+                  onClick={() => setEditEntry(entry)}
+                  className="flex items-center justify-between text-sm w-full text-left p-2 -mx-2 rounded-lg hover:bg-muted/50 transition-colors"
+                >
+                  <div className="flex items-center gap-2 flex-1 min-w-0">
+                    {entry.imageUrl && (
+                      <img
+                        src={entry.imageUrl}
+                        alt={entry.name}
+                        className={cn(
+                          "w-8 h-8 rounded-lg object-cover",
+                          isPending && "opacity-50"
+                        )}
+                      />
                     )}
-                  >
-                    {entry.name}
-                  </span>
-                  {isPending && (
-                    <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-4 shrink-0">
-                      Pending
-                    </Badge>
-                  )}
-                </div>
-                <EnergyValue
-                  kcal={entry.calories}
-                  className={cn(
-                    "font-medium ml-2",
-                    isPending && "text-muted-foreground/60"
-                  )}
-                />
-              </button>
+                    <span
+                      className={cn(
+                        "truncate",
+                        isPending
+                          ? "text-muted-foreground/60 italic"
+                          : "text-muted-foreground"
+                      )}
+                    >
+                      {entry.name}
+                    </span>
+                    {isPending && (
+                      <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-4 shrink-0">
+                        Pending
+                      </Badge>
+                    )}
+                  </div>
+                  <EnergyValue
+                    kcal={entry.calories}
+                    className={cn(
+                      "font-medium ml-2",
+                      isPending && "text-muted-foreground/60"
+                    )}
+                  />
+                </button>
+              </li>
             );
           })}
           {entries.length > 3 && (
-            <button
-              onClick={() => setIsExpanded(!isExpanded)}
-              className="text-xs text-muted-foreground hover:text-foreground text-center pt-1 w-full transition-colors"
-            >
-              {isExpanded ? "Show less" : `+${entries.length - 3} more`}
-            </button>
+            <li>
+              <button
+                onClick={() => setIsExpanded(!isExpanded)}
+                className="text-xs text-muted-foreground hover:text-foreground text-center pt-1 w-full transition-colors"
+              >
+                {isExpanded ? "Show less" : `+${entries.length - 3} more`}
+              </button>
+            </li>
           )}
-        </div>
+        </ul>
       )}
 
       <FoodEntryEditSheet

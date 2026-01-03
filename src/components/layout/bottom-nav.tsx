@@ -2,9 +2,10 @@
 
 import { usePathname, useRouter } from "next/navigation";
 import { Home, Search, Plus, Users, User } from "lucide-react";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { useState, useTransition } from "react";
+import { trpc } from "@/trpc/react";
 
 const navItems = [
   { href: "/dashboard", icon: Home, label: "Home" },
@@ -19,6 +20,11 @@ export function BottomNav() {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [pendingHref, setPendingHref] = useState<string | null>(null);
+
+  // Fetch pending approval count for badge
+  const { data: pendingCount } = trpc.food.getPendingApprovalCount.useQuery(undefined, {
+    refetchInterval: 30000, // Refresh every 30 seconds
+  });
 
   const handleNavigation = (href: string) => {
     if (href === pathname) return;
@@ -63,11 +69,14 @@ export function BottomNav() {
             );
           }
 
+          const badgeCount = item.href === "/partner" ? (pendingCount?.count ?? 0) : 0;
+
           return (
             <button
               key={item.href}
               onClick={() => handleNavigation(item.href)}
               className="relative flex flex-col items-center gap-1 px-3 py-2 group"
+              aria-current={isActive ? "page" : undefined}
             >
               <motion.div
                 className="relative"
@@ -92,6 +101,19 @@ export function BottomNav() {
                     transition={{ type: "spring", stiffness: 500, damping: 30 }}
                   />
                 )}
+                {/* Pending approvals badge */}
+                <AnimatePresence>
+                  {badgeCount > 0 && (
+                    <motion.span
+                      initial={{ scale: 0, opacity: 0 }}
+                      animate={{ scale: 1, opacity: 1 }}
+                      exit={{ scale: 0, opacity: 0 }}
+                      className="absolute -top-2 -right-2 min-w-[18px] h-[18px] px-1 bg-primary text-[10px] text-primary-foreground rounded-full flex items-center justify-center font-semibold shadow-sm"
+                    >
+                      {badgeCount > 9 ? "9+" : badgeCount}
+                    </motion.span>
+                  )}
+                </AnimatePresence>
               </motion.div>
               <span
                 className={cn(

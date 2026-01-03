@@ -67,15 +67,31 @@ export function DualProgressRing({
       ? userProgress.current - userProgress.goal
       : 0;
 
+  // Accessibility labels
+  const userAriaLabel = userOver > 0
+    ? `You have consumed ${userProgress.current} of ${userProgress.goal} calories. ${userOver} calories over goal.`
+    : `You have consumed ${userProgress.current} of ${userProgress.goal} calories. ${userRemaining} calories remaining.`;
+
+  const partnerAriaLabel = partnerProgress
+    ? `${partnerProgress.name} has consumed ${partnerProgress.current} of ${partnerProgress.goal} calories.`
+    : '';
+
+  const combinedAriaLabel = partnerProgress
+    ? `${userAriaLabel} ${partnerAriaLabel} ${bothOnTrack ? 'Both partners are on track!' : ''}`
+    : userAriaLabel;
+
   return (
     <div
       className="relative flex items-center justify-center"
       style={{ width: size, height: size }}
+      role="group"
+      aria-label={combinedAriaLabel}
     >
       <svg
         className="absolute transform -rotate-90"
         width={size}
         height={size}
+        aria-hidden="true"
       >
         <defs>
           {/* User ring gradient (terracotta) */}

@@ -13,12 +13,13 @@ import { trpc } from "@/trpc/react";
 import { format } from "date-fns";
 import { motion } from "framer-motion";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ChevronLeft, ChevronRight, CalendarDays, Bell } from "lucide-react";
+import { ChevronLeft, ChevronRight, CalendarDays, Bell, RotateCcw, Target } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useState, useEffect } from "react";
 import { calculateMacroTargets } from "@/lib/bmr";
 import Link from "next/link";
 import { Card, CardContent } from "@/components/ui/card";
+import { cn } from "@/lib/utils";
 
 export default function DashboardPage() {
   const [selectedDate, setSelectedDate] = useState(new Date());
@@ -101,7 +102,28 @@ export default function DashboardPage() {
   }
 
   return (
-    <div className="p-4 space-y-6">
+    <div className={cn(
+      "p-4 space-y-6 transition-colors duration-300",
+      !isToday && "bg-amber-50/50 dark:bg-amber-950/30"
+    )}>
+      {/* Return to Today Banner (when viewing past dates) */}
+      {!isToday && (
+        <motion.div
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+        >
+          <Button
+            onClick={goToToday}
+            variant="secondary"
+            size="sm"
+            className="w-full gap-2 bg-background/80 backdrop-blur-sm border border-amber-200 dark:border-amber-800"
+          >
+            <RotateCcw className="w-4 h-4" />
+            Return to Today
+          </Button>
+        </motion.div>
+      )}
+
       {/* Date Header with Streak */}
       <motion.div
         initial={{ opacity: 0, y: -10 }}
@@ -143,7 +165,7 @@ export default function DashboardPage() {
             )}
           </div>
           {!isToday && (
-            <p className="text-xs text-muted-foreground">Tap to go to today</p>
+            <p className="text-xs text-muted-foreground">Viewing {format(selectedDate, "MMM d, yyyy")}</p>
           )}
         </div>
         <Button
@@ -214,13 +236,24 @@ export default function DashboardPage() {
         <motion.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
-          className="bg-accent/30 border border-accent rounded-2xl p-4 text-center"
+          className="bg-gradient-to-br from-primary/15 via-secondary/10 to-accent/15 border-2 border-dashed border-primary/30 rounded-2xl p-5 text-center"
         >
-          <p className="text-sm font-medium mb-2">
-            Set up your profile to calculate your BMR
+          <motion.div
+            initial={{ scale: 0.8 }}
+            animate={{ scale: 1 }}
+            transition={{ delay: 0.2, type: "spring", stiffness: 200 }}
+            className="w-14 h-14 mx-auto mb-4 rounded-full bg-primary/10 flex items-center justify-center"
+          >
+            <Target className="w-7 h-7 text-primary" />
+          </motion.div>
+          <h3 className="font-semibold text-base mb-1">
+            Calculate Your Calorie Goal
+          </h3>
+          <p className="text-sm text-muted-foreground mb-4">
+            Set up your profile to get personalized daily targets
           </p>
           <Link href="/profile">
-            <Button size="sm" variant="secondary">
+            <Button className="shadow-md">
               Complete Profile
             </Button>
           </Link>
