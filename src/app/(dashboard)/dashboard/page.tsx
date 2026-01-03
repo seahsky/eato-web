@@ -5,6 +5,8 @@ import { DualProgressRing } from "@/components/dashboard/dual-progress-ring";
 import { MacroCard } from "@/components/dashboard/macro-card";
 import { MealSection } from "@/components/dashboard/meal-section";
 import { PartnerCard } from "@/components/dashboard/partner-card";
+import { WeeklySparkline } from "@/components/dashboard/weekly-sparkline";
+import { RecentRecipes } from "@/components/dashboard/recent-recipes";
 import { PartnerDaySheet } from "@/components/partner/partner-day-sheet";
 import { NotificationPermissionBanner } from "@/components/notifications/notification-permission-banner";
 import { StreakCounter } from "@/components/gamification/StreakCounter";
@@ -15,7 +17,7 @@ import { motion } from "framer-motion";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ChevronLeft, ChevronRight, CalendarDays, Bell, RotateCcw, Target } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { calculateMacroTargets } from "@/lib/bmr";
 import Link from "next/link";
 import { Card, CardContent } from "@/components/ui/card";
@@ -24,6 +26,7 @@ import { cn } from "@/lib/utils";
 export default function DashboardPage() {
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [partnerSheetOpen, setPartnerSheetOpen] = useState(false);
+  const constraintsRef = useRef<HTMLDivElement>(null);
 
   // Joint celebration hook
   const {
@@ -48,6 +51,11 @@ export default function DashboardPage() {
 
   const { data: partnerStreakData } = trpc.stats.getPartnerStreakData.useQuery(undefined, {
     enabled: !!partnerSummary,
+  });
+
+  // Fetch weekly data for sparkline (based on selected date)
+  const { data: weeklyData } = trpc.stats.getWeeklySummary.useQuery({
+    endDate: format(selectedDate, "yyyy-MM-dd"),
   });
 
   const isToday = format(selectedDate, "yyyy-MM-dd") === format(new Date(), "yyyy-MM-dd");
@@ -102,10 +110,29 @@ export default function DashboardPage() {
   }
 
   return (
-    <div className={cn(
-      "p-4 space-y-6 transition-colors duration-300",
-      !isToday && "bg-amber-50/50 dark:bg-amber-950/30"
-    )}>
+    <div ref={constraintsRef} className="overflow-hidden">
+      <motion.div
+        drag="x"
+        dragConstraints={constraintsRef}
+        dragElastic={0.15}
+        dragMomentum={false}
+        onDragEnd={(_, info) => {
+          const threshold = 80;
+          const velocity = 300;
+
+          // Swipe right = go to previous day
+          if (info.offset.x > threshold || info.velocity.x > velocity) {
+            goToPrevDay();
+          }
+          // Swipe left = go to next day (only if not today)
+          if ((info.offset.x < -threshold || info.velocity.x < -velocity) && !isToday) {
+            goToNextDay();
+          }
+        }}
+        className={cn(
+          "p-4 space-y-6 transition-colors duration-300 touch-pan-y",
+          !isToday && "bg-amber-50/50 dark:bg-amber-950/30"
+        )}>
       {/* Return to Today Banner (when viewing past dates) */}
       {!isToday && (
         <motion.div
@@ -231,6 +258,16 @@ export default function DashboardPage() {
         )}
       </motion.div>
 
+      {/* Weekly Trend Sparkline */}
+      {weeklyData && weeklyData.days.length > 0 && (
+        <WeeklySparkline
+          days={weeklyData.days}
+          calorieGoal={weeklyData.calorieGoal}
+          hasPartner={!!partnerSummary}
+          onDayClick={(date) => setSelectedDate(date)}
+        />
+      )}
+
       {/* Setup Profile Reminder */}
       {!summary?.bmr && (
         <motion.div
@@ -355,6 +392,9 @@ export default function DashboardPage() {
         />
       </div>
 
+      {/* Recent Recipes Carousel */}
+      <RecentRecipes />
+
       {/* Joint Celebration Dialog */}
       {partnerSummary && (
         <JointCelebration
@@ -364,6 +404,7 @@ export default function DashboardPage() {
           partnerName={partnerSummary.partnerName}
         />
       )}
+      </motion.div>
     </div>
   );
 }

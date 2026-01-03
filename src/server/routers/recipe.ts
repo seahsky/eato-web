@@ -420,6 +420,32 @@ export const recipeRouter = router({
       return entry;
     }),
 
+  // Get recent recipes for quick access carousel
+  getRecent: protectedProcedure
+    .input(z.object({ limit: z.number().min(1).max(10).default(5) }))
+    .query(async ({ ctx, input }) => {
+      // Get user's most recently updated recipes
+      const recipes = await ctx.prisma.recipe.findMany({
+        where: { userId: ctx.user.id },
+        select: {
+          id: true,
+          name: true,
+          imageUrl: true,
+          caloriesPer100g: true,
+          proteinPer100g: true,
+          carbsPer100g: true,
+          fatPer100g: true,
+          yieldWeight: true,
+          yieldUnit: true,
+          updatedAt: true,
+        },
+        orderBy: { updatedAt: "desc" },
+        take: input.limit,
+      });
+
+      return recipes;
+    }),
+
   // Search recipes by name
   search: protectedProcedure
     .input(z.object({ query: z.string().min(1) }))
