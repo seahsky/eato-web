@@ -1,16 +1,19 @@
 "use client";
 
 import { usePathname, useRouter } from "next/navigation";
-import { Home, Search, Plus, Users, User } from "lucide-react";
+import { Home, Search, Users, User } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { useState, useTransition } from "react";
 import { trpc } from "@/trpc/react";
+import { FABMenu } from "./fab-menu";
+import { BarcodeScannerSheet } from "@/components/barcode/barcode-scanner-sheet";
+import type { FoodProduct } from "@/types/food";
 
 const navItems = [
   { href: "/dashboard", icon: Home, label: "Home" },
   { href: "/search", icon: Search, label: "Search" },
-  { href: "/log", icon: Plus, label: "Add", isMain: true },
+  { href: "/log", label: "Add", isMain: true },
   { href: "/partner", icon: Users, label: "Partner" },
   { href: "/profile", icon: User, label: "Profile" },
 ];
@@ -20,11 +23,20 @@ export function BottomNav() {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [pendingHref, setPendingHref] = useState<string | null>(null);
+  const [fabOpen, setFabOpen] = useState(false);
+  const [scannerOpen, setScannerOpen] = useState(false);
 
   // Fetch pending approval count for badge
   const { data: pendingCount } = trpc.food.getPendingApprovalCount.useQuery(undefined, {
     refetchInterval: 30000, // Refresh every 30 seconds
   });
+
+  const handleBarcodeProductFound = (product: FoodProduct) => {
+    setScannerOpen(false);
+    // Store the scanned product in sessionStorage for the search page to pick up
+    sessionStorage.setItem("scannedProduct", JSON.stringify(product));
+    router.push("/search?from=scan");
+  };
 
   const handleNavigation = (href: string) => {
     if (href === pathname) return;
@@ -38,36 +50,28 @@ export function BottomNav() {
   };
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-50 bg-card/95 backdrop-blur-lg border-t border-border/50 safe-bottom">
-      <div className="flex items-center justify-around h-16 max-w-lg mx-auto px-2">
-        {navItems.map((item) => {
+    <>
+      <nav className="fixed bottom-0 left-0 right-0 z-50 bg-card/95 backdrop-blur-lg border-t border-border/50 safe-bottom">
+        <div className="flex items-center justify-around h-16 max-w-lg mx-auto px-2">
+          {navItems.map((item) => {
           const isActive = pathname === item.href;
           const isPendingNav = pendingHref === item.href && isPending;
-          const Icon = item.icon;
 
           if (item.isMain) {
             return (
-              <button
+              <FABMenu
                 key={item.href}
-                onClick={() => handleNavigation(item.href)}
-                className="relative -mt-6"
-              >
-                <motion.div
-                  className={cn(
-                    "w-14 h-14 rounded-full bg-gradient-to-br from-primary to-primary/80 flex items-center justify-center shadow-lg shadow-primary/30",
-                    isPendingNav && "opacity-70"
-                  )}
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.92 }}
-                >
-                  <Icon className={cn(
-                    "w-6 h-6 text-primary-foreground transition-transform",
-                    isPendingNav && "animate-pulse"
-                  )} />
-                </motion.div>
-              </button>
+                isOpen={fabOpen}
+                onOpenChange={setFabOpen}
+                onBarcodeOpen={() => {
+                  setFabOpen(false);
+                  setScannerOpen(true);
+                }}
+              />
             );
           }
+
+          const Icon = item.icon!;
 
           const badgeCount = item.href === "/partner" ? (pendingCount?.count ?? 0) : 0;
 
@@ -128,8 +132,16 @@ export function BottomNav() {
               </span>
             </button>
           );
-        })}
-      </div>
-    </nav>
+          })}
+        </div>
+      </nav>
+
+      {/* Barcode Scanner Sheet - accessible from FAB menu */}
+      <BarcodeScannerSheet
+        open={scannerOpen}
+        onOpenChange={setScannerOpen}
+        onProductFound={handleBarcodeProductFound}
+      />
+    </>
   );
 }

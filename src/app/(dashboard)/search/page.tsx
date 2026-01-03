@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useSearchParams } from "next/navigation";
 import { FoodSearch } from "@/components/food/food-search";
 import { FoodEntryForm } from "@/components/food/food-entry-form";
 import { BarcodeScannerSheet } from "@/components/barcode/barcode-scanner-sheet";
@@ -10,8 +11,25 @@ import { Button } from "@/components/ui/button";
 import type { FoodProduct } from "@/types/food";
 
 export default function SearchPage() {
+  const searchParams = useSearchParams();
   const [selectedProduct, setSelectedProduct] = useState<FoodProduct | null>(null);
   const [scannerOpen, setScannerOpen] = useState(false);
+
+  // Check for scanned product from FAB menu barcode scanner
+  useEffect(() => {
+    if (searchParams.get("from") === "scan") {
+      const storedProduct = sessionStorage.getItem("scannedProduct");
+      if (storedProduct) {
+        try {
+          const product = JSON.parse(storedProduct) as FoodProduct;
+          setSelectedProduct(product);
+          sessionStorage.removeItem("scannedProduct");
+        } catch {
+          // Invalid JSON, ignore
+        }
+      }
+    }
+  }, [searchParams]);
 
   const handleBarcodeProductFound = (product: FoodProduct) => {
     setScannerOpen(false);

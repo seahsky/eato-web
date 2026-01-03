@@ -7,7 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { FoodSearch } from "@/components/food/food-search";
 import { RecipeList } from "@/components/recipe/recipe-list";
 import { RecipeLogForm } from "@/components/recipe/recipe-log-form";
-import { useState, Suspense } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -31,9 +31,17 @@ function LogPageContent() {
   const searchParams = useSearchParams();
   const mealParam = searchParams.get("meal")?.toUpperCase() ?? "LUNCH";
   const dateParam = searchParams.get("date") ?? undefined;
+  const tabParam = searchParams.get("tab") ?? "search";
   const [selectedProduct, setSelectedProduct] = useState<FoodProduct | null>(null);
   const [selectedRecipe, setSelectedRecipe] = useState<Recipe | null>(null);
-  const [activeTab, setActiveTab] = useState("search");
+  const [activeTab, setActiveTab] = useState(tabParam);
+
+  // Sync active tab with URL param when it changes
+  useEffect(() => {
+    if (tabParam && tabParam !== activeTab) {
+      setActiveTab(tabParam);
+    }
+  }, [tabParam, activeTab]);
 
   const handleProductSelect = (product: FoodProduct) => {
     setSelectedProduct(product);
