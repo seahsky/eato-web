@@ -1,6 +1,6 @@
 import webpush from "web-push";
 import { prisma } from "@/lib/prisma";
-import type { NotificationPayload, PushSubscriptionJSON } from "./types";
+import type { NotificationPayload, WebPushSubscription, SendResult } from "./types";
 
 // Initialize web-push with VAPID details
 const vapidPublicKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
@@ -15,24 +15,33 @@ if (vapidPublicKey && vapidPrivateKey) {
 }
 
 /**
- * Send a push notification to all of a user's subscribed devices
+ * Send web push notification to all web push subscriptions for a user
  */
-export async function sendPushNotification(
+export async function sendWebPushNotification(
   userId: string,
   payload: NotificationPayload
-): Promise<{ success: boolean; sent: number; failed: number }> {
-  // Get all subscriptions for this user
+): Promise<SendResult> {
+  // Get only WEB_PUSH subscriptions for this user
   const subscriptions = await prisma.pushSubscription.findMany({
-    where: { userId },
+    where: { userId, tokenType: "WEB_PUSH" },
   });
 
   if (subscriptions.length === 0) {
     return { success: true, sent: 0, failed: 0 };
   }
 
+  const errors: Array<{ subscriptionId: string; error: string }> = [];
+  let sent = 0;
+  let failed = 0;
+
   const results = await Promise.allSettled(
     subscriptions.map(async (sub) => {
-      const pushSubscription: PushSubscriptionJSON = {
+      // Skip if missing required web push fields
+      if (!sub.endpoint || !sub.p256dh || !sub.auth) {
+        return { success: false, subscriptionId: sub.id, error: "Missing web push fields" };
+      }
+
+      const pushSubscription: WebPushSubscription = {
         endpoint: sub.endpoint,
         keys: {
           p256dh: sub.p256dh,
@@ -62,44 +71,40 @@ export async function sendPushNotification(
             where: { id: sub.id },
           });
         }
-        return { success: false, subscriptionId: sub.id, error };
+        return {
+          success: false,
+          subscriptionId: sub.id,
+          error: error instanceof Error ? error.message : "Unknown error"
+        };
       }
     })
   );
 
-  const sent = results.filter(
-    (r) => r.status === "fulfilled" && r.value.success
-  ).length;
-  const failed = results.length - sent;
-
-  return { success: true, sent, failed };
-}
-
-/**
- * Check if a user has push notification capability (at least one subscription)
- */
-export async function userHasPushSubscription(userId: string): Promise<boolean> {
-  const count = await prisma.pushSubscription.count({
-    where: { userId },
-  });
-  return count > 0;
-}
-
-/**
- * Check if user has notifications enabled for a specific type
- */
-export async function isNotificationEnabled(
-  userId: string,
-  settingKey: "partnerFoodLogged" | "partnerGoalReached" | "partnerLinked" | "receiveNudges"
-): Promise<boolean> {
-  const settings = await prisma.notificationSettings.findUnique({
-    where: { userId },
-  });
-
-  // If no settings exist, use defaults (all enabled)
-  if (!settings) {
-    return true;
+  for (const result of results) {
+    if (result.status === "fulfilled") {
+      if (result.value.success) {
+        sent++;
+      } else {
+        failed++;
+        if (result.value.error) {
+          errors.push({
+            subscriptionId: result.value.subscriptionId,
+            error: result.value.error,
+          });
+        }
+      }
+    } else {
+      failed++;
+    }
   }
 
-  return settings[settingKey];
+  return {
+    success: true,
+    sent,
+    failed,
+    errors: errors.length > 0 ? errors : undefined
+  };
 }
+
+// Legacy alias for backward compatibility
+export const sendPushNotification = sendWebPushNotification;

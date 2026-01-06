@@ -2,7 +2,7 @@ import { z } from "zod";
 import { router, protectedProcedure } from "../trpc";
 import { TRPCError } from "@trpc/server";
 import { nanoid } from "nanoid";
-import { notifyPartnerLinked, sendCelebrationNotification } from "@/lib/notifications/triggers";
+import { notifyPartnerLinked, sendCelebrationNotification, sendNudgeNotification } from "@/lib/notifications/triggers";
 
 export const authRouter = router({
   // Generate a partner link code
@@ -158,6 +158,74 @@ export const authRouter = router({
         user.name || "Your partner",
         input.reason
       );
+
+      return { success: true, sent };
+    }),
+
+  // Send nudge to partner
+  sendNudge: protectedProcedure
+    .input(
+      z.object({
+        type: z.enum(["log_reminder", "goal_motivation", "general"]).default("general"),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      const user = await ctx.prisma.user.findUnique({
+        where: { id: ctx.user.id },
+        select: { name: true, partnerId: true },
+      });
+
+      if (!user?.partnerId) {
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: "You must have a linked partner to send nudges",
+        });
+      }
+
+      // Rate limit: 1 nudge per 4 hours - check last nudge sent
+      const fourHoursAgo = new Date(Date.now() - 4 * 60 * 60 * 1000);
+      const recentNudge = await ctx.prisma.nudge.findFirst({
+        where: {
+          fromUserId: ctx.user.id,
+          toUserId: user.partnerId,
+          createdAt: { gte: fourHoursAgo },
+        },
+        orderBy: { createdAt: "desc" },
+      });
+
+      if (recentNudge) {
+        const remainingMs = recentNudge.createdAt.getTime() + 4 * 60 * 60 * 1000 - Date.now();
+        const remainingMinutes = Math.ceil(remainingMs / 60000);
+        throw new TRPCError({
+          code: "TOO_MANY_REQUESTS",
+          message: `Please wait ${remainingMinutes} minutes before sending another nudge`,
+        });
+      }
+
+      // Get nudge message based on type
+      const messages: Record<string, string> = {
+        log_reminder: "Don't forget to log your meals today!",
+        goal_motivation: "You're doing great - keep tracking!",
+        general: "Your partner is thinking of you!",
+      };
+
+      const message = messages[input.type];
+
+      // Send notification
+      const sent = await sendNudgeNotification(
+        user.partnerId,
+        user.name || "Your partner",
+        message
+      );
+
+      // Record the nudge
+      await ctx.prisma.nudge.create({
+        data: {
+          fromUserId: ctx.user.id,
+          toUserId: user.partnerId,
+          message,
+        },
+      });
 
       return { success: true, sent };
     }),

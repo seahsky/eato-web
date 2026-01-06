@@ -5,7 +5,7 @@ import { getProductByBarcode, getProductById } from "../services/fatsecret";
 import { searchFoods, searchFoodsFast } from "../services/food-search";
 import { hashQuery, cleanupExpiredCache } from "../services/search-cache";
 import { startOfDay, endOfDay } from "date-fns";
-import { notifyPartnerFoodLogged, notifyPartnerGoalReached, notifyPendingApproval } from "@/lib/notifications/triggers";
+import { notifyPartnerFoodLogged, notifyPartnerGoalReached, notifyPendingApproval, notifyBadgeUnlocked, notifyApprovalResult } from "@/lib/notifications/triggers";
 import { calculateStreakUpdate } from "@/lib/gamification/streaks";
 import { getStreakBadgesToUnlock } from "@/lib/gamification/badges";
 
@@ -260,6 +260,15 @@ export const foodRouter = router({
           } catch {
             // Ignore duplicate key errors
           }
+        }
+
+        // Notify user about new badges
+        if (newBadges.length > 0) {
+          const { BADGES } = await import("@/lib/gamification/badges");
+          const badgeNames = newBadges
+            .map((id) => BADGES[id]?.name)
+            .filter(Boolean) as string[];
+          notifyBadgeUnlocked(ctx.user.id, badgeNames).catch(() => {});
         }
       }
 
@@ -560,6 +569,20 @@ export const foodRouter = router({
         });
       }
 
+      // Notify the logger that their entry was approved
+      if (entry.loggedByUserId) {
+        const approver = await ctx.prisma.user.findUnique({
+          where: { id: ctx.user.id },
+          select: { name: true },
+        });
+        notifyApprovalResult(
+          entry.loggedByUserId,
+          approver?.name || "Your partner",
+          entry.name,
+          true
+        ).catch(() => {});
+      }
+
       return { success: true };
     }),
 
@@ -594,6 +617,20 @@ export const foodRouter = router({
           rejectionNote: input.note,
         },
       });
+
+      // Notify the logger that their entry was rejected
+      if (entry.loggedByUserId) {
+        const rejecter = await ctx.prisma.user.findUnique({
+          where: { id: ctx.user.id },
+          select: { name: true },
+        });
+        notifyApprovalResult(
+          entry.loggedByUserId,
+          rejecter?.name || "Your partner",
+          entry.name,
+          false
+        ).catch(() => {});
+      }
 
       return { success: true };
     }),

@@ -5,7 +5,11 @@ export type NotificationType =
   | "PARTNER_GOAL_REACHED"
   | "PARTNER_LINKED"
   | "NUDGE"
-  | "MEAL_REMINDER";
+  | "MEAL_REMINDER"
+  | "PENDING_APPROVAL"
+  | "CELEBRATION"
+  | "BADGE_UNLOCKED"
+  | "APPROVAL_RESULT";
 
 export interface NotificationPayload {
   title: string;
@@ -17,7 +21,8 @@ export interface NotificationPayload {
   data?: Record<string, unknown>;
 }
 
-export interface PushSubscriptionJSON {
+// Web Push specific (VAPID)
+export interface WebPushSubscription {
   endpoint: string;
   keys: {
     p256dh: string;
@@ -25,8 +30,19 @@ export interface PushSubscriptionJSON {
   };
 }
 
+// Unified result type for notification sending
+export interface SendResult {
+  success: boolean;
+  sent: number;
+  failed: number;
+  errors?: Array<{ subscriptionId: string; error: string }>;
+}
+
 export interface SendNotificationOptions {
   userId: string;
   payload: NotificationPayload;
   type: NotificationType;
 }
+
+// Legacy alias for backward compatibility
+export type PushSubscriptionJSON = WebPushSubscription;

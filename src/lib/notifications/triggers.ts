@@ -1,4 +1,4 @@
-import { sendPushNotification, isNotificationEnabled, userHasPushSubscription } from "./web-push";
+import { sendNotificationToUser, isNotificationEnabled, userHasAnySubscription } from "./sender";
 import type { MealType } from "@prisma/client";
 
 const MEAL_TYPE_LABELS: Record<MealType, string> = {
@@ -21,13 +21,13 @@ export async function notifyPendingApproval(
     mealType: MealType;
   }
 ): Promise<void> {
-  const hasSubscription = await userHasPushSubscription(partnerId);
+  const hasSubscription = await userHasAnySubscription(partnerId);
   if (!hasSubscription) return;
 
   const isEnabled = await isNotificationEnabled(partnerId, "partnerFoodLogged");
   if (!isEnabled) return;
 
-  await sendPushNotification(partnerId, {
+  await sendNotificationToUser(partnerId, {
     title: `${loggerName} logged food for you`,
     body: `${entry.name} (${entry.calories} kcal) - Tap to review`,
     tag: "pending-approval",
@@ -53,13 +53,13 @@ export async function notifyPartnerFoodLogged(
   mealType: MealType
 ): Promise<void> {
   // Check if partner has subscriptions and notifications enabled
-  const hasSubscription = await userHasPushSubscription(partnerId);
+  const hasSubscription = await userHasAnySubscription(partnerId);
   if (!hasSubscription) return;
 
   const isEnabled = await isNotificationEnabled(partnerId, "partnerFoodLogged");
   if (!isEnabled) return;
 
-  await sendPushNotification(partnerId, {
+  await sendNotificationToUser(partnerId, {
     title: `${loggerName} logged ${MEAL_TYPE_LABELS[mealType]}`,
     body: foodName,
     tag: "partner-food-logged",
@@ -74,13 +74,13 @@ export async function notifyPartnerGoalReached(
   partnerId: string,
   userName: string
 ): Promise<void> {
-  const hasSubscription = await userHasPushSubscription(partnerId);
+  const hasSubscription = await userHasAnySubscription(partnerId);
   if (!hasSubscription) return;
 
   const isEnabled = await isNotificationEnabled(partnerId, "partnerGoalReached");
   if (!isEnabled) return;
 
-  await sendPushNotification(partnerId, {
+  await sendNotificationToUser(partnerId, {
     title: "Goal reached!",
     body: `${userName} hit their calorie target for today`,
     tag: "partner-goal-reached",
@@ -95,13 +95,13 @@ export async function notifyPartnerLinked(
   userId: string,
   partnerName: string
 ): Promise<void> {
-  const hasSubscription = await userHasPushSubscription(userId);
+  const hasSubscription = await userHasAnySubscription(userId);
   if (!hasSubscription) return;
 
   const isEnabled = await isNotificationEnabled(userId, "partnerLinked");
   if (!isEnabled) return;
 
-  await sendPushNotification(userId, {
+  await sendNotificationToUser(userId, {
     title: "Partner linked!",
     body: `You're now connected with ${partnerName}`,
     tag: "partner-linked",
@@ -117,13 +117,13 @@ export async function sendNudgeNotification(
   fromUserName: string,
   message?: string
 ): Promise<boolean> {
-  const hasSubscription = await userHasPushSubscription(toUserId);
+  const hasSubscription = await userHasAnySubscription(toUserId);
   if (!hasSubscription) return false;
 
   const isEnabled = await isNotificationEnabled(toUserId, "receiveNudges");
   if (!isEnabled) return false;
 
-  const result = await sendPushNotification(toUserId, {
+  const result = await sendNotificationToUser(toUserId, {
     title: `Nudge from ${fromUserName}`,
     body: message || "Don't forget to log your meals today!",
     tag: "nudge",
@@ -140,12 +140,12 @@ export async function sendMealReminder(
   userId: string,
   mealType: MealType
 ): Promise<void> {
-  const hasSubscription = await userHasPushSubscription(userId);
+  const hasSubscription = await userHasAnySubscription(userId);
   if (!hasSubscription) return;
 
   const mealLabel = MEAL_TYPE_LABELS[mealType];
 
-  await sendPushNotification(userId, {
+  await sendNotificationToUser(userId, {
     title: `Time for ${mealLabel}!`,
     body: `Don't forget to log your ${mealLabel}`,
     tag: `reminder-${mealType.toLowerCase()}`,
@@ -161,7 +161,7 @@ export async function sendCelebrationNotification(
   fromUserName: string,
   reason: "goal_hit" | "streak_milestone" | "badge_earned" | "general"
 ): Promise<boolean> {
-  const hasSubscription = await userHasPushSubscription(toUserId);
+  const hasSubscription = await userHasAnySubscription(toUserId);
   if (!hasSubscription) return false;
 
   const isEnabled = await isNotificationEnabled(toUserId, "receiveNudges");
@@ -188,7 +188,7 @@ export async function sendCelebrationNotification(
 
   const message = messages[reason];
 
-  const result = await sendPushNotification(toUserId, {
+  const result = await sendNotificationToUser(toUserId, {
     title: message.title,
     body: message.body,
     tag: "celebration",
@@ -196,4 +196,45 @@ export async function sendCelebrationNotification(
   });
 
   return result.sent > 0;
+}
+
+/**
+ * Notify user when they unlock new badges
+ */
+export async function notifyBadgeUnlocked(
+  userId: string,
+  badgeNames: string[]
+): Promise<void> {
+  const hasSubscription = await userHasAnySubscription(userId);
+  if (!hasSubscription) return;
+
+  const count = badgeNames.length;
+  await sendNotificationToUser(userId, {
+    title: `🏆 New Badge${count > 1 ? "s" : ""} Unlocked!`,
+    body: badgeNames.join(", "),
+    tag: "badge-unlocked",
+    url: "/profile?tab=badges",
+    data: { type: "badge_unlocked", badges: badgeNames },
+  });
+}
+
+/**
+ * Notify food logger when their entry is approved or rejected
+ */
+export async function notifyApprovalResult(
+  loggerId: string,
+  approverName: string,
+  foodName: string,
+  approved: boolean
+): Promise<void> {
+  const hasSubscription = await userHasAnySubscription(loggerId);
+  if (!hasSubscription) return;
+
+  await sendNotificationToUser(loggerId, {
+    title: approved ? "✅ Entry Approved" : "❌ Entry Rejected",
+    body: `${approverName} ${approved ? "approved" : "rejected"} your ${foodName} entry`,
+    tag: "approval-result",
+    url: "/dashboard",
+    data: { type: "approval_result", approved },
+  });
 }

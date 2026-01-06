@@ -2,12 +2,13 @@ import { z } from "zod";
 import { router, protectedProcedure } from "../trpc";
 import { TRPCError } from "@trpc/server";
 import { sendNudgeNotification } from "@/lib/notifications/triggers";
+import { syncMealReminders } from "@/lib/agenda/scheduler";
 
 // 4 hours in milliseconds
 const NUDGE_COOLDOWN_MS = 4 * 60 * 60 * 1000;
 
 export const notificationRouter = router({
-  // Subscribe to push notifications
+  // Subscribe to web push notifications
   subscribe: protectedProcedure
     .input(
       z.object({
@@ -28,6 +29,7 @@ export const notificationRouter = router({
         },
         create: {
           userId: ctx.user.id,
+          tokenType: "WEB_PUSH",
           endpoint: input.endpoint,
           p256dh: input.p256dh,
           auth: input.auth,
@@ -47,16 +49,70 @@ export const notificationRouter = router({
       return { success: true, id: subscription.id };
     }),
 
-  // Unsubscribe from push notifications
-  unsubscribe: protectedProcedure
-    .input(z.object({ endpoint: z.string().url() }))
+  // Subscribe to Expo push notifications (for mobile app)
+  subscribeExpo: protectedProcedure
+    .input(
+      z.object({
+        expoToken: z.string().startsWith("ExponentPushToken["),
+        deviceId: z.string().optional(),
+        userAgent: z.string().optional(),
+      })
+    )
     .mutation(async ({ ctx, input }) => {
-      await ctx.prisma.pushSubscription.deleteMany({
-        where: {
+      // Upsert subscription (update if token exists, create if new)
+      const subscription = await ctx.prisma.pushSubscription.upsert({
+        where: { expoToken: input.expoToken },
+        update: {
+          deviceId: input.deviceId,
+          userAgent: input.userAgent,
+        },
+        create: {
           userId: ctx.user.id,
-          endpoint: input.endpoint,
+          tokenType: "EXPO_PUSH",
+          expoToken: input.expoToken,
+          deviceId: input.deviceId,
+          userAgent: input.userAgent,
         },
       });
+
+      // Create default notification settings if they don't exist
+      await ctx.prisma.notificationSettings.upsert({
+        where: { userId: ctx.user.id },
+        update: {},
+        create: {
+          userId: ctx.user.id,
+        },
+      });
+
+      return { success: true, id: subscription.id };
+    }),
+
+  // Unsubscribe from push notifications (supports both web and expo)
+  unsubscribe: protectedProcedure
+    .input(
+      z.object({
+        endpoint: z.string().url().optional(),
+        expoToken: z.string().optional(),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      if (input.endpoint) {
+        await ctx.prisma.pushSubscription.deleteMany({
+          where: {
+            userId: ctx.user.id,
+            endpoint: input.endpoint,
+          },
+        });
+      }
+
+      if (input.expoToken) {
+        await ctx.prisma.pushSubscription.deleteMany({
+          where: {
+            userId: ctx.user.id,
+            expoToken: input.expoToken,
+          },
+        });
+      }
 
       return { success: true };
     }),
@@ -102,6 +158,7 @@ export const notificationRouter = router({
         breakfastReminderTime: null,
         lunchReminderTime: null,
         dinnerReminderTime: null,
+        timezone: "UTC",
       };
     }
 
@@ -113,6 +170,7 @@ export const notificationRouter = router({
       breakfastReminderTime: settings.breakfastReminderTime,
       lunchReminderTime: settings.lunchReminderTime,
       dinnerReminderTime: settings.dinnerReminderTime,
+      timezone: settings.timezone,
     };
   }),
 
@@ -124,9 +182,10 @@ export const notificationRouter = router({
         partnerGoalReached: z.boolean().optional(),
         partnerLinked: z.boolean().optional(),
         receiveNudges: z.boolean().optional(),
-        breakfastReminderTime: z.string().nullable().optional(),
-        lunchReminderTime: z.string().nullable().optional(),
-        dinnerReminderTime: z.string().nullable().optional(),
+        breakfastReminderTime: z.string().regex(/^\d{2}:\d{2}$/).nullable().optional(),
+        lunchReminderTime: z.string().regex(/^\d{2}:\d{2}$/).nullable().optional(),
+        dinnerReminderTime: z.string().regex(/^\d{2}:\d{2}$/).nullable().optional(),
+        timezone: z.string().optional(),
       })
     )
     .mutation(async ({ ctx, input }) => {
@@ -139,6 +198,20 @@ export const notificationRouter = router({
         },
       });
 
+      // Sync meal reminder jobs when settings change
+      const mealReminderChanged =
+        input.breakfastReminderTime !== undefined ||
+        input.lunchReminderTime !== undefined ||
+        input.dinnerReminderTime !== undefined ||
+        input.timezone !== undefined;
+
+      if (mealReminderChanged) {
+        // Fire and forget - don't block the response
+        syncMealReminders(ctx.user.id).catch((error) => {
+          console.error("Failed to sync meal reminders:", error);
+        });
+      }
+
       return settings;
     }),
 
@@ -148,6 +221,8 @@ export const notificationRouter = router({
       where: { userId: ctx.user.id },
       select: {
         id: true,
+        tokenType: true,
+        deviceId: true,
         userAgent: true,
         createdAt: true,
       },
