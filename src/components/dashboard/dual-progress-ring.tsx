@@ -38,7 +38,7 @@ export function DualProgressRing({
 
   // User ring calculations (outer ring)
   const userRing = useMemo(() => {
-    const pct = Math.min((userProgress.current / userProgress.goal) * 100, 150);
+    const pct = userProgress.goal > 0 ? Math.min((userProgress.current / userProgress.goal) * 100, 150) : 0;
     const radius = (size - strokeWidth) / 2;
     const circ = 2 * Math.PI * radius;
     const offs = circ - (Math.min(pct, 100) / 100) * circ;
@@ -57,10 +57,9 @@ export function DualProgressRing({
   const partnerRing = useMemo(() => {
     if (!partnerProgress) return null;
 
-    const pct = Math.min(
-      (partnerProgress.current / partnerProgress.goal) * 100,
-      150
-    );
+    const pct = partnerProgress.goal > 0
+      ? Math.min((partnerProgress.current / partnerProgress.goal) * 100, 150)
+      : 0;
     const radius = (size - strokeWidth) / 2 - strokeWidth - 8;
     const circ = 2 * Math.PI * radius;
     const offs = circ - (Math.min(pct, 100) / 100) * circ;

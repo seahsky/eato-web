@@ -34,7 +34,7 @@ export function WeeklyBudgetCard({
 }: WeeklyBudgetCardProps) {
   const { energyUnit } = useEnergyUnit();
 
-  const weeklyProgress = Math.min((weeklyConsumed / weeklyBudget) * 100, 100);
+  const weeklyProgress = weeklyBudget > 0 ? Math.min((weeklyConsumed / weeklyBudget) * 100, 100) : 0;
   const weeklyBalance = getEnergyBalance(weeklyConsumed, weeklyBudget);
   const onTrack = isOnTrack(weeklyBalance);
   const progressColor = getEnergyBalanceColor(weeklyBalance);

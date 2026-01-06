@@ -66,7 +66,7 @@ export function getDaysRemainingInWeek(
   weekStartDay: WeekStartDay = 0
 ): number {
   const { end } = getWeekBounds(date, weekStartDay);
-  return differenceInDays(end, date);
+  return Math.max(0, differenceInDays(end, date));
 }
 
 /**

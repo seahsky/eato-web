@@ -26,7 +26,7 @@ export function ProgressRing({
   strokeWidth = 12,
 }: ProgressRingProps) {
   const { percentage, color, circumference, offset } = useMemo(() => {
-    const pct = Math.min((current / goal) * 100, 150);
+    const pct = goal > 0 ? Math.min((current / goal) * 100, 150) : 0;
     const radius = (size - strokeWidth) / 2;
     const circ = 2 * Math.PI * radius;
     const offs = circ - (Math.min(pct, 100) / 100) * circ;
