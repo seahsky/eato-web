@@ -3,6 +3,7 @@ import { router, protectedProcedure } from "../trpc";
 import { calculateBMR, calculateTDEE } from "@/lib/bmr";
 
 const energyUnitSchema = z.enum(["KCAL", "KJ"]);
+const displayModeSchema = z.enum(["QUALITATIVE", "EXACT"]);
 
 const profileSchema = z.object({
   age: z.number().min(13).max(120),
@@ -202,5 +203,39 @@ export const profileRouter = router({
       });
 
       return { profile, bmr, tdee };
+    }),
+
+  // Update display mode preference (Qualitative vs Exact)
+  updateDisplayMode: protectedProcedure
+    .input(z.object({ displayMode: displayModeSchema }))
+    .mutation(async ({ ctx, input }) => {
+      const profile = await ctx.prisma.profile.update({
+        where: { userId: ctx.user.id },
+        data: { displayMode: input.displayMode },
+      });
+      return profile;
+    }),
+
+  // Update weekly budget settings
+  updateWeeklyBudget: protectedProcedure
+    .input(
+      z.object({
+        weeklyCalorieBudget: z.number().min(7000).max(70000).nullable().optional(),
+        weekStartDay: z.number().min(0).max(6).optional(),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      const profile = await ctx.prisma.profile.update({
+        where: { userId: ctx.user.id },
+        data: {
+          ...(input.weeklyCalorieBudget !== undefined && {
+            weeklyCalorieBudget: input.weeklyCalorieBudget,
+          }),
+          ...(input.weekStartDay !== undefined && {
+            weekStartDay: input.weekStartDay,
+          }),
+        },
+      });
+      return profile;
     }),
 });

@@ -1,12 +1,18 @@
 import { z } from "zod";
 import { router, protectedProcedure } from "../trpc";
-import { startOfDay, endOfDay, subDays, startOfWeek, endOfWeek } from "date-fns";
+import { startOfDay, endOfDay, subDays, startOfWeek, endOfWeek, format } from "date-fns";
 import {
   getFlameSize,
   getNextMilestone,
   getMilestoneProgress,
   isStreakAtRisk,
 } from "@/lib/gamification/streaks";
+import {
+  getWeekBounds,
+  calculateWeeklyBudgetStatus,
+  type WeekStartDay,
+} from "@/lib/weekly-budget";
+import { getEnergyBalance } from "@/lib/energy-balance";
 
 export const statsRouter = router({
   // Get daily summary
@@ -121,6 +127,145 @@ export const statsRouter = router({
         totalCalories: days.reduce((sum, d) => sum + d.totalCalories, 0),
         daysOnGoal: days.filter((d) => d.goalMet).length,
         calorieGoal: profile?.calorieGoal ?? 2000,
+      };
+    }),
+
+  // Get weekly budget status (for Energy Balance feature)
+  getWeeklyBudgetStatus: protectedProcedure
+    .input(
+      z.object({
+        date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Date must be in YYYY-MM-DD format").optional(),
+      })
+    )
+    .query(async ({ ctx, input }) => {
+      // Parse date or use today
+      const targetDateStr = input.date ?? new Date().toISOString().split("T")[0];
+      const targetDate = new Date(targetDateStr + "T00:00:00.000Z");
+
+      // Get user's profile
+      const profile = await ctx.prisma.profile.findUnique({
+        where: { userId: ctx.user.id },
+      });
+
+      const dailyGoal = profile?.calorieGoal ?? 2000;
+      const weekStartDay = (profile?.weekStartDay ?? 0) as WeekStartDay;
+      const weeklyCalorieBudget = profile?.weeklyCalorieBudget ?? null;
+
+      // Get week bounds
+      const { start, end } = getWeekBounds(targetDate, weekStartDay);
+
+      // Fetch all DailyLogs for the week
+      const weekLogs = await ctx.prisma.dailyLog.findMany({
+        where: {
+          userId: ctx.user.id,
+          date: {
+            gte: start,
+            lte: endOfDay(end),
+          },
+        },
+      });
+
+      // Get today's data
+      const todayKey = format(targetDate, "yyyy-MM-dd");
+      const todayLog = weekLogs.find(
+        (log) => format(log.date, "yyyy-MM-dd") === todayKey
+      );
+      const dailyConsumed = todayLog?.totalCalories ?? 0;
+
+      // Calculate weekly totals
+      const weeklyConsumed = weekLogs.reduce((sum, log) => sum + log.totalCalories, 0);
+      const daysLogged = weekLogs.filter((log) => log.totalCalories > 0).length;
+
+      // Calculate full status
+      const status = calculateWeeklyBudgetStatus({
+        date: targetDate,
+        dailyConsumed,
+        dailyGoal,
+        weeklyConsumed,
+        weeklyCalorieBudget,
+        daysLogged,
+        weekStartDay,
+      });
+
+      return status;
+    }),
+
+  // Get partner's weekly budget status
+  getPartnerWeeklyBudgetStatus: protectedProcedure
+    .input(
+      z.object({
+        date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Date must be in YYYY-MM-DD format").optional(),
+      })
+    )
+    .query(async ({ ctx, input }) => {
+      // Get current user to find partner
+      const user = await ctx.prisma.user.findUnique({
+        where: { id: ctx.user.id },
+        select: { partnerId: true },
+      });
+
+      if (!user?.partnerId) {
+        return null;
+      }
+
+      // Parse date or use today
+      const targetDateStr = input.date ?? new Date().toISOString().split("T")[0];
+      const targetDate = new Date(targetDateStr + "T00:00:00.000Z");
+
+      // Get partner's profile
+      const profile = await ctx.prisma.profile.findUnique({
+        where: { userId: user.partnerId },
+      });
+
+      const dailyGoal = profile?.calorieGoal ?? 2000;
+      const weekStartDay = (profile?.weekStartDay ?? 0) as WeekStartDay;
+      const weeklyCalorieBudget = profile?.weeklyCalorieBudget ?? null;
+
+      // Get week bounds
+      const { start, end } = getWeekBounds(targetDate, weekStartDay);
+
+      // Fetch partner's DailyLogs for the week
+      const weekLogs = await ctx.prisma.dailyLog.findMany({
+        where: {
+          userId: user.partnerId,
+          date: {
+            gte: start,
+            lte: endOfDay(end),
+          },
+        },
+      });
+
+      // Get today's data
+      const todayKey = format(targetDate, "yyyy-MM-dd");
+      const todayLog = weekLogs.find(
+        (log) => format(log.date, "yyyy-MM-dd") === todayKey
+      );
+      const dailyConsumed = todayLog?.totalCalories ?? 0;
+
+      // Calculate weekly totals
+      const weeklyConsumed = weekLogs.reduce((sum, log) => sum + log.totalCalories, 0);
+      const daysLogged = weekLogs.filter((log) => log.totalCalories > 0).length;
+
+      // Calculate full status
+      const status = calculateWeeklyBudgetStatus({
+        date: targetDate,
+        dailyConsumed,
+        dailyGoal,
+        weeklyConsumed,
+        weeklyCalorieBudget,
+        daysLogged,
+        weekStartDay,
+      });
+
+      // Get partner name
+      const partner = await ctx.prisma.user.findUnique({
+        where: { id: user.partnerId },
+        select: { name: true },
+      });
+
+      return {
+        ...status,
+        partnerName: partner?.name ?? "Partner",
       };
     }),
 

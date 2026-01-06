@@ -78,6 +78,13 @@ model Profile {
   tdee          Float         // Total Daily Energy Expenditure
   calorieGoal   Float         // User's daily target
 
+  // Weekly budget feature
+  weeklyCalorieBudget  Float?        // Null = auto-calculate as calorieGoal * 7
+  weekStartDay         Int     @default(0)  // 0=Sunday, 1=Monday, ..., 6=Saturday
+
+  // Display preference
+  displayMode   DisplayMode   @default(QUALITATIVE)
+
   // User preferences
   energyUnit    EnergyUnit    @default(KCAL)
 
@@ -93,6 +100,11 @@ enum Gender {
 enum EnergyUnit {
   KCAL
   KJ
+}
+
+enum DisplayMode {
+  QUALITATIVE  // Shows Light/Balanced/Full
+  EXACT        // Shows exact calorie numbers
 }
 
 enum ActivityLevel {
@@ -336,18 +348,30 @@ model TranslationCache {
   @@index([expiresAt])
 }
 
-// Push notification subscription per device
+// Push notification subscription per device (supports both Web Push and Expo)
 model PushSubscription {
-  id        String   @id @default(auto()) @map("_id") @db.ObjectId
-  userId    String   @db.ObjectId
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  endpoint  String   @unique
-  p256dh    String
-  auth      String
+  id        String    @id @default(auto()) @map("_id") @db.ObjectId
+  userId    String    @db.ObjectId
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Token type discriminator
+  tokenType TokenType @default(WEB_PUSH)
+
+  // Web Push fields (required when tokenType = WEB_PUSH)
+  endpoint  String?   @unique
+  p256dh    String?
+  auth      String?
+
+  // Expo Push fields (required when tokenType = EXPO_PUSH)
+  expoToken String?   @unique
+
+  // Common fields
+  deviceId  String?
   userAgent String?
-  createdAt DateTime @default(now())
+  createdAt DateTime  @default(now())
 
   @@index([userId])
+  @@index([tokenType])
 }
 
 // User notification preferences
@@ -368,6 +392,9 @@ model NotificationSettings {
   breakfastReminderTime String?
   lunchReminderTime     String?
   dinnerReminderTime    String?
+
+  // Timezone for meal reminders (IANA format, e.g., "America/New_York")
+  timezone String @default("UTC")
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -561,6 +588,12 @@ enum ScrapeJobStatus {
   RUNNING
   COMPLETED
   FAILED
+}
+
+// Push notification token type
+enum TokenType {
+  WEB_PUSH
+  EXPO_PUSH
 }
 
 // ============================================

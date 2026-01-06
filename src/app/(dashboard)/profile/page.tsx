@@ -24,6 +24,7 @@ import { EnergyValue } from "@/components/ui/energy-value";
 import { useEnergyUnit } from "@/contexts/energy-context";
 import { getEnergyLabel, convertEnergy, convertToKcal, type EnergyUnit } from "@/lib/energy";
 import { NotificationSettings } from "@/components/notifications/notification-settings";
+import { WeeklyBudgetSettings } from "@/components/profile/weekly-budget-settings";
 import { StreakCounter } from "@/components/gamification/StreakCounter";
 import { BadgeShowcaseByCategory } from "@/components/gamification/BadgeShowcase";
 import { JointBadgeConstellation, JointBadgePreview } from "@/components/gamification/JointBadgeConstellation";
@@ -526,6 +527,22 @@ export default function ProfilePage() {
       >
         <NotificationSettings />
       </motion.div>
+
+      {/* Weekly Budget Settings */}
+      {profile && (
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.35 }}
+        >
+          <WeeklyBudgetSettings
+            dailyGoal={profile.calorieGoal}
+            weeklyBudget={profile.weeklyCalorieBudget}
+            weekStartDay={profile.weekStartDay}
+            displayMode={profile.displayMode}
+          />
+        </motion.div>
+      )}
 
       {/* Joint Badge Constellation Sheet */}
       {partnerAchievements && (

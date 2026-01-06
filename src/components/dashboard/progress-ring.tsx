@@ -2,13 +2,17 @@
 
 import { motion } from "framer-motion";
 import { useMemo } from "react";
-import { EnergyValue } from "@/components/ui/energy-value";
-import { useEnergyUnit } from "@/contexts/energy-context";
-import { convertEnergy, getEnergyLabel } from "@/lib/energy";
+import { EnergyBalanceDisplay } from "@/components/ui/energy-balance-display";
+import {
+  getEnergyBalance,
+  getEnergyBalanceColor,
+} from "@/lib/energy-balance";
 
 interface ProgressRingProps {
   current: number;
   goal: number;
+  weeklyConsumed?: number;
+  weeklyBudget?: number;
   size?: number;
   strokeWidth?: number;
 }
@@ -16,6 +20,8 @@ interface ProgressRingProps {
 export function ProgressRing({
   current,
   goal,
+  weeklyConsumed,
+  weeklyBudget,
   size = 200,
   strokeWidth = 12,
 }: ProgressRingProps) {
@@ -25,13 +31,9 @@ export function ProgressRing({
     const circ = 2 * Math.PI * radius;
     const offs = circ - (Math.min(pct, 100) / 100) * circ;
 
-    // Color based on progress
-    let col = "var(--success)"; // Green - under goal
-    if (pct >= 85 && pct < 100) {
-      col = "var(--chart-3)"; // Orange - approaching
-    } else if (pct >= 100) {
-      col = "var(--destructive)"; // Red - over goal
-    }
+    // Color based on energy balance level
+    const level = getEnergyBalance(current, goal);
+    const col = getEnergyBalanceColor(level);
 
     return { percentage: pct, color: col, circumference: circ, offset: offs };
   }, [current, goal, size, strokeWidth]);
@@ -40,9 +42,10 @@ export function ProgressRing({
   const over = current > goal ? current - goal : 0;
 
   // Accessibility label
-  const ariaLabel = over > 0
-    ? `You have consumed ${current} of ${goal} calories. ${over} calories over goal.`
-    : `You have consumed ${current} of ${goal} calories. ${remaining} calories remaining.`;
+  const ariaLabel =
+    over > 0
+      ? `You have consumed ${current} of ${goal} calories. ${over} calories over goal.`
+      : `You have consumed ${current} of ${goal} calories. ${remaining} calories remaining.`;
 
   return (
     <div
@@ -87,63 +90,22 @@ export function ProgressRing({
         />
       </svg>
 
-      {/* Center content */}
-      <CenterContent
-        current={current}
-        goal={goal}
-        over={over}
-        remaining={remaining}
-      />
-    </div>
-  );
-}
-
-function CenterContent({
-  current,
-  goal,
-  over,
-  remaining,
-}: {
-  current: number;
-  goal: number;
-  over: number;
-  remaining: number;
-}) {
-  const { energyUnit } = useEnergyUnit();
-
-  return (
-    <div className="text-center z-10">
-      <motion.div
-        initial={{ scale: 0.5, opacity: 0 }}
-        animate={{ scale: 1, opacity: 1 }}
-        transition={{ delay: 0.3, duration: 0.5 }}
-      >
-        <EnergyValue
-          kcal={current}
-          showUnit={false}
-          toggleable
-          className="text-4xl font-bold tracking-tight font-serif"
-        />
-        <p className="text-sm text-muted-foreground mt-1">
-          of {convertEnergy(goal, energyUnit)} {getEnergyLabel(energyUnit)}
-        </p>
-      </motion.div>
-      <motion.div
-        className="mt-3"
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ delay: 0.5 }}
-      >
-        {over > 0 ? (
-          <span className="text-xs font-medium text-destructive bg-destructive/10 px-2 py-1 rounded-full">
-            +{convertEnergy(over, energyUnit)} {getEnergyLabel(energyUnit)} over
-          </span>
-        ) : (
-          <span className="text-xs font-medium text-success bg-success/10 px-2 py-1 rounded-full">
-            {convertEnergy(remaining, energyUnit)} {getEnergyLabel(energyUnit)} remaining
-          </span>
-        )}
-      </motion.div>
+      {/* Center content - Energy Balance Display */}
+      <div className="z-10">
+        <motion.div
+          initial={{ scale: 0.5, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          transition={{ delay: 0.3, duration: 0.5 }}
+        >
+          <EnergyBalanceDisplay
+            consumed={current}
+            goal={goal}
+            weeklyConsumed={weeklyConsumed}
+            weeklyBudget={weeklyBudget}
+            size="lg"
+          />
+        </motion.div>
+      </div>
     </div>
   );
 }

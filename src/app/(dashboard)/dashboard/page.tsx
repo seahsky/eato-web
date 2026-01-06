@@ -6,12 +6,14 @@ import { MacroCard } from "@/components/dashboard/macro-card";
 import { MealSection } from "@/components/dashboard/meal-section";
 import { PartnerCard } from "@/components/dashboard/partner-card";
 import { WeeklySparkline } from "@/components/dashboard/weekly-sparkline";
+import { WeeklyBudgetCard } from "@/components/dashboard/weekly-budget-card";
 import { RecentRecipes } from "@/components/dashboard/recent-recipes";
 import { PartnerDaySheet } from "@/components/partner/partner-day-sheet";
 import { NotificationPermissionBanner } from "@/components/notifications/notification-permission-banner";
 import { StreakCounter } from "@/components/gamification/StreakCounter";
 import { JointCelebration, useJointCelebration } from "@/components/gamification/JointCelebration";
 import { OnboardingWizard } from "@/components/onboarding/onboarding-wizard";
+import { DisplayModeProvider } from "@/contexts/display-mode-context";
 import { trpc } from "@/trpc/react";
 import { format } from "date-fns";
 import { motion } from "framer-motion";
@@ -69,6 +71,20 @@ export default function DashboardPage() {
     endDate: format(selectedDate, "yyyy-MM-dd"),
   });
 
+  // Fetch weekly budget status for Energy Balance feature
+  const { data: weeklyBudgetStatus } = trpc.stats.getWeeklyBudgetStatus.useQuery({
+    date: format(selectedDate, "yyyy-MM-dd"),
+  });
+
+  // Fetch partner's weekly budget status
+  const { data: partnerWeeklyBudgetStatus } = trpc.stats.getPartnerWeeklyBudgetStatus.useQuery(
+    { date: format(selectedDate, "yyyy-MM-dd") },
+    { enabled: !!partnerSummary }
+  );
+
+  // Get profile for display mode
+  const { data: profile } = trpc.profile.get.useQuery();
+
   const isToday = format(selectedDate, "yyyy-MM-dd") === format(new Date(), "yyyy-MM-dd");
 
   // Check for joint celebration trigger (only on today's data)
@@ -121,6 +137,10 @@ export default function DashboardPage() {
   }
 
   return (
+    <DisplayModeProvider
+      initialMode={profile?.displayMode ?? "QUALITATIVE"}
+      hasProfile={!!profile}
+    >
     <div ref={constraintsRef} className="overflow-hidden">
       <motion.div
         drag="x"
@@ -254,20 +274,39 @@ export default function DashboardPage() {
             userProgress={{
               current: summary?.totalCalories ?? 0,
               goal: summary?.calorieGoal ?? 2000,
+              weeklyConsumed: weeklyBudgetStatus?.weeklyConsumed,
+              weeklyBudget: weeklyBudgetStatus?.weeklyBudget,
             }}
             partnerProgress={{
               current: partnerSummary.totalCalories,
               goal: partnerSummary.calorieGoal,
               name: partnerSummary.partnerName,
+              weeklyConsumed: partnerWeeklyBudgetStatus?.weeklyConsumed,
+              weeklyBudget: partnerWeeklyBudgetStatus?.weeklyBudget,
             }}
           />
         ) : (
           <ProgressRing
             current={summary?.totalCalories ?? 0}
             goal={summary?.calorieGoal ?? 2000}
+            weeklyConsumed={weeklyBudgetStatus?.weeklyConsumed}
+            weeklyBudget={weeklyBudgetStatus?.weeklyBudget}
           />
         )}
       </motion.div>
+
+      {/* Weekly Budget Card */}
+      {weeklyBudgetStatus && (
+        <WeeklyBudgetCard
+          weeklyBudget={weeklyBudgetStatus.weeklyBudget}
+          weeklyConsumed={weeklyBudgetStatus.weeklyConsumed}
+          weeklyRemaining={weeklyBudgetStatus.weeklyRemaining}
+          daysRemaining={weeklyBudgetStatus.daysRemaining}
+          suggestedDailyBudget={weeklyBudgetStatus.suggestedDailyBudget}
+          weekStartDate={weeklyBudgetStatus.weekStartDate}
+          weekEndDate={weeklyBudgetStatus.weekEndDate}
+        />
+      )}
 
       {/* Weekly Trend Sparkline */}
       {weeklyData && weeklyData.days.length > 0 && (
@@ -347,6 +386,8 @@ export default function DashboardPage() {
                 (entries) => entries.length > 0
               )
             }
+            partnerWeeklyConsumed={partnerWeeklyBudgetStatus?.weeklyConsumed}
+            partnerWeeklyBudget={partnerWeeklyBudgetStatus?.weeklyBudget}
             onClick={() => setPartnerSheetOpen(true)}
           />
           <PartnerDaySheet
@@ -433,5 +474,6 @@ export default function DashboardPage() {
       )}
       </motion.div>
     </div>
+    </DisplayModeProvider>
   );
 }

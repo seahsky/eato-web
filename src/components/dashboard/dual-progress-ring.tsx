@@ -3,14 +3,27 @@
 import { motion } from "framer-motion";
 import { useMemo } from "react";
 import { Heart } from "lucide-react";
-import { EnergyValue } from "@/components/ui/energy-value";
-import { useEnergyUnit } from "@/contexts/energy-context";
-import { convertEnergy, getEnergyLabel } from "@/lib/energy";
+import { EnergyBalanceDisplay } from "@/components/ui/energy-balance-display";
+import {
+  getEnergyBalance,
+  isOnTrack,
+} from "@/lib/energy-balance";
 import { cn } from "@/lib/utils";
 
 interface DualProgressRingProps {
-  userProgress: { current: number; goal: number };
-  partnerProgress?: { current: number; goal: number; name: string };
+  userProgress: {
+    current: number;
+    goal: number;
+    weeklyConsumed?: number;
+    weeklyBudget?: number;
+  };
+  partnerProgress?: {
+    current: number;
+    goal: number;
+    name: string;
+    weeklyConsumed?: number;
+    weeklyBudget?: number;
+  };
   size?: number;
   strokeWidth?: number;
 }
@@ -29,13 +42,14 @@ export function DualProgressRing({
     const radius = (size - strokeWidth) / 2;
     const circ = 2 * Math.PI * radius;
     const offs = circ - (Math.min(pct, 100) / 100) * circ;
+    const level = getEnergyBalance(userProgress.current, userProgress.goal);
 
     return {
       percentage: pct,
       circumference: circ,
       offset: offs,
       radius,
-      isOnTrack: pct <= 100,
+      isOnTrack: isOnTrack(level),
     };
   }, [userProgress, size, strokeWidth]);
 
@@ -50,34 +64,26 @@ export function DualProgressRing({
     const radius = (size - strokeWidth) / 2 - strokeWidth - 8;
     const circ = 2 * Math.PI * radius;
     const offs = circ - (Math.min(pct, 100) / 100) * circ;
+    const level = getEnergyBalance(partnerProgress.current, partnerProgress.goal);
 
     return {
       percentage: pct,
       circumference: circ,
       offset: offs,
       radius,
-      isOnTrack: pct <= 100,
+      isOnTrack: isOnTrack(level),
     };
   }, [partnerProgress, size, strokeWidth]);
 
   const bothOnTrack = userRing.isOnTrack && (partnerRing?.isOnTrack ?? true);
-  const userRemaining = Math.max(userProgress.goal - userProgress.current, 0);
-  const userOver =
-    userProgress.current > userProgress.goal
-      ? userProgress.current - userProgress.goal
-      : 0;
 
   // Accessibility labels
-  const userAriaLabel = userOver > 0
-    ? `You have consumed ${userProgress.current} of ${userProgress.goal} calories. ${userOver} calories over goal.`
-    : `You have consumed ${userProgress.current} of ${userProgress.goal} calories. ${userRemaining} calories remaining.`;
-
+  const userAriaLabel = `You have consumed ${userProgress.current} of ${userProgress.goal} calories.`;
   const partnerAriaLabel = partnerProgress
     ? `${partnerProgress.name} has consumed ${partnerProgress.current} of ${partnerProgress.goal} calories.`
-    : '';
-
+    : "";
   const combinedAriaLabel = partnerProgress
-    ? `${userAriaLabel} ${partnerAriaLabel} ${bothOnTrack ? 'Both partners are on track!' : ''}`
+    ? `${userAriaLabel} ${partnerAriaLabel} ${bothOnTrack ? "Both partners are on track!" : ""}`
     : userAriaLabel;
 
   return (
@@ -95,13 +101,25 @@ export function DualProgressRing({
       >
         <defs>
           {/* User ring gradient (terracotta) */}
-          <linearGradient id="user-ring-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+          <linearGradient
+            id="user-ring-gradient"
+            x1="0%"
+            y1="0%"
+            x2="100%"
+            y2="100%"
+          >
             <stop offset="0%" stopColor="var(--you-color)" />
             <stop offset="100%" stopColor="oklch(0.5 0.14 30)" />
           </linearGradient>
 
           {/* Partner ring gradient (sage) */}
-          <linearGradient id="partner-ring-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+          <linearGradient
+            id="partner-ring-gradient"
+            x1="0%"
+            y1="0%"
+            x2="100%"
+            y2="100%"
+          >
             <stop offset="0%" stopColor="var(--partner-color)" />
             <stop offset="100%" stopColor="oklch(0.5 0.12 145)" />
           </linearGradient>
@@ -133,7 +151,9 @@ export function DualProgressRing({
           cy={size / 2}
           r={userRing.radius}
           fill="none"
-          stroke={userRing.isOnTrack ? "url(#user-ring-gradient)" : "var(--destructive)"}
+          stroke={
+            userRing.isOnTrack ? "url(#user-ring-gradient)" : "var(--destructive)"
+          }
           strokeWidth={strokeWidth}
           strokeLinecap="round"
           strokeDasharray={userRing.circumference}
@@ -163,7 +183,11 @@ export function DualProgressRing({
               cy={size / 2}
               r={partnerRing.radius}
               fill="none"
-              stroke={partnerRing.isOnTrack ? "url(#partner-ring-gradient)" : "var(--destructive)"}
+              stroke={
+                partnerRing.isOnTrack
+                  ? "url(#partner-ring-gradient)"
+                  : "var(--destructive)"
+              }
               strokeWidth={strokeWidth - 2}
               strokeLinecap="round"
               strokeDasharray={partnerRing.circumference}
@@ -181,10 +205,7 @@ export function DualProgressRing({
         {/* Heart icon for partner mode */}
         {hasPartner && (
           <motion.div
-            className={cn(
-              "mb-1",
-              bothOnTrack && "animate-heartbeat"
-            )}
+            className={cn("mb-1", bothOnTrack && "animate-heartbeat")}
             initial={{ scale: 0, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
             transition={{ delay: 0.5, type: "spring", stiffness: 300 }}
@@ -200,26 +221,35 @@ export function DualProgressRing({
           </motion.div>
         )}
 
+        {/* Energy Balance Display */}
         <motion.div
           initial={{ scale: 0.5, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
           transition={{ delay: 0.3, duration: 0.5 }}
         >
-          <EnergyValue
-            kcal={userProgress.current}
-            showUnit={false}
-            toggleable
-            className="text-4xl font-bold tracking-tight font-serif"
+          <EnergyBalanceDisplay
+            consumed={userProgress.current}
+            goal={userProgress.goal}
+            weeklyConsumed={userProgress.weeklyConsumed}
+            weeklyBudget={userProgress.weeklyBudget}
+            size="md"
           />
         </motion.div>
 
-        <CenterStatus
-          userProgress={userProgress}
-          partnerProgress={partnerProgress}
-          userRemaining={userRemaining}
-          userOver={userOver}
-          bothOnTrack={bothOnTrack}
-        />
+        {/* Partner sync status */}
+        {hasPartner && (
+          <motion.p
+            className={cn(
+              "text-xs mt-2 font-medium",
+              bothOnTrack ? "text-success" : "text-muted-foreground"
+            )}
+            initial={{ opacity: 0, y: 5 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.8 }}
+          >
+            {bothOnTrack ? "Both on track!" : "Keep going together"}
+          </motion.p>
+        )}
       </div>
 
       {/* Partner indicator labels (positioned at ring edges) */}
@@ -232,68 +262,6 @@ export function DualProgressRing({
         />
       )}
     </div>
-  );
-}
-
-function CenterStatus({
-  userProgress,
-  partnerProgress,
-  userRemaining,
-  userOver,
-  bothOnTrack,
-}: {
-  userProgress: { current: number; goal: number };
-  partnerProgress?: { current: number; goal: number; name: string };
-  userRemaining: number;
-  userOver: number;
-  bothOnTrack: boolean;
-}) {
-  const { energyUnit } = useEnergyUnit();
-  const hasPartner = !!partnerProgress;
-
-  return (
-    <motion.div
-      className="mt-1"
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      transition={{ delay: 0.5 }}
-    >
-      <p className="text-xs text-muted-foreground">
-        of {convertEnergy(userProgress.goal, energyUnit)} {getEnergyLabel(energyUnit)}
-      </p>
-
-      <motion.div
-        className="mt-2"
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ delay: 0.6 }}
-      >
-        {userOver > 0 ? (
-          <span className="text-xs font-medium text-destructive bg-destructive/10 px-2 py-1 rounded-full">
-            +{convertEnergy(userOver, energyUnit)} {getEnergyLabel(energyUnit)} over
-          </span>
-        ) : (
-          <span className="text-xs font-medium text-success bg-success/10 px-2 py-1 rounded-full">
-            {convertEnergy(userRemaining, energyUnit)} {getEnergyLabel(energyUnit)} left
-          </span>
-        )}
-      </motion.div>
-
-      {/* Partner sync status */}
-      {hasPartner && (
-        <motion.p
-          className={cn(
-            "text-xs mt-2 font-medium",
-            bothOnTrack ? "text-success" : "text-muted-foreground"
-          )}
-          initial={{ opacity: 0, y: 5 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.8 }}
-        >
-          {bothOnTrack ? "Both on track!" : "Keep going together"}
-        </motion.p>
-      )}
-    </motion.div>
   );
 }
 
