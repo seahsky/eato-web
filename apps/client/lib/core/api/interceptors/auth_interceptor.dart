@@ -1,9 +1,17 @@
 import 'package:dio/dio.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
+import '../../../features/auth/providers/auth_provider.dart';
+
 class AuthInterceptor extends Interceptor {
   final _storage = const FlutterSecureStorage();
   static const _tokenKey = 'auth_token';
+
+  /// Maximum number of retries for transient failures
+  static const _maxRetries = 1;
+
+  /// Track if we're already handling a 401 to prevent loops
+  static bool _isHandling401 = false;
 
   @override
   Future<void> onRequest(
@@ -17,15 +25,63 @@ class AuthInterceptor extends Interceptor {
       options.headers['Authorization'] = 'Bearer $token';
     }
 
+    // Initialize retry count
+    options.extra['retryCount'] ??= 0;
+
     handler.next(options);
   }
 
   @override
-  void onError(DioException err, ErrorInterceptorHandler handler) {
+  Future<void> onError(
+    DioException err,
+    ErrorInterceptorHandler handler,
+  ) async {
+    final statusCode = err.response?.statusCode;
+    final retryCount = err.requestOptions.extra['retryCount'] as int? ?? 0;
+
     // Handle 401 Unauthorized
-    if (err.response?.statusCode == 401) {
-      // TODO: Trigger logout or token refresh
+    if (statusCode == 401) {
+      if (!_isHandling401) {
+        _isHandling401 = true;
+        try {
+          // Call the global logout callback
+          if (globalLogoutCallback != null) {
+            await globalLogoutCallback!();
+          }
+        } finally {
+          _isHandling401 = false;
+        }
+      }
+      handler.next(err);
+      return;
     }
+
+    // Retry logic for transient failures (5xx, network errors)
+    final shouldRetry = retryCount < _maxRetries &&
+        (statusCode != null && statusCode >= 500 ||
+            err.type == DioExceptionType.connectionTimeout ||
+            err.type == DioExceptionType.receiveTimeout ||
+            err.type == DioExceptionType.connectionError);
+
+    if (shouldRetry) {
+      err.requestOptions.extra['retryCount'] = retryCount + 1;
+
+      // Wait before retrying (exponential backoff)
+      await Future.delayed(Duration(milliseconds: 500 * (retryCount + 1)));
+
+      try {
+        // Create a new Dio instance for retry to avoid interceptor loops
+        final dio = Dio();
+        final response = await dio.fetch(err.requestOptions);
+        handler.resolve(response);
+        return;
+      } catch (e) {
+        // Retry failed, pass original error
+        handler.next(err);
+        return;
+      }
+    }
+
     handler.next(err);
   }
 

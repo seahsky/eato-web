@@ -1,3 +1,7 @@
+import 'dart:async';
+
+import 'package:clerk_flutter/clerk_flutter.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/api/api_client.dart';
@@ -18,6 +22,7 @@ class User {
   final String? name;
   final String? avatarUrl;
   final String? partnerId;
+  final bool profileCompleted;
 
   const User({
     required this.id,
@@ -25,6 +30,7 @@ class User {
     this.name,
     this.avatarUrl,
     this.partnerId,
+    this.profileCompleted = false,
   });
 
   factory User.fromJson(Map<String, dynamic> json) {
@@ -34,10 +40,12 @@ class User {
       name: json['name'] as String?,
       avatarUrl: json['avatarUrl'] as String?,
       partnerId: json['partnerId'] as String?,
+      profileCompleted: json['profileCompleted'] as bool? ?? false,
     );
   }
 
   bool get hasPartner => partnerId != null;
+  bool get needsOnboarding => !profileCompleted;
 }
 
 // Auth state
@@ -45,22 +53,26 @@ class AuthState {
   final AuthStatus status;
   final User? user;
   final String? error;
+  final String? token;
 
   const AuthState({
     this.status = AuthStatus.initial,
     this.user,
     this.error,
+    this.token,
   });
 
   AuthState copyWith({
     AuthStatus? status,
     User? user,
     String? error,
+    String? token,
   }) {
     return AuthState(
       status: status ?? this.status,
       user: user ?? this.user,
       error: error ?? this.error,
+      token: token ?? this.token,
     );
   }
 
@@ -68,15 +80,40 @@ class AuthState {
   bool get isLoading => status == AuthStatus.loading;
 }
 
+/// Callback type for triggering logout from interceptor
+typedef LogoutCallback = Future<void> Function();
+
+/// Global logout callback that can be called from the auth interceptor
+LogoutCallback? globalLogoutCallback;
+
 // Auth notifier
 class AuthNotifier extends StateNotifier<AuthState> {
   final ApiClient _apiClient;
+  Timer? _tokenRefreshTimer;
+  ClerkAuthState? _clerkAuth;
 
   AuthNotifier(this._apiClient) : super(const AuthState()) {
+    // Register global logout callback
+    globalLogoutCallback = _handleUnauthorized;
     _checkAuthStatus();
   }
 
+  @override
+  void dispose() {
+    _tokenRefreshTimer?.cancel();
+    globalLogoutCallback = null;
+    super.dispose();
+  }
+
+  /// Set the Clerk auth provider for session management
+  void setClerkAuth(ClerkAuthState clerkAuth) {
+    _clerkAuth = clerkAuth;
+  }
+
+  /// Check if there's an existing valid session
   Future<void> _checkAuthStatus() async {
+    state = state.copyWith(status: AuthStatus.loading);
+
     final token = await AuthInterceptor.getToken();
     if (token != null) {
       await refreshUser();
@@ -85,16 +122,25 @@ class AuthNotifier extends StateNotifier<AuthState> {
     }
   }
 
+  /// Refresh user data from the API
   Future<void> refreshUser() async {
-    state = state.copyWith(status: AuthStatus.loading);
     try {
       final userData = await _apiClient.getCurrentUser();
-      final user = User.fromJson(userData);
-      state = state.copyWith(
-        status: AuthStatus.authenticated,
-        user: user,
-        error: null,
-      );
+      if (userData != null) {
+        final user = User.fromJson(userData);
+        state = state.copyWith(
+          status: AuthStatus.authenticated,
+          user: user,
+          error: null,
+        );
+      } else {
+        // User not found in our database
+        state = state.copyWith(
+          status: AuthStatus.unauthenticated,
+          user: null,
+          error: 'User not found',
+        );
+      }
     } catch (e) {
       state = state.copyWith(
         status: AuthStatus.unauthenticated,
@@ -104,17 +150,97 @@ class AuthNotifier extends StateNotifier<AuthState> {
     }
   }
 
+  /// Sign in with a Clerk session token
   Future<void> signIn(String token) async {
+    state = state.copyWith(status: AuthStatus.loading);
+
+    // Store the token for API requests
     await AuthInterceptor.setToken(token);
+    state = state.copyWith(token: token);
+
+    // Fetch user data from our API
     await refreshUser();
+
+    // Start token refresh timer if authenticated
+    if (state.isAuthenticated) {
+      _startTokenRefreshTimer();
+    }
   }
 
-  Future<void> signOut() async {
-    await AuthInterceptor.clearToken();
-    state = state.copyWith(
-      status: AuthStatus.unauthenticated,
-      user: null,
+  /// Start a timer to refresh the token before it expires
+  /// Clerk tokens typically expire in 60 seconds, so refresh at 50 seconds
+  void _startTokenRefreshTimer() {
+    _tokenRefreshTimer?.cancel();
+    _tokenRefreshTimer = Timer.periodic(
+      const Duration(seconds: 50),
+      (_) => _refreshTokenFromClerk(),
     );
+  }
+
+  /// Refresh the token from Clerk
+  Future<void> _refreshTokenFromClerk() async {
+    if (_clerkAuth == null) return;
+
+    try {
+      final session = _clerkAuth!.session;
+      if (session != null) {
+        final token = session.lastActiveToken;
+        if (token != null && token.isNotExpired) {
+          await updateToken(token.jwt);
+        } else {
+          // Token expired, sign out
+          await signOut();
+        }
+      } else {
+        // No active session, sign out
+        await signOut();
+      }
+    } catch (e) {
+      // Token refresh failed, sign out
+      await signOut();
+    }
+  }
+
+  /// Handle 401 unauthorized response
+  Future<void> _handleUnauthorized() async {
+    await signOut();
+  }
+
+  /// Sign out and clear all auth state
+  Future<void> signOut() async {
+    _tokenRefreshTimer?.cancel();
+    _tokenRefreshTimer = null;
+
+    // Clear local token
+    await AuthInterceptor.clearToken();
+
+    // Sign out from Clerk if available
+    if (_clerkAuth != null) {
+      try {
+        await _clerkAuth!.signOut();
+      } catch (e) {
+        // Ignore Clerk sign out errors
+      }
+    }
+
+    state = const AuthState(status: AuthStatus.unauthenticated);
+  }
+
+  /// Update the token (called when Clerk refreshes the session)
+  Future<void> updateToken(String token) async {
+    await AuthInterceptor.setToken(token);
+    state = state.copyWith(token: token);
+  }
+
+  /// Handle Clerk session changes
+  void handleSessionChange(ClerkAuthState clerkAuth) {
+    _clerkAuth = clerkAuth;
+    final session = clerkAuth.session;
+
+    if (session == null && state.isAuthenticated) {
+      // Session ended externally, sign out
+      signOut();
+    }
   }
 }
 
@@ -134,4 +260,9 @@ final isAuthenticatedProvider = Provider<bool>((ref) {
 
 final currentUserProvider = Provider<User?>((ref) {
   return ref.watch(authProvider).user;
+});
+
+final needsOnboardingProvider = Provider<bool>((ref) {
+  final user = ref.watch(currentUserProvider);
+  return user?.needsOnboarding ?? false;
 });

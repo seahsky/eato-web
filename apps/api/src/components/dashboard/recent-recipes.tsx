@@ -53,7 +53,7 @@ export function RecentRecipes({ className }: RecentRecipesProps) {
       {/* Horizontal scroll carousel */}
       <ScrollArea className="w-full whitespace-nowrap">
         <div className="flex gap-3 pb-2">
-          {recipes.map((recipe, index) => (
+          {recipes.map((recipe: NonNullable<typeof recipes>[number], index: number) => (
             <motion.div
               key={recipe.id}
               initial={{ opacity: 0, x: 20 }}

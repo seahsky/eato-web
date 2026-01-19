@@ -244,7 +244,7 @@ export function NotificationSettings() {
                 <Skeleton className="h-12 w-full" />
               ) : subscriptions && subscriptions.length > 0 ? (
                 <div className="space-y-2">
-                  {subscriptions.map((sub) => (
+                  {subscriptions.map((sub: NonNullable<typeof subscriptions>[number]) => (
                     <div
                       key={sub.id}
                       className="flex items-center justify-between bg-muted/50 rounded-lg p-3"

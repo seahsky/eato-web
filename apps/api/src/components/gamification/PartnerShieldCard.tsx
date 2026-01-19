@@ -131,8 +131,8 @@ export function PartnerShieldCard() {
               <p className="text-sm font-medium">Recent Shield History</p>
               <div className="space-y-1">
                 {[
-                  ...shieldHistory.shieldsGiven.map((s) => ({ ...s, type: "given" as const })),
-                  ...shieldHistory.shieldsReceived.map((s) => ({ ...s, type: "received" as const })),
+                  ...shieldHistory.shieldsGiven.map((s: NonNullable<typeof shieldHistory>['shieldsGiven'][number]) => ({ ...s, type: "given" as const })),
+                  ...shieldHistory.shieldsReceived.map((s: NonNullable<typeof shieldHistory>['shieldsReceived'][number]) => ({ ...s, type: "received" as const })),
                 ]
                   .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
                   .slice(0, 10)

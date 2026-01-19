@@ -109,9 +109,9 @@ export function RestDayCalendar({ className }: RestDayCalendarProps) {
             <p className="text-sm font-medium">Upcoming Rest Days</p>
             <AnimatePresence>
               {restDayData?.restDayDates
-                .filter((d) => new Date(d) >= new Date())
-                .sort((a, b) => new Date(a).getTime() - new Date(b).getTime())
-                .map((restDate) => (
+                .filter((d: Date | string) => new Date(d) >= new Date())
+                .sort((a: Date | string, b: Date | string) => new Date(a).getTime() - new Date(b).getTime())
+                .map((restDate: Date | string) => (
                   <motion.div
                     key={new Date(restDate).toISOString()}
                     initial={{ opacity: 0, x: -10 }}

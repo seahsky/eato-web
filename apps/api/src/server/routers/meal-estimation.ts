@@ -48,6 +48,7 @@ const updateEstimationSchema = z.object({
 export const mealEstimationRouter = router({
   // Create a new meal estimation
   create: protectedProcedure
+    .meta({ openapi: { method: "POST", path: "/meal-estimations" } })
     .input(createEstimationSchema)
     .mutation(async ({ ctx, input }) => {
       const estimation = await ctx.prisma.mealEstimation.create({
@@ -98,6 +99,7 @@ export const mealEstimationRouter = router({
 
   // List user's meal estimations
   list: protectedProcedure
+    .meta({ openapi: { method: "GET", path: "/meal-estimations" } })
     .input(
       z
         .object({
@@ -147,6 +149,7 @@ export const mealEstimationRouter = router({
 
   // Get single estimation by ID
   getById: protectedProcedure
+    .meta({ openapi: { method: "GET", path: "/meal-estimations/{id}" } })
     .input(z.object({ id: z.string() }))
     .query(async ({ ctx, input }) => {
       const estimation = await ctx.prisma.mealEstimation.findFirst({
@@ -173,6 +176,7 @@ export const mealEstimationRouter = router({
 
   // Update meal estimation
   update: protectedProcedure
+    .meta({ openapi: { method: "PUT", path: "/meal-estimations/{id}" } })
     .input(updateEstimationSchema)
     .mutation(async ({ ctx, input }) => {
       // Verify ownership
@@ -240,6 +244,7 @@ export const mealEstimationRouter = router({
 
   // Update food entry reference after logging
   linkFoodEntry: protectedProcedure
+    .meta({ openapi: { method: "POST", path: "/meal-estimations/{estimationId}/link" } })
     .input(
       z.object({
         estimationId: z.string(),
@@ -269,6 +274,7 @@ export const mealEstimationRouter = router({
 
   // Delete meal estimation
   delete: protectedProcedure
+    .meta({ openapi: { method: "DELETE", path: "/meal-estimations/{id}" } })
     .input(z.object({ id: z.string() }))
     .mutation(async ({ ctx, input }) => {
       // Verify ownership

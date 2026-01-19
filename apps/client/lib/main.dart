@@ -1,14 +1,30 @@
+import 'package:clerk_flutter/clerk_flutter.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'core/config/env.dart';
 import 'core/router/app_router.dart';
 import 'core/theme/app_theme.dart';
 
-void main() {
+void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // Validate environment in production
+  if (!kDebugMode) {
+    Env.validate();
+  }
+
   runApp(
-    const ProviderScope(
-      child: EatoApp(),
+    ClerkAuth(
+      config: ClerkAuthConfig(
+        publishableKey: Env.clerkPublishableKey.isNotEmpty
+            ? Env.clerkPublishableKey
+            : 'pk_test_placeholder', // Placeholder for development
+      ),
+      child: const ProviderScope(
+        child: EatoApp(),
+      ),
     ),
   );
 }

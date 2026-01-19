@@ -45,12 +45,14 @@ const foodEntrySchema = z.object({
 export const foodRouter = router({
   // Unified search across USDA and Open Food Facts
   search: protectedProcedure
+    .meta({ openapi: { method: "GET", path: "/food/search" } })
     .input(
       z.object({
         query: z.string().min(2),
         page: z.number().min(1).default(1),
       })
     )
+    .output(z.any())
     .query(async ({ input }) => {
       return searchFoods(input.query, input.page);
     }),
@@ -58,11 +60,13 @@ export const foodRouter = router({
   // Fast search - returns cached results or fastest API response
   // Use this for progressive loading (shows results faster)
   searchFast: protectedProcedure
+    .meta({ openapi: { method: "GET", path: "/food/search-fast" } })
     .input(
       z.object({
         query: z.string().min(2),
       })
     )
+    .output(z.any())
     .query(async ({ input }) => {
       return searchFoodsFast(input.query);
     }),
@@ -70,6 +74,7 @@ export const foodRouter = router({
   // Batch search - search for multiple ingredients in parallel
   // Used by meal calculator to lookup all ingredients at once
   batchSearch: protectedProcedure
+    .meta({ openapi: { method: "POST", path: "/food/batch-search" } })
     .input(
       z.object({
         queries: z
@@ -82,6 +87,7 @@ export const foodRouter = router({
           .max(15),
       })
     )
+    .output(z.any())
     .query(async ({ input }) => {
       const results = await Promise.allSettled(
         input.queries.map(({ id, query }) =>
@@ -108,7 +114,9 @@ export const foodRouter = router({
 
   // Get product by barcode (FatSecret)
   getByBarcode: protectedProcedure
+    .meta({ openapi: { method: "GET", path: "/food/barcode/{barcode}" } })
     .input(z.object({ barcode: z.string() }))
+    .output(z.any())
     .query(async ({ input }) => {
       const product = await getProductByBarcode(input.barcode);
       if (!product) {
@@ -122,7 +130,9 @@ export const foodRouter = router({
 
   // Get FatSecret food by food_id
   getByFatSecretId: protectedProcedure
+    .meta({ openapi: { method: "GET", path: "/food/fatsecret/{foodId}" } })
     .input(z.object({ foodId: z.string() }))
+    .output(z.any())
     .query(async ({ input }) => {
       const food = await getProductById(input.foodId);
       if (!food) {
@@ -135,7 +145,11 @@ export const foodRouter = router({
     }),
 
   // Log food entry
-  log: protectedProcedure.input(foodEntrySchema).mutation(async ({ ctx, input }) => {
+  log: protectedProcedure
+    .meta({ openapi: { method: "POST", path: "/food/entries" } })
+    .input(foodEntrySchema)
+    .output(z.any())
+    .mutation(async ({ ctx, input }) => {
     const { forPartnerId, ...entryData } = input;
     const isLoggingForPartner = !!forPartnerId;
     let targetUserId = ctx.user.id;
@@ -367,7 +381,9 @@ export const foodRouter = router({
 
   // Get entries for a date
   getByDate: protectedProcedure
+    .meta({ openapi: { method: "GET", path: "/food/entries/by-date" } })
     .input(z.object({ date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Date must be in YYYY-MM-DD format") }))
+    .output(z.any())
     .query(async ({ ctx, input }) => {
       const dayStart = new Date(input.date + "T00:00:00.000Z");
       const dayEnd = new Date(input.date + "T23:59:59.999Z");
@@ -387,12 +403,14 @@ export const foodRouter = router({
 
   // Update entry
   update: protectedProcedure
+    .meta({ openapi: { method: "PUT", path: "/food/entries/{id}" } })
     .input(
       z.object({
         id: z.string(),
         data: foodEntrySchema.partial(),
       })
     )
+    .output(z.any())
     .mutation(async ({ ctx, input }) => {
       // First find the entry without user restriction
       const entry = await ctx.prisma.foodEntry.findFirst({
@@ -463,7 +481,9 @@ export const foodRouter = router({
 
   // Delete entry
   delete: protectedProcedure
+    .meta({ openapi: { method: "DELETE", path: "/food/entries/{id}" } })
     .input(z.object({ id: z.string() }))
+    .output(z.object({ success: z.boolean() }))
     .mutation(async ({ ctx, input }) => {
       // First find the entry without user restriction
       const entry = await ctx.prisma.foodEntry.findFirst({
@@ -522,7 +542,11 @@ export const foodRouter = router({
     }),
 
   // Get entries pending current user's approval
-  getPendingApprovals: protectedProcedure.query(async ({ ctx }) => {
+  getPendingApprovals: protectedProcedure
+    .meta({ openapi: { method: "GET", path: "/food/pending-approvals" } })
+    .input(z.void())
+    .output(z.any())
+    .query(async ({ ctx }) => {
     const entries = await ctx.prisma.foodEntry.findMany({
       where: {
         userId: ctx.user.id,
@@ -547,7 +571,11 @@ export const foodRouter = router({
   }),
 
   // Get pending approval count (for badge)
-  getPendingApprovalCount: protectedProcedure.query(async ({ ctx }) => {
+  getPendingApprovalCount: protectedProcedure
+    .meta({ openapi: { method: "GET", path: "/food/pending-approvals/count" } })
+    .input(z.void())
+    .output(z.object({ count: z.number() }))
+    .query(async ({ ctx }) => {
     const count = await ctx.prisma.foodEntry.count({
       where: {
         userId: ctx.user.id,
