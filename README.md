@@ -1,6 +1,19 @@
-# Eato - Diet Tracking PWA
+# Eato
 
-A mobile-first Progressive Web App for tracking daily calories with your partner.
+A mobile-first calorie tracking app for couples to reach their health goals together.
+
+## Monorepo Structure
+
+```
+eato/
+├── apps/
+│   ├── api/                   # Next.js backend (tRPC + Prisma)
+│   └── client/                # Flutter app (iOS, Android, Web)
+├── packages/                  # Shared code (future)
+│   └── shared/
+├── docs/                      # Documentation
+└── README.md
+```
 
 ## Features
 
@@ -8,30 +21,35 @@ A mobile-first Progressive Web App for tracking daily calories with your partner
 - **BMR Calculator**: Calculate your Basal Metabolic Rate using the Mifflin-St Jeor equation
 - **Partner Mode**: Link accounts with your partner to track progress together
 - **Daily & Weekly Stats**: Visualize your progress with animated charts
-- **PWA**: Install on your phone for offline access
+- **Cross-Platform**: Native iOS/Android apps + web support
 
 ## Tech Stack
 
-- Next.js 14 (App Router)
-- shadcn/ui
-- tRPC
+### Backend (apps/api/)
+- Next.js 16 (App Router)
+- tRPC + trpc-openapi (REST API)
 - Prisma + MongoDB
-- NextAuth.js
-- Serwist (PWA)
-- Framer Motion
+- Clerk Authentication
+
+### Mobile (apps/client/)
+- Flutter 3
+- Riverpod (State Management)
+- GoRouter (Navigation)
+- Dio + Retrofit (API Client)
 
 ## Getting Started
 
 ### Prerequisites
 
 - Node.js 18+
+- Flutter 3.19+
 - MongoDB database (MongoDB Atlas recommended)
 
-### Setup
+### Backend Setup
 
-1. **Clone and install:**
+1. **Navigate to api directory:**
    ```bash
-   cd eato-web
+   cd apps/api
    npm install
    ```
 
@@ -40,12 +58,7 @@ A mobile-first Progressive Web App for tracking daily calories with your partner
    cp .env.example .env.local
    ```
 
-   Edit `.env.local`:
-   ```env
-   DATABASE_URL="mongodb+srv://<username>:<password>@<cluster>.mongodb.net/eato"
-   NEXTAUTH_URL="http://localhost:3000"
-   NEXTAUTH_SECRET="generate-with-openssl-rand-base64-32"
-   ```
+   Edit `.env.local` with your credentials.
 
 3. **Generate Prisma client:**
    ```bash
@@ -60,40 +73,44 @@ A mobile-first Progressive Web App for tracking daily calories with your partner
 
 5. Open [http://localhost:3000](http://localhost:3000)
 
-## Build for Production
+### Mobile Setup
 
+1. **Navigate to client directory:**
+   ```bash
+   cd apps/client
+   flutter pub get
+   ```
+
+2. **Run on device/simulator:**
+   ```bash
+   flutter run
+   ```
+
+## API Documentation
+
+The backend exposes both tRPC and REST endpoints:
+
+- **tRPC**: `/api/trpc/[procedure]`
+- **REST (OpenAPI)**: `/api/rest/[path]`
+- **OpenAPI Spec**: `/api/openapi.json`
+
+## Development
+
+### Backend Commands
 ```bash
-npm run build -- --webpack
-npm start
+cd apps/api
+npm run dev          # Start dev server
+npm run build        # Build for production
+npm run lint         # Run linter
+npx prisma studio    # Open Prisma Studio
 ```
 
-## Project Structure
-
+### Mobile Commands
+```bash
+cd apps/client
+flutter run -d chrome    # Run on web
+flutter run -d ios       # Run on iOS
+flutter run -d android   # Run on Android
+flutter build apk        # Build Android APK
+flutter build ios        # Build iOS app
 ```
-src/
-├── app/                    # Next.js App Router pages
-│   ├── (auth)/            # Login/Register pages
-│   ├── (dashboard)/       # Protected dashboard pages
-│   └── api/               # API routes
-├── components/            # React components
-│   ├── ui/                # shadcn/ui components
-│   ├── auth/              # Auth forms
-│   ├── dashboard/         # Dashboard components
-│   └── food/              # Food tracking components
-├── lib/                   # Utilities
-│   ├── auth.ts            # NextAuth config
-│   ├── prisma.ts          # Prisma client
-│   └── bmr.ts             # BMR calculations
-├── server/                # tRPC server
-│   ├── routers/           # API routers
-│   └── services/          # External services
-└── trpc/                  # tRPC client setup
-```
-
-## Environment Variables
-
-| Variable | Description |
-|----------|-------------|
-| `DATABASE_URL` | MongoDB connection string |
-| `NEXTAUTH_URL` | App URL (http://localhost:3000) |
-| `NEXTAUTH_SECRET` | Secret for JWT signing |

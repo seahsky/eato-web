@@ -26,10 +26,32 @@ import {
 } from "@/lib/weekly-budget";
 import { getEnergyBalance } from "@/lib/energy-balance";
 
+// Output schemas for OpenAPI
+const dailySummaryOutputSchema = z.object({
+  date: z.date(),
+  totalCalories: z.number(),
+  totalProtein: z.number(),
+  totalCarbs: z.number(),
+  totalFat: z.number(),
+  totalFiber: z.number(),
+  calorieGoal: z.number(),
+  bmr: z.number().nullable(),
+  tdee: z.number().nullable(),
+  entries: z.array(z.any()),
+  entriesByMeal: z.object({
+    BREAKFAST: z.array(z.any()),
+    LUNCH: z.array(z.any()),
+    DINNER: z.array(z.any()),
+    SNACK: z.array(z.any()),
+  }),
+});
+
 export const statsRouter = router({
   // Get daily summary
   getDailySummary: protectedProcedure
+    .meta({ openapi: { method: "GET", path: "/stats/daily" } })
     .input(z.object({ date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Date must be in YYYY-MM-DD format") }))
+    .output(dailySummaryOutputSchema)
     .query(async ({ ctx, input }) => {
       // Parse YYYY-MM-DD as UTC midnight for consistent date handling across timezones
       const dayStart = new Date(input.date + "T00:00:00.000Z");

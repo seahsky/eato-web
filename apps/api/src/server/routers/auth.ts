@@ -4,9 +4,53 @@ import { TRPCError } from "@trpc/server";
 import { nanoid } from "nanoid";
 import { notifyPartnerLinked, sendCelebrationNotification, sendNudgeNotification } from "@/lib/notifications/triggers";
 
+// Output schemas for OpenAPI
+const partnerCodeOutputSchema = z.object({
+  code: z.string(),
+  expiresAt: z.date(),
+});
+
+const linkPartnerOutputSchema = z.object({
+  success: z.boolean(),
+  partnerName: z.string().nullable(),
+});
+
+const unlinkPartnerOutputSchema = z.object({
+  success: z.boolean(),
+});
+
+// Use passthrough for complex Prisma types that may have extra fields
+const userOutputSchema = z.object({
+  id: z.string(),
+  clerkId: z.string(),
+  email: z.string(),
+  name: z.string().nullable(),
+  profileCompleted: z.boolean(),
+  partnerId: z.string().nullable(),
+  profile: z.object({
+    id: z.string(),
+    age: z.number(),
+    weight: z.number(),
+    height: z.number(),
+    gender: z.string(),
+    activityLevel: z.string(),
+    bmr: z.number(),
+    tdee: z.number(),
+    calorieGoal: z.number(),
+  }).passthrough().nullable(),
+  partner: z.object({
+    id: z.string(),
+    name: z.string().nullable(),
+  }).passthrough().nullable(),
+}).passthrough().nullable();
+
 export const authRouter = router({
   // Generate a partner link code
-  generatePartnerCode: protectedProcedure.mutation(async ({ ctx }) => {
+  generatePartnerCode: protectedProcedure
+    .meta({ openapi: { method: "POST", path: "/auth/partner-code" } })
+    .input(z.void())
+    .output(partnerCodeOutputSchema)
+    .mutation(async ({ ctx }) => {
     const code = nanoid(6).toUpperCase();
     const expiry = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
 
@@ -23,7 +67,9 @@ export const authRouter = router({
 
   // Link with partner using code
   linkPartner: protectedProcedure
+    .meta({ openapi: { method: "POST", path: "/auth/link-partner" } })
     .input(z.object({ code: z.string().length(6) }))
+    .output(linkPartnerOutputSchema)
     .mutation(async ({ ctx, input }) => {
       const partner = await ctx.prisma.user.findFirst({
         where: {
@@ -89,7 +135,11 @@ export const authRouter = router({
     }),
 
   // Unlink partner
-  unlinkPartner: protectedProcedure.mutation(async ({ ctx }) => {
+  unlinkPartner: protectedProcedure
+    .meta({ openapi: { method: "POST", path: "/auth/unlink-partner" } })
+    .input(z.void())
+    .output(unlinkPartnerOutputSchema)
+    .mutation(async ({ ctx }) => {
     const user = await ctx.prisma.user.findUnique({
       where: { id: ctx.user.id },
     });
@@ -116,7 +166,11 @@ export const authRouter = router({
   }),
 
   // Get current user with partner info
-  getMe: protectedProcedure.query(async ({ ctx }) => {
+  getMe: protectedProcedure
+    .meta({ openapi: { method: "GET", path: "/auth/me" } })
+    .input(z.void())
+    .output(userOutputSchema)
+    .query(async ({ ctx }) => {
     const user = await ctx.prisma.user.findUnique({
       where: { id: ctx.user.id },
       include: {
