@@ -238,3 +238,56 @@ export async function notifyApprovalResult(
     data: { type: "approval_result", approved },
   });
 }
+
+/**
+ * Notify partner that they have been shielded
+ */
+export async function notifyPartnerShielded(
+  partnerId: string,
+  shielderName: string,
+  shieldedDate: Date
+): Promise<void> {
+  const hasSubscription = await userHasAnySubscription(partnerId);
+  if (!hasSubscription) return;
+
+  const dateStr = new Intl.DateTimeFormat("en-US", {
+    month: "short",
+    day: "numeric",
+  }).format(shieldedDate);
+
+  await sendNotificationToUser(partnerId, {
+    title: "Your Streak Was Saved! 🛡️",
+    body: `${shielderName} used a shield to protect your streak on ${dateStr}`,
+    tag: "partner-shield",
+    url: "/partner",
+    data: {
+      type: "partner_shield",
+      shieldDate: shieldedDate.toISOString(),
+      shielderName,
+    },
+  });
+}
+
+/**
+ * Notify user about shield opportunity for partner
+ */
+export async function notifyShieldOpportunity(
+  userId: string,
+  partnerName: string,
+  partnerStreak: number
+): Promise<void> {
+  const hasSubscription = await userHasAnySubscription(userId);
+  if (!hasSubscription) return;
+
+  await sendNotificationToUser(userId, {
+    title: "Shield Your Partner? 🛡️",
+    body: `${partnerName} missed yesterday. Use a shield to save their ${partnerStreak}-day streak?`,
+    tag: "shield-opportunity",
+    url: "/partner",
+    data: {
+      type: "shield_opportunity",
+      partnerName,
+      partnerStreak,
+    },
+  });
+}

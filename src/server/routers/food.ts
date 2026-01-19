@@ -6,8 +6,16 @@ import { searchFoods, searchFoodsFast } from "../services/food-search";
 import { hashQuery, cleanupExpiredCache } from "../services/search-cache";
 import { startOfDay, endOfDay } from "date-fns";
 import { notifyPartnerFoodLogged, notifyPartnerGoalReached, notifyPendingApproval, notifyBadgeUnlocked, notifyApprovalResult } from "@/lib/notifications/triggers";
-import { calculateStreakUpdate } from "@/lib/gamification/streaks";
-import { getStreakBadgesToUnlock } from "@/lib/gamification/badges";
+import {
+  calculateStreakUpdateWithRestDays,
+  calculateWeeklyStreakUpdate,
+  shouldResetRestDays,
+  MAX_REST_DAYS_PER_MONTH,
+} from "@/lib/gamification/streaks";
+import {
+  getStreakBadgesToUnlock,
+  getWeeklyStreakBadgesToUnlock,
+} from "@/lib/gamification/badges";
 
 const foodEntrySchema = z.object({
   name: z.string().min(1),
@@ -214,6 +222,13 @@ export const foodRouter = router({
           longestGoalStreak: true,
           lastLogDate: true,
           streakFreezes: true,
+          restDayDates: true,
+          restDaysRemaining: true,
+          lastRestDayReset: true,
+          weeklyStreak: true,
+          longestWeeklyStreak: true,
+          currentWeekDays: true,
+          weekStartDate: true,
           achievements: { select: { badgeId: true } },
           name: true,
           partnerId: true,
@@ -221,7 +236,11 @@ export const foodRouter = router({
       });
 
       if (userData) {
-        const streakResult = calculateStreakUpdate(
+        // Check if monthly rest day reset needed
+        const needsRestDayReset = shouldResetRestDays(userData.lastRestDayReset);
+
+        // Calculate daily streak with rest days
+        const streakResult = calculateStreakUpdateWithRestDays(
           {
             currentStreak: userData.currentStreak,
             longestStreak: userData.longestStreak,
@@ -229,6 +248,20 @@ export const foodRouter = router({
             longestGoalStreak: userData.longestGoalStreak,
             lastLogDate: userData.lastLogDate,
             streakFreezes: userData.streakFreezes,
+            restDayDates: userData.restDayDates,
+            restDaysRemaining: userData.restDaysRemaining,
+            lastRestDayReset: userData.lastRestDayReset,
+          },
+          consumedAt
+        );
+
+        // Calculate weekly streak
+        const weeklyResult = calculateWeeklyStreakUpdate(
+          {
+            weeklyStreak: userData.weeklyStreak,
+            longestWeeklyStreak: userData.longestWeeklyStreak,
+            currentWeekDays: userData.currentWeekDays,
+            weekStartDate: userData.weekStartDate,
           },
           consumedAt
         );
@@ -241,12 +274,22 @@ export const foodRouter = router({
             longestStreak: streakResult.longestStreak,
             streakFreezes: streakResult.freezesRemaining,
             lastLogDate: consumedAt,
+            weeklyStreak: weeklyResult.weeklyStreak,
+            longestWeeklyStreak: weeklyResult.longestWeeklyStreak,
+            currentWeekDays: weeklyResult.currentWeekDays,
+            weekStartDate: weeklyResult.weekStartDate,
+            ...(needsRestDayReset && {
+              restDaysRemaining: MAX_REST_DAYS_PER_MONTH,
+              lastRestDayReset: new Date(),
+            }),
           },
         });
 
-        // Check for new badges to unlock based on streak
+        // Check for new badges to unlock based on streaks
         const unlockedBadgeIds = userData.achievements.map((a) => a.badgeId);
-        const newBadges = getStreakBadgesToUnlock(streakResult.newStreak, unlockedBadgeIds);
+        const newDailyBadges = getStreakBadgesToUnlock(streakResult.newStreak, unlockedBadgeIds);
+        const newWeeklyBadges = getWeeklyStreakBadgesToUnlock(weeklyResult.weeklyStreak, unlockedBadgeIds);
+        const newBadges = [...newDailyBadges, ...newWeeklyBadges];
 
         // Create achievement records for new badges (one at a time to handle duplicates)
         for (const badgeId of newBadges) {

@@ -33,6 +33,7 @@ import { PartnerMacroCards } from "@/components/partner/partner-macro-cards";
 import { NudgePartnerButton } from "@/components/notifications/nudge-partner-button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
+import { PartnerShieldCard } from "@/components/gamification/PartnerShieldCard";
 
 function PartnerWeeklyStats({
   averageCalories,
@@ -219,6 +220,15 @@ export default function PartnerPage() {
             transition={{ delay: 0.2 }}
           >
             <PartnerMacroCards />
+          </motion.div>
+
+          {/* Partner Shield Card */}
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.23 }}
+          >
+            <PartnerShieldCard />
           </motion.div>
 
           {/* Partner Weekly Stats */}

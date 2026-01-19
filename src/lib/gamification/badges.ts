@@ -97,6 +97,58 @@ export const BADGES: Record<string, BadgeDefinition> = {
     order: 8,
   },
 
+  // Weekly consistency badges
+  monthly_consistent: {
+    id: "monthly_consistent",
+    name: "Monthly Consistent",
+    description: "Logged 5+ days for 4 weeks in a row",
+    category: "consistency",
+    icon: "calendar-check",
+    requirement: "4-week streak",
+    rarity: "common",
+    order: 9,
+  },
+  bimonthly_champion: {
+    id: "bimonthly_champion",
+    name: "Bimonthly Champion",
+    description: "Logged 5+ days for 8 weeks in a row",
+    category: "consistency",
+    icon: "calendar-days",
+    requirement: "8-week streak",
+    rarity: "uncommon",
+    order: 10,
+  },
+  quarterly_master: {
+    id: "quarterly_master",
+    name: "Quarterly Master",
+    description: "Logged 5+ days for 12 weeks in a row",
+    category: "consistency",
+    icon: "sparkles",
+    requirement: "12-week streak",
+    rarity: "rare",
+    order: 11,
+  },
+  half_year_consistent: {
+    id: "half_year_consistent",
+    name: "Half-Year Consistent",
+    description: "Logged 5+ days for 26 weeks in a row",
+    category: "consistency",
+    icon: "award",
+    requirement: "26-week streak",
+    rarity: "epic",
+    order: 12,
+  },
+  yearly_consistent: {
+    id: "yearly_consistent",
+    name: "Yearly Consistent",
+    description: "Logged 5+ days for 52 weeks in a row",
+    category: "consistency",
+    icon: "crown",
+    requirement: "52-week streak",
+    rarity: "legendary",
+    order: 13,
+  },
+
   // Logging badges
   meal_prepper: {
     id: "meal_prepper",
@@ -312,6 +364,33 @@ export function getGoalStreakBadgesToUnlock(
   for (const [threshold, badgeId] of Object.entries(goalBadgeThresholds)) {
     if (
       goalStreak >= parseInt(threshold) &&
+      !unlockedBadgeIds.includes(badgeId)
+    ) {
+      toUnlock.push(badgeId);
+    }
+  }
+
+  return toUnlock;
+}
+
+// Check which weekly streak badges should be unlocked
+export function getWeeklyStreakBadgesToUnlock(
+  weeklyStreak: number,
+  unlockedBadgeIds: string[]
+): string[] {
+  const weeklyBadgeThresholds: Record<number, string> = {
+    4: "monthly_consistent",
+    8: "bimonthly_champion",
+    12: "quarterly_master",
+    26: "half_year_consistent",
+    52: "yearly_consistent",
+  };
+
+  const toUnlock: string[] = [];
+
+  for (const [threshold, badgeId] of Object.entries(weeklyBadgeThresholds)) {
+    if (
+      weeklyStreak >= parseInt(threshold) &&
       !unlockedBadgeIds.includes(badgeId)
     ) {
       toUnlock.push(badgeId);

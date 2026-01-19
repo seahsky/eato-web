@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { TRPCError } from "@trpc/server";
 import { router, protectedProcedure } from "../trpc";
 import { startOfDay, endOfDay, subDays, startOfWeek, endOfWeek, format } from "date-fns";
 import {
@@ -6,7 +7,18 @@ import {
   getNextMilestone,
   getMilestoneProgress,
   isStreakAtRisk,
+  shouldResetRestDays,
+  isRestDay,
+  getWeeklyProgress,
+  getNextWeeklyMilestone,
+  MAX_REST_DAYS_PER_MONTH,
 } from "@/lib/gamification/streaks";
+import {
+  shouldResetShields,
+  checkShieldEligibility,
+  applyPartnerShield,
+  MAX_SHIELDS_PER_MONTH,
+} from "@/lib/gamification/partner-shields";
 import {
   getWeekBounds,
   calculateWeeklyBudgetStatus,
@@ -498,6 +510,9 @@ export const statsRouter = router({
         longestGoalStreak: true,
         lastLogDate: true,
         streakFreezes: true,
+        weeklyStreak: true,
+        longestWeeklyStreak: true,
+        currentWeekDays: true,
       },
     });
 
@@ -512,6 +527,11 @@ export const statsRouter = router({
         nextMilestone: 7,
         milestoneProgress: 0,
         streakAtRisk: false,
+        weeklyStreak: 0,
+        longestWeeklyStreak: 0,
+        currentWeekDays: 0,
+        weeklyProgress: 0,
+        nextWeeklyMilestone: 4,
       };
     }
 
@@ -525,6 +545,11 @@ export const statsRouter = router({
       nextMilestone: getNextMilestone(user.currentStreak),
       milestoneProgress: getMilestoneProgress(user.currentStreak),
       streakAtRisk: isStreakAtRisk(user.lastLogDate, user.currentStreak),
+      weeklyStreak: user.weeklyStreak,
+      longestWeeklyStreak: user.longestWeeklyStreak,
+      currentWeekDays: user.currentWeekDays,
+      weeklyProgress: getWeeklyProgress(user.currentWeekDays),
+      nextWeeklyMilestone: getNextWeeklyMilestone(user.weeklyStreak),
     };
   }),
 
@@ -766,4 +791,352 @@ export const statsRouter = router({
         nextCursor: limitedItems.length === input.limit ? limitedItems[limitedItems.length - 1]?.id : undefined,
       };
     }),
+
+  // ============================================
+  // REST DAY PROCEDURES
+  // ============================================
+
+  // Declare a rest day
+  declareRestDay: protectedProcedure
+    .input(z.object({
+      date: z.string(),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const user = await ctx.prisma.user.findUnique({
+        where: { id: ctx.user.id },
+        select: {
+          restDayDates: true,
+          restDaysRemaining: true,
+          lastRestDayReset: true,
+        },
+      });
+
+      if (!user) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "User not found",
+        });
+      }
+
+      // Check if monthly reset needed
+      const needsReset = shouldResetRestDays(user.lastRestDayReset);
+      let restDaysRemaining = user.restDaysRemaining;
+      let lastRestDayReset = user.lastRestDayReset;
+
+      if (needsReset) {
+        restDaysRemaining = MAX_REST_DAYS_PER_MONTH;
+        lastRestDayReset = new Date();
+      }
+
+      // Validate rest day allowance
+      if (restDaysRemaining <= 0) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "No rest days remaining this month",
+        });
+      }
+
+      const restDate = new Date(input.date);
+      const today = startOfDay(new Date());
+      const requestedDate = startOfDay(restDate);
+
+      // Prevent retroactive rest days
+      if (requestedDate < today) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "Cannot declare past dates as rest days",
+        });
+      }
+
+      // Check if already declared
+      const alreadyDeclared = user.restDayDates.some(
+        (date) => startOfDay(date).toISOString() === requestedDate.toISOString()
+      );
+
+      if (alreadyDeclared) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "This date is already declared as a rest day",
+        });
+      }
+
+      // Add rest day
+      await ctx.prisma.user.update({
+        where: { id: ctx.user.id },
+        data: {
+          restDayDates: {
+            push: restDate,
+          },
+          restDaysRemaining: restDaysRemaining - 1,
+          ...(needsReset && { lastRestDayReset }),
+        },
+      });
+
+      return {
+        success: true,
+        restDaysRemaining: restDaysRemaining - 1,
+        restDayDate: restDate,
+      };
+    }),
+
+  // Remove a rest day
+  removeRestDay: protectedProcedure
+    .input(z.object({
+      date: z.string(),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const user = await ctx.prisma.user.findUnique({
+        where: { id: ctx.user.id },
+        select: {
+          restDayDates: true,
+          restDaysRemaining: true,
+        },
+      });
+
+      if (!user) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "User not found",
+        });
+      }
+
+      const restDate = startOfDay(new Date(input.date));
+      const updatedRestDays = user.restDayDates.filter(
+        (date) => startOfDay(date).toISOString() !== restDate.toISOString()
+      );
+
+      await ctx.prisma.user.update({
+        where: { id: ctx.user.id },
+        data: {
+          restDayDates: updatedRestDays,
+          restDaysRemaining: user.restDaysRemaining + 1,
+        },
+      });
+
+      return { success: true };
+    }),
+
+  // Get all rest days
+  getRestDays: protectedProcedure.query(async ({ ctx }) => {
+    const user = await ctx.prisma.user.findUnique({
+      where: { id: ctx.user.id },
+      select: {
+        restDayDates: true,
+        restDaysRemaining: true,
+        lastRestDayReset: true,
+      },
+    });
+
+    if (!user) {
+      return {
+        restDayDates: [],
+        restDaysRemaining: 6,
+        needsReset: false,
+      };
+    }
+
+    const needsReset = shouldResetRestDays(user.lastRestDayReset);
+
+    return {
+      restDayDates: user.restDayDates,
+      restDaysRemaining: needsReset
+        ? MAX_REST_DAYS_PER_MONTH
+        : user.restDaysRemaining,
+      needsReset,
+    };
+  }),
+
+  // ============================================
+  // PARTNER SHIELD PROCEDURES
+  // ============================================
+
+  // Get partner shield status
+  getPartnerShieldStatus: protectedProcedure.query(async ({ ctx }) => {
+    const user = await ctx.prisma.user.findUnique({
+      where: { id: ctx.user.id },
+      select: {
+        partnerId: true,
+        partnerShields: true,
+        shieldsUsedThisMonth: true,
+        lastShieldReset: true,
+        lastLogDate: true,
+        currentStreak: true,
+      },
+    });
+
+    if (!user?.partnerId) {
+      return null;
+    }
+
+    // Check if monthly reset needed
+    const needsReset = shouldResetShields(user.lastShieldReset);
+    const currentShields = needsReset ? MAX_SHIELDS_PER_MONTH : user.partnerShields;
+
+    // Get partner data
+    const partner = await ctx.prisma.user.findUnique({
+      where: { id: user.partnerId },
+      select: {
+        name: true,
+        lastLogDate: true,
+        currentStreak: true,
+        partnerShields: true,
+        lastShieldReset: true,
+      },
+    });
+
+    if (!partner) {
+      return null;
+    }
+
+    const partnerNeedsReset = shouldResetShields(partner.lastShieldReset);
+
+    // Check if user can shield partner
+    const userCanShield = checkShieldEligibility(
+      partner.lastLogDate,
+      partner.currentStreak,
+      currentShields > 0
+    );
+
+    // Check if partner can shield user
+    const partnerCanShield = checkShieldEligibility(
+      user.lastLogDate,
+      user.currentStreak,
+      (partnerNeedsReset ? MAX_SHIELDS_PER_MONTH : partner.partnerShields) > 0
+    );
+
+    return {
+      userShields: currentShields,
+      partnerShields: partnerNeedsReset ? MAX_SHIELDS_PER_MONTH : partner.partnerShields,
+      partnerName: partner.name ?? "Partner",
+      userCanShield,
+      partnerCanShield,
+    };
+  }),
+
+  // Use shield on partner
+  usePartnerShield: protectedProcedure
+    .input(z.object({
+      targetDate: z.string(),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const user = await ctx.prisma.user.findUnique({
+        where: { id: ctx.user.id },
+        select: {
+          partnerId: true,
+          partnerShields: true,
+          lastShieldReset: true,
+        },
+      });
+
+      if (!user?.partnerId) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "No partner linked",
+        });
+      }
+
+      // Check if reset needed
+      const needsReset = shouldResetShields(user.lastShieldReset);
+      const currentShields = needsReset ? MAX_SHIELDS_PER_MONTH : user.partnerShields;
+
+      if (currentShields <= 0) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "No shields remaining this month",
+        });
+      }
+
+      // Get partner
+      const partner = await ctx.prisma.user.findUnique({
+        where: { id: user.partnerId },
+        select: {
+          lastLogDate: true,
+          currentStreak: true,
+          name: true,
+        },
+      });
+
+      if (!partner) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Partner not found",
+        });
+      }
+
+      // Validate eligibility
+      const eligibility = checkShieldEligibility(
+        partner.lastLogDate,
+        partner.currentStreak,
+        currentShields > 0
+      );
+
+      if (!eligibility.canUseShield) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: eligibility.reason ?? "Cannot use shield",
+        });
+      }
+
+      const targetDate = new Date(input.targetDate);
+
+      // Apply shield
+      await applyPartnerShield(
+        ctx.prisma,
+        ctx.user.id,
+        user.partnerId,
+        targetDate
+      );
+
+      // Reset shields if needed
+      if (needsReset) {
+        await ctx.prisma.user.update({
+          where: { id: ctx.user.id },
+          data: {
+            lastShieldReset: new Date(),
+          },
+        });
+      }
+
+      return {
+        success: true,
+        partnerName: partner.name ?? "Partner",
+        shieldedDate: targetDate,
+        remainingShields: currentShields - 1,
+      };
+    }),
+
+  // Get shield history
+  getShieldHistory: protectedProcedure.query(async ({ ctx }) => {
+    const [shieldsGiven, shieldsReceived] = await Promise.all([
+      ctx.prisma.partnerShield.findMany({
+        where: { fromUserId: ctx.user.id },
+        include: {
+          toUser: { select: { name: true } },
+        },
+        orderBy: { createdAt: "desc" },
+        take: 10,
+      }),
+      ctx.prisma.partnerShield.findMany({
+        where: { toUserId: ctx.user.id },
+        include: {
+          fromUser: { select: { name: true } },
+        },
+        orderBy: { createdAt: "desc" },
+        take: 10,
+      }),
+    ]);
+
+    return {
+      shieldsGiven: shieldsGiven.map((s) => ({
+        date: s.shieldedDate,
+        partnerName: s.toUser.name ?? "Partner",
+        createdAt: s.createdAt,
+      })),
+      shieldsReceived: shieldsReceived.map((s) => ({
+        date: s.shieldedDate,
+        partnerName: s.fromUser.name ?? "Partner",
+        createdAt: s.createdAt,
+      })),
+    };
+  }),
 });

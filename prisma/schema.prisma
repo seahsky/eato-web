@@ -52,6 +52,24 @@ model User {
   lastLogDate          DateTime?
   streakFreezes        Int       @default(0)   // Max 2
 
+  // Gamification - Rest Day Declaration
+  restDayDates         DateTime[]    @default([])
+  restDaysRemaining    Int           @default(6)
+  lastRestDayReset     DateTime      @default(now())
+
+  // Gamification - Weekly Streaks
+  weeklyStreak         Int       @default(0)
+  longestWeeklyStreak  Int       @default(0)
+  currentWeekDays      Int       @default(0)
+  weekStartDate        DateTime?
+
+  // Gamification - Partner Shields
+  partnerShields           Int                 @default(2)
+  shieldsUsedThisMonth     DateTime[]          @default([])
+  lastShieldReset          DateTime            @default(now())
+  shieldsGiven             PartnerShield[]     @relation("ShieldGiver")
+  shieldsReceived          PartnerShield[]     @relation("ShieldReceiver")
+
   // Gamification - Unlockables
   unlockedTheme        String    @default("default")
   avatarFrame          String    @default("none")
@@ -610,5 +628,20 @@ model Achievement {
 
   @@unique([userId, badgeId])
   @@index([userId])
+}
+
+// Partner shield usage history
+model PartnerShield {
+  id           String   @id @default(auto()) @map("_id") @db.ObjectId
+  fromUserId   String   @db.ObjectId
+  fromUser     User     @relation("ShieldGiver", fields: [fromUserId], references: [id], onDelete: Cascade)
+  toUserId     String   @db.ObjectId
+  toUser       User     @relation("ShieldReceiver", fields: [toUserId], references: [id], onDelete: Cascade)
+  shieldedDate DateTime
+  createdAt    DateTime @default(now())
+
+  @@index([fromUserId])
+  @@index([toUserId])
+  @@index([shieldedDate])
 }
 

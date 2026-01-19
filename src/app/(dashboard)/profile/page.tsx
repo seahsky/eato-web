@@ -28,6 +28,7 @@ import { WeeklyBudgetSettings } from "@/components/profile/weekly-budget-setting
 import { StreakCounter } from "@/components/gamification/StreakCounter";
 import { BadgeShowcaseByCategory } from "@/components/gamification/BadgeShowcase";
 import { JointBadgeConstellation, JointBadgePreview } from "@/components/gamification/JointBadgeConstellation";
+import { RestDayCalendar } from "@/components/gamification/RestDayCalendar";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import type { ActivityLevel, Gender } from "@/lib/bmr";
 import type { BadgeCategory } from "@/lib/gamification/badges";
@@ -316,6 +317,15 @@ export default function ProfilePage() {
           </Card>
         </motion.div>
       )}
+
+      {/* Rest Day Calendar */}
+      <motion.div
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.13 }}
+      >
+        <RestDayCalendar />
+      </motion.div>
 
       {/* Calorie Goal Suggestions */}
       {profile && (

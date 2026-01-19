@@ -1,8 +1,10 @@
 "use client";
 
+import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Flame, Snowflake } from "lucide-react";
+import { Flame, Snowflake, Calendar } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
 
 type FlameSize = "none" | "small" | "medium" | "large" | "epic";
 
@@ -18,6 +20,11 @@ interface StreakCounterProps {
   // Partner props for duo mode
   partnerStreak?: number;
   showDuoMode?: boolean;
+  // Weekly streak props
+  weeklyStreak?: number;
+  longestWeeklyStreak?: number;
+  currentWeekDays?: number;
+  nextWeeklyMilestone?: number | null;
 }
 
 const flameSizeConfig: Record<
@@ -57,11 +64,22 @@ export function StreakCounter({
   className,
   partnerStreak,
   showDuoMode = false,
+  weeklyStreak,
+  longestWeeklyStreak,
+  currentWeekDays,
+  nextWeeklyMilestone,
 }: StreakCounterProps) {
+  const [viewMode, setViewMode] = useState<"daily" | "weekly">("weekly");
+
   const config = flameSizeConfig[flameSize];
   const hasStreak = currentStreak > 0;
   const hasDuoStreak = showDuoMode && partnerStreak !== undefined && partnerStreak > 0 && currentStreak > 0;
   const duoStreak = hasDuoStreak ? Math.min(currentStreak, partnerStreak!) : 0;
+
+  // Weekly streak calculations
+  const hasWeeklyStreak = (weeklyStreak ?? 0) > 0;
+  const weeklyProgress = currentWeekDays ? (currentWeekDays / 5) * 100 : 0;
+  const isMonday = new Date().getDay() === 1;
 
   if (compact) {
     return (
@@ -88,82 +106,176 @@ export function StreakCounter({
 
   return (
     <div className={cn("flex flex-col items-center", className)}>
-      {/* Flame icon with glow effect */}
-      <div className="relative">
-        <FlameIcon
-          flameSize={flameSize}
-          config={config}
-          hasStreak={hasStreak}
-          streakAtRisk={streakAtRisk}
-          size={48}
-        />
-      </div>
+      {/* View Mode Toggle */}
+      {weeklyStreak !== undefined && (
+        <div className="flex gap-2 mb-4">
+          <Button
+            variant={viewMode === "weekly" ? "default" : "outline"}
+            size="sm"
+            onClick={() => setViewMode("weekly")}
+          >
+            <Calendar className="w-4 h-4 mr-1" />
+            Weekly
+          </Button>
+          <Button
+            variant={viewMode === "daily" ? "default" : "outline"}
+            size="sm"
+            onClick={() => setViewMode("daily")}
+          >
+            <Flame className="w-4 h-4 mr-1" />
+            Daily
+          </Button>
+        </div>
+      )}
 
-      {/* Streak count */}
-      <motion.div
-        className="mt-2 text-center"
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.2 }}
-      >
-        <span className="text-3xl font-bold tabular-nums">{currentStreak}</span>
-        <span className="text-sm text-muted-foreground ml-1">
-          day{currentStreak !== 1 ? "s" : ""}
-        </span>
-      </motion.div>
-
-      {/* Progress to next milestone */}
-      {nextMilestone && hasStreak && (
-        <motion.div
-          className="mt-3 w-full max-w-[120px]"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.3 }}
-        >
-          <div className="flex justify-between text-xs text-muted-foreground mb-1">
-            <span>{currentStreak}</span>
-            <span>{nextMilestone}</span>
+      {/* Conditional Rendering */}
+      {viewMode === "weekly" && weeklyStreak !== undefined ? (
+        <>
+          {/* Weekly View */}
+          <div className="relative">
+            <Calendar className="w-12 h-12 text-primary" />
           </div>
-          <div className="h-1.5 bg-muted rounded-full overflow-hidden">
+
+          {/* Weekly Streak count */}
+          <motion.div
+            className="mt-2 text-center"
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2 }}
+          >
+            <span className="text-3xl font-bold tabular-nums">{weeklyStreak}</span>
+            <span className="text-sm text-muted-foreground ml-1">
+              week{weeklyStreak !== 1 ? "s" : ""}
+            </span>
+          </motion.div>
+
+          {/* Monday special message */}
+          {isMonday && hasWeeklyStreak && (
             <motion.div
-              className="h-full rounded-full"
-              style={{
-                background: `linear-gradient(90deg, ${config.colors.join(", ")})`,
-              }}
-              initial={{ width: 0 }}
-              animate={{ width: `${milestoneProgress}%` }}
-              transition={{ duration: 0.8, ease: "easeOut" }}
+              className="mt-2 text-xs text-primary font-medium flex items-center gap-1"
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+            >
+              🎯 New week, fresh start!
+            </motion.div>
+          )}
+
+          {/* Progress to next weekly milestone */}
+          {nextWeeklyMilestone && hasWeeklyStreak && (
+            <motion.div
+              className="mt-3 w-full max-w-[120px]"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.3 }}
+            >
+              <div className="flex justify-between text-xs text-muted-foreground mb-1">
+                <span>{weeklyStreak}</span>
+                <span>{nextWeeklyMilestone}</span>
+              </div>
+              <div className="h-1.5 bg-muted rounded-full overflow-hidden">
+                <motion.div
+                  className="h-full rounded-full bg-primary"
+                  initial={{ width: 0 }}
+                  animate={{ width: `${((weeklyStreak / nextWeeklyMilestone) * 100)}%` }}
+                  transition={{ duration: 0.8, ease: "easeOut" }}
+                />
+              </div>
+            </motion.div>
+          )}
+
+          {/* Current week progress */}
+          {currentWeekDays !== undefined && (
+            <motion.div
+              className="mt-3 flex items-center gap-1 text-xs text-muted-foreground"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.4 }}
+            >
+              <span>{currentWeekDays}/5 days this week</span>
+            </motion.div>
+          )}
+        </>
+      ) : (
+        <>
+          {/* Daily View (existing implementation) */}
+          {/* Flame icon with glow effect */}
+          <div className="relative">
+            <FlameIcon
+              flameSize={flameSize}
+              config={config}
+              hasStreak={hasStreak}
+              streakAtRisk={streakAtRisk}
+              size={48}
             />
           </div>
-        </motion.div>
-      )}
 
-      {/* Streak freezes */}
-      {streakFreezes > 0 && (
-        <motion.div
-          className="mt-3 flex items-center gap-1 text-xs text-muted-foreground"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.4 }}
-        >
-          <Snowflake className="w-3 h-3 text-blue-400" />
-          <span>{streakFreezes} freeze{streakFreezes !== 1 ? "s" : ""}</span>
-        </motion.div>
-      )}
-
-      {/* Streak at risk warning */}
-      <AnimatePresence>
-        {streakAtRisk && (
+          {/* Streak count */}
           <motion.div
-            className="mt-3 text-xs text-amber-500 font-medium"
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.9 }}
+            className="mt-2 text-center"
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2 }}
           >
-            Log food to keep your streak!
+            <span className="text-3xl font-bold tabular-nums">{currentStreak}</span>
+            <span className="text-sm text-muted-foreground ml-1">
+              day{currentStreak !== 1 ? "s" : ""}
+            </span>
           </motion.div>
-        )}
-      </AnimatePresence>
+
+          {/* Progress to next milestone */}
+          {nextMilestone && hasStreak && (
+            <motion.div
+              className="mt-3 w-full max-w-[120px]"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.3 }}
+            >
+              <div className="flex justify-between text-xs text-muted-foreground mb-1">
+                <span>{currentStreak}</span>
+                <span>{nextMilestone}</span>
+              </div>
+              <div className="h-1.5 bg-muted rounded-full overflow-hidden">
+                <motion.div
+                  className="h-full rounded-full"
+                  style={{
+                    background: `linear-gradient(90deg, ${config.colors.join(", ")})`,
+                  }}
+                  initial={{ width: 0 }}
+                  animate={{ width: `${milestoneProgress}%` }}
+                  transition={{ duration: 0.8, ease: "easeOut" }}
+                />
+              </div>
+            </motion.div>
+          )}
+
+          {/* Streak freezes */}
+          {streakFreezes > 0 && (
+            <motion.div
+              className="mt-3 flex items-center gap-1 text-xs text-muted-foreground"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.4 }}
+            >
+              <Snowflake className="w-3 h-3 text-blue-400" />
+              <span>{streakFreezes} freeze{streakFreezes !== 1 ? "s" : ""}</span>
+            </motion.div>
+          )}
+
+          {/* Streak at risk warning */}
+          <AnimatePresence>
+            {streakAtRisk && (
+              <motion.div
+                className="mt-3 text-xs text-amber-500 font-medium"
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.9 }}
+              >
+                Log food to keep your streak!
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </>
+      )}
     </div>
   );
 }
