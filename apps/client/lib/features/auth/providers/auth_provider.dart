@@ -86,23 +86,76 @@ typedef LogoutCallback = Future<void> Function();
 /// Global logout callback that can be called from the auth interceptor
 LogoutCallback? globalLogoutCallback;
 
-// Auth notifier
-class AuthNotifier extends StateNotifier<AuthState> {
+// Auth notifier with app lifecycle handling
+class AuthNotifier extends StateNotifier<AuthState> with WidgetsBindingObserver {
   final ApiClient _apiClient;
   Timer? _tokenRefreshTimer;
   ClerkAuthState? _clerkAuth;
+  DateTime? _lastTokenRefresh;
+  bool _isInBackground = false;
 
   AuthNotifier(this._apiClient) : super(const AuthState()) {
     // Register global logout callback
     globalLogoutCallback = _handleUnauthorized;
+    // Listen to app lifecycle changes
+    WidgetsBinding.instance.addObserver(this);
     _checkAuthStatus();
   }
 
   @override
   void dispose() {
     _tokenRefreshTimer?.cancel();
+    WidgetsBinding.instance.removeObserver(this);
     globalLogoutCallback = null;
     super.dispose();
+  }
+
+  /// Handle app lifecycle state changes
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState lifecycleState) {
+    switch (lifecycleState) {
+      case AppLifecycleState.paused:
+      case AppLifecycleState.inactive:
+        _handleAppBackground();
+      case AppLifecycleState.resumed:
+        _handleAppForeground();
+      case AppLifecycleState.detached:
+      case AppLifecycleState.hidden:
+        // No action needed
+        break;
+    }
+  }
+
+  /// Called when app goes to background
+  void _handleAppBackground() {
+    _isInBackground = true;
+    // Pause token refresh timer to save resources
+    _tokenRefreshTimer?.cancel();
+    _tokenRefreshTimer = null;
+  }
+
+  /// Called when app comes to foreground
+  Future<void> _handleAppForeground() async {
+    if (!_isInBackground) return;
+    _isInBackground = false;
+
+    if (!state.isAuthenticated) return;
+
+    // Check if token might have expired while in background
+    final now = DateTime.now();
+    final tokenAge = _lastTokenRefresh != null
+        ? now.difference(_lastTokenRefresh!)
+        : const Duration(minutes: 5);
+
+    if (tokenAge.inSeconds >= 50) {
+      // Token might be expired or close to expiry, refresh immediately
+      await _refreshTokenFromClerk();
+    }
+
+    // Restart the refresh timer
+    if (state.isAuthenticated) {
+      _startTokenRefreshTimer();
+    }
   }
 
   /// Set the Clerk auth provider for session management
@@ -126,7 +179,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
   Future<void> refreshUser() async {
     try {
       final userData = await _apiClient.getCurrentUser();
-      if (userData != null) {
+      if (userData.isNotEmpty) {
         final user = User.fromJson(userData);
         state = state.copyWith(
           status: AuthStatus.authenticated,
@@ -157,6 +210,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
     // Store the token for API requests
     await AuthInterceptor.setToken(token);
     state = state.copyWith(token: token);
+    _lastTokenRefresh = DateTime.now();
 
     // Fetch user data from our API
     await refreshUser();
@@ -230,6 +284,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
   Future<void> updateToken(String token) async {
     await AuthInterceptor.setToken(token);
     state = state.copyWith(token: token);
+    _lastTokenRefresh = DateTime.now();
   }
 
   /// Handle Clerk session changes

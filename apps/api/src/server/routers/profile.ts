@@ -23,16 +23,22 @@ const profileSchema = z.object({
 
 export const profileRouter = router({
   // Get profile
-  get: protectedProcedure.query(async ({ ctx }) => {
-    const profile = await ctx.prisma.profile.findUnique({
-      where: { userId: ctx.user.id },
-    });
-    return profile;
-  }),
+  get: protectedProcedure
+    .meta({ openapi: { method: "GET", path: "/profile" } })
+    .input(z.void())
+    .output(z.any())
+    .query(async ({ ctx }) => {
+      const profile = await ctx.prisma.profile.findUnique({
+        where: { userId: ctx.user.id },
+      });
+      return profile;
+    }),
 
   // Create or update profile
   upsert: protectedProcedure
+    .meta({ openapi: { method: "PUT", path: "/profile" } })
     .input(profileSchema)
+    .output(z.any())
     .mutation(async ({ ctx, input }) => {
       const bmr = calculateBMR(
         input.weight,
@@ -65,7 +71,9 @@ export const profileRouter = router({
 
   // Update just the calorie goal
   updateGoal: protectedProcedure
+    .meta({ openapi: { method: "PUT", path: "/profile/goal" } })
     .input(z.object({ calorieGoal: z.number().min(1000).max(10000) }))
+    .output(z.any())
     .mutation(async ({ ctx, input }) => {
       const profile = await ctx.prisma.profile.update({
         where: { userId: ctx.user.id },
@@ -76,7 +84,9 @@ export const profileRouter = router({
 
   // Update energy unit preference
   updateEnergyUnit: protectedProcedure
+    .meta({ openapi: { method: "PUT", path: "/profile/energy-unit" } })
     .input(z.object({ energyUnit: energyUnitSchema }))
+    .output(z.any())
     .mutation(async ({ ctx, input }) => {
       const profile = await ctx.prisma.profile.update({
         where: { userId: ctx.user.id },
@@ -86,7 +96,11 @@ export const profileRouter = router({
     }),
 
   // Get partner's profile (read-only)
-  getPartnerProfile: protectedProcedure.query(async ({ ctx }) => {
+  getPartnerProfile: protectedProcedure
+    .meta({ openapi: { method: "GET", path: "/profile/partner" } })
+    .input(z.void())
+    .output(z.any())
+    .query(async ({ ctx }) => {
     const user = await ctx.prisma.user.findUnique({
       where: { id: ctx.user.id },
       select: { partnerId: true },
@@ -117,6 +131,7 @@ export const profileRouter = router({
 
   // Calculate BMR preview (without saving)
   calculateBMRPreview: protectedProcedure
+    .meta({ openapi: { method: "POST", path: "/profile/calculate-bmr" } })
     .input(
       z.object({
         age: z.number().min(13).max(120),
@@ -132,6 +147,7 @@ export const profileRouter = router({
         ]),
       })
     )
+    .output(z.object({ bmr: z.number(), tdee: z.number() }))
     .query(({ input }) => {
       const bmr = calculateBMR(
         input.weight,
@@ -145,6 +161,7 @@ export const profileRouter = router({
 
   // Complete onboarding wizard - creates profile and marks user as onboarded
   completeOnboarding: protectedProcedure
+    .meta({ openapi: { method: "POST", path: "/profile/complete-onboarding" } })
     .input(
       z.object({
         age: z.number().min(13).max(120),
@@ -161,6 +178,7 @@ export const profileRouter = router({
         calorieGoal: z.number().min(1000).max(10000),
       })
     )
+    .output(z.any())
     .mutation(async ({ ctx, input }) => {
       const bmr = calculateBMR(
         input.weight,
@@ -207,7 +225,9 @@ export const profileRouter = router({
 
   // Update display mode preference (Qualitative vs Exact)
   updateDisplayMode: protectedProcedure
+    .meta({ openapi: { method: "PUT", path: "/profile/display-mode" } })
     .input(z.object({ displayMode: displayModeSchema }))
+    .output(z.any())
     .mutation(async ({ ctx, input }) => {
       const profile = await ctx.prisma.profile.update({
         where: { userId: ctx.user.id },
@@ -218,12 +238,14 @@ export const profileRouter = router({
 
   // Update weekly budget settings
   updateWeeklyBudget: protectedProcedure
+    .meta({ openapi: { method: "PUT", path: "/profile/weekly-budget" } })
     .input(
       z.object({
         weeklyCalorieBudget: z.number().min(7000).max(70000).nullable().optional(),
         weekStartDay: z.number().min(0).max(6).optional(),
       })
     )
+    .output(z.any())
     .mutation(async ({ ctx, input }) => {
       const profile = await ctx.prisma.profile.update({
         where: { userId: ctx.user.id },

@@ -189,6 +189,7 @@ export const authRouter = router({
 
   // Send celebration to partner
   sendCelebration: protectedProcedure
+    .meta({ openapi: { method: "POST", path: "/auth/send-celebration" } })
     .input(
       z.object({
         reason: z.enum(["goal_hit", "streak_milestone", "badge_earned", "general"]),
@@ -218,6 +219,7 @@ export const authRouter = router({
 
   // Send nudge to partner
   sendNudge: protectedProcedure
+    .meta({ openapi: { method: "POST", path: "/auth/send-nudge" } })
     .input(
       z.object({
         type: z.enum(["log_reminder", "goal_motivation", "general"]).default("general"),

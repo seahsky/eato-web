@@ -115,7 +115,7 @@ export function MealCalculator() {
           };
         }
 
-        const searchResult = result.data?.find((r) => r.id === ing.id);
+        const searchResult = result.data?.find((r: { id: string; query: string; products: FoodProduct[] }) => r.id === ing.id);
         const matchedProduct = searchResult?.products[0];
         const alternatives = searchResult?.products.slice(1);
 

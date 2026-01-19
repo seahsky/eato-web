@@ -63,7 +63,7 @@ export function FoodQuickAccess({ onSelect }: FoodQuickAccessProps) {
       const newIsFavorite = !isCurrentlyFavorite;
 
       // Optimistically update recent foods
-      utils.food.getRecentFoods.setData(undefined, (old) =>
+      utils.food.getRecentFoods.setData(undefined, (old: QuickAccessFood[] | undefined) =>
         old?.map((f) =>
           f.name === variables.name && f.brand === variables.brand
             ? { ...f, isFavorite: newIsFavorite }
@@ -74,23 +74,23 @@ export function FoodQuickAccess({ onSelect }: FoodQuickAccessProps) {
       // Optimistically update favorites
       if (newIsFavorite) {
         // Adding to favorites - find the food and add it
-        const foodToAdd = previousRecent?.find(f => f.name === variables.name && f.brand === variables.brand)
-          ?? previousFrequent?.find(f => f.name === variables.name && f.brand === variables.brand);
+        const foodToAdd = previousRecent?.find((f: QuickAccessFood) => f.name === variables.name && f.brand === variables.brand)
+          ?? previousFrequent?.find((f: QuickAccessFood) => f.name === variables.name && f.brand === variables.brand);
         if (foodToAdd) {
-          utils.food.getFavoriteFoods.setData(undefined, (old) => [
+          utils.food.getFavoriteFoods.setData(undefined, (old: QuickAccessFood[] | undefined) => [
             { ...foodToAdd, isFavorite: true },
             ...(old ?? []),
           ]);
         }
       } else {
         // Removing from favorites
-        utils.food.getFavoriteFoods.setData(undefined, (old) =>
+        utils.food.getFavoriteFoods.setData(undefined, (old: QuickAccessFood[] | undefined) =>
           old?.filter((f) => !(f.name === variables.name && f.brand === variables.brand))
         );
       }
 
       // Optimistically update frequent foods
-      utils.food.getFrequentFoods.setData(undefined, (old) =>
+      utils.food.getFrequentFoods.setData(undefined, (old: QuickAccessFood[] | undefined) =>
         old?.map((f) =>
           f.name === variables.name && f.brand === variables.brand
             ? { ...f, isFavorite: newIsFavorite }

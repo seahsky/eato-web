@@ -96,6 +96,7 @@ export const statsRouter = router({
 
   // Get weekly summary (last 7 days)
   getWeeklySummary: protectedProcedure
+    .meta({ openapi: { method: "GET", path: "/stats/weekly" } })
     .input(
       z.object({
         endDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Date must be in YYYY-MM-DD format").optional(),
@@ -166,6 +167,7 @@ export const statsRouter = router({
 
   // Get weekly budget status (for Energy Balance feature)
   getWeeklyBudgetStatus: protectedProcedure
+    .meta({ openapi: { method: "GET", path: "/stats/weekly-budget" } })
     .input(
       z.object({
         date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Date must be in YYYY-MM-DD format").optional(),
@@ -226,6 +228,7 @@ export const statsRouter = router({
 
   // Get partner's weekly budget status
   getPartnerWeeklyBudgetStatus: protectedProcedure
+    .meta({ openapi: { method: "GET", path: "/stats/partner/weekly-budget" } })
     .input(
       z.object({
         date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Date must be in YYYY-MM-DD format").optional(),
@@ -305,6 +308,7 @@ export const statsRouter = router({
 
   // Get partner's daily summary
   getPartnerDailySummary: protectedProcedure
+    .meta({ openapi: { method: "GET", path: "/stats/partner/daily" } })
     .input(z.object({ date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Date must be in YYYY-MM-DD format") }))
     .query(async ({ ctx, input }) => {
       // Get current user to find partner
@@ -371,7 +375,11 @@ export const statsRouter = router({
     }),
 
   // Get partner's weekly summary
-  getPartnerWeeklySummary: protectedProcedure.query(async ({ ctx }) => {
+  getPartnerWeeklySummary: protectedProcedure
+    .meta({ openapi: { method: "GET", path: "/stats/partner/weekly" } })
+    .input(z.void())
+    .output(z.any())
+    .query(async ({ ctx }) => {
     const user = await ctx.prisma.user.findUnique({
       where: { id: ctx.user.id },
       select: { partnerId: true },
@@ -429,6 +437,7 @@ export const statsRouter = router({
 
   // Get partner's history with food entries
   getPartnerHistory: protectedProcedure
+    .meta({ openapi: { method: "GET", path: "/stats/partner/history" } })
     .input(
       z.object({
         days: z.number().min(1).max(14).default(7),
@@ -522,7 +531,11 @@ export const statsRouter = router({
     }),
 
   // Get user's streak data
-  getStreakData: protectedProcedure.query(async ({ ctx }) => {
+  getStreakData: protectedProcedure
+    .meta({ openapi: { method: "GET", path: "/stats/streak" } })
+    .input(z.void())
+    .output(z.any())
+    .query(async ({ ctx }) => {
     const user = await ctx.prisma.user.findUnique({
       where: { id: ctx.user.id },
       select: {
@@ -576,7 +589,11 @@ export const statsRouter = router({
   }),
 
   // Get partner's streak data (for mutual achievements)
-  getPartnerStreakData: protectedProcedure.query(async ({ ctx }) => {
+  getPartnerStreakData: protectedProcedure
+    .meta({ openapi: { method: "GET", path: "/stats/partner/streak" } })
+    .input(z.void())
+    .output(z.any())
+    .query(async ({ ctx }) => {
     const user = await ctx.prisma.user.findUnique({
       where: { id: ctx.user.id },
       select: { partnerId: true },
@@ -611,6 +628,7 @@ export const statsRouter = router({
 
   // Get partner's recent activity for activity feed
   getPartnerActivity: protectedProcedure
+    .meta({ openapi: { method: "GET", path: "/stats/partner/activity" } })
     .input(
       z.object({
         limit: z.number().min(1).max(50).default(20),
@@ -820,6 +838,7 @@ export const statsRouter = router({
 
   // Declare a rest day
   declareRestDay: protectedProcedure
+    .meta({ openapi: { method: "POST", path: "/stats/rest-days" } })
     .input(z.object({
       date: z.string(),
     }))
@@ -903,6 +922,7 @@ export const statsRouter = router({
 
   // Remove a rest day
   removeRestDay: protectedProcedure
+    .meta({ openapi: { method: "DELETE", path: "/stats/rest-days" } })
     .input(z.object({
       date: z.string(),
     }))
@@ -939,7 +959,11 @@ export const statsRouter = router({
     }),
 
   // Get all rest days
-  getRestDays: protectedProcedure.query(async ({ ctx }) => {
+  getRestDays: protectedProcedure
+    .meta({ openapi: { method: "GET", path: "/stats/rest-days" } })
+    .input(z.void())
+    .output(z.any())
+    .query(async ({ ctx }) => {
     const user = await ctx.prisma.user.findUnique({
       where: { id: ctx.user.id },
       select: {
@@ -973,7 +997,11 @@ export const statsRouter = router({
   // ============================================
 
   // Get partner shield status
-  getPartnerShieldStatus: protectedProcedure.query(async ({ ctx }) => {
+  getPartnerShieldStatus: protectedProcedure
+    .meta({ openapi: { method: "GET", path: "/stats/partner-shields" } })
+    .input(z.void())
+    .output(z.any())
+    .query(async ({ ctx }) => {
     const user = await ctx.prisma.user.findUnique({
       where: { id: ctx.user.id },
       select: {
@@ -1037,6 +1065,7 @@ export const statsRouter = router({
 
   // Use shield on partner
   usePartnerShield: protectedProcedure
+    .meta({ openapi: { method: "POST", path: "/stats/partner-shields/use" } })
     .input(z.object({
       targetDate: z.string(),
     }))
@@ -1128,7 +1157,11 @@ export const statsRouter = router({
     }),
 
   // Get shield history
-  getShieldHistory: protectedProcedure.query(async ({ ctx }) => {
+  getShieldHistory: protectedProcedure
+    .meta({ openapi: { method: "GET", path: "/stats/partner-shields/history" } })
+    .input(z.void())
+    .output(z.any())
+    .query(async ({ ctx }) => {
     const [shieldsGiven, shieldsReceived] = await Promise.all([
       ctx.prisma.partnerShield.findMany({
         where: { fromUserId: ctx.user.id },

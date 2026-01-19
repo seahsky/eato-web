@@ -10,6 +10,7 @@ const NUDGE_COOLDOWN_MS = 4 * 60 * 60 * 1000;
 export const notificationRouter = router({
   // Subscribe to web push notifications
   subscribe: protectedProcedure
+    .meta({ openapi: { method: "POST", path: "/notifications/subscribe" } })
     .input(
       z.object({
         endpoint: z.string().url(),
@@ -51,6 +52,7 @@ export const notificationRouter = router({
 
   // Subscribe to Expo push notifications (for mobile app)
   subscribeExpo: protectedProcedure
+    .meta({ openapi: { method: "POST", path: "/notifications/subscribe-expo" } })
     .input(
       z.object({
         expoToken: z.string().startsWith("ExponentPushToken["),
@@ -89,6 +91,7 @@ export const notificationRouter = router({
 
   // Unsubscribe from push notifications (supports both web and expo)
   unsubscribe: protectedProcedure
+    .meta({ openapi: { method: "POST", path: "/notifications/unsubscribe" } })
     .input(
       z.object({
         endpoint: z.string().url().optional(),
@@ -119,7 +122,9 @@ export const notificationRouter = router({
 
   // Unsubscribe a specific device by ID
   unsubscribeDevice: protectedProcedure
+    .meta({ openapi: { method: "DELETE", path: "/notifications/device/{subscriptionId}" } })
     .input(z.object({ subscriptionId: z.string() }))
+    .output(z.object({ success: z.boolean() }))
     .mutation(async ({ ctx, input }) => {
       const subscription = await ctx.prisma.pushSubscription.findFirst({
         where: {
@@ -143,7 +148,11 @@ export const notificationRouter = router({
     }),
 
   // Get notification settings
-  getSettings: protectedProcedure.query(async ({ ctx }) => {
+  getSettings: protectedProcedure
+    .meta({ openapi: { method: "GET", path: "/notifications/settings" } })
+    .input(z.void())
+    .output(z.any())
+    .query(async ({ ctx }) => {
     const settings = await ctx.prisma.notificationSettings.findUnique({
       where: { userId: ctx.user.id },
     });
@@ -176,6 +185,7 @@ export const notificationRouter = router({
 
   // Update notification settings
   updateSettings: protectedProcedure
+    .meta({ openapi: { method: "PUT", path: "/notifications/settings" } })
     .input(
       z.object({
         partnerFoodLogged: z.boolean().optional(),
@@ -216,7 +226,11 @@ export const notificationRouter = router({
     }),
 
   // Get user's registered devices/subscriptions
-  getSubscriptions: protectedProcedure.query(async ({ ctx }) => {
+  getSubscriptions: protectedProcedure
+    .meta({ openapi: { method: "GET", path: "/notifications/subscriptions" } })
+    .input(z.void())
+    .output(z.any())
+    .query(async ({ ctx }) => {
     const subscriptions = await ctx.prisma.pushSubscription.findMany({
       where: { userId: ctx.user.id },
       select: {
@@ -234,11 +248,13 @@ export const notificationRouter = router({
 
   // Send nudge to partner
   sendNudge: protectedProcedure
+    .meta({ openapi: { method: "POST", path: "/notifications/nudge" } })
     .input(
       z.object({
         message: z.string().max(200).optional(),
       })
     )
+    .output(z.any())
     .mutation(async ({ ctx, input }) => {
       // Get user with partner info
       const user = await ctx.prisma.user.findUnique({
@@ -302,7 +318,11 @@ export const notificationRouter = router({
     }),
 
   // Get last nudge sent to partner (for cooldown display)
-  getLastNudge: protectedProcedure.query(async ({ ctx }) => {
+  getLastNudge: protectedProcedure
+    .meta({ openapi: { method: "GET", path: "/notifications/nudge/last" } })
+    .input(z.void())
+    .output(z.any())
+    .query(async ({ ctx }) => {
     const user = await ctx.prisma.user.findUnique({
       where: { id: ctx.user.id },
       select: { partnerId: true },
@@ -342,7 +362,11 @@ export const notificationRouter = router({
   }),
 
   // Check if user has any push subscriptions
-  hasSubscription: protectedProcedure.query(async ({ ctx }) => {
+  hasSubscription: protectedProcedure
+    .meta({ openapi: { method: "GET", path: "/notifications/has-subscription" } })
+    .input(z.void())
+    .output(z.boolean())
+    .query(async ({ ctx }) => {
     const count = await ctx.prisma.pushSubscription.count({
       where: { userId: ctx.user.id },
     });

@@ -8,9 +8,15 @@ import {
   type BadgeCategory,
 } from "@/lib/gamification/badges";
 
+import { z } from "zod";
+
 export const achievementsRouter = router({
   // Get all user achievements with badge details
-  getAll: protectedProcedure.query(async ({ ctx }) => {
+  getAll: protectedProcedure
+    .meta({ openapi: { method: "GET", path: "/achievements" } })
+    .input(z.void())
+    .output(z.any())
+    .query(async ({ ctx }) => {
     const achievements = await ctx.prisma.achievement.findMany({
       where: { userId: ctx.user.id },
       orderBy: { unlockedAt: "desc" },
@@ -56,7 +62,11 @@ export const achievementsRouter = router({
   }),
 
   // Get badges by category
-  getByCategory: protectedProcedure.query(async ({ ctx }) => {
+  getByCategory: protectedProcedure
+    .meta({ openapi: { method: "GET", path: "/achievements/by-category" } })
+    .input(z.void())
+    .output(z.any())
+    .query(async ({ ctx }) => {
     const achievements = await ctx.prisma.achievement.findMany({
       where: { userId: ctx.user.id },
     });
@@ -83,7 +93,11 @@ export const achievementsRouter = router({
   }),
 
   // Get recent achievements (for notifications/toasts)
-  getRecent: protectedProcedure.query(async ({ ctx }) => {
+  getRecent: protectedProcedure
+    .meta({ openapi: { method: "GET", path: "/achievements/recent" } })
+    .input(z.void())
+    .output(z.any())
+    .query(async ({ ctx }) => {
     const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
 
     const recentAchievements = await ctx.prisma.achievement.findMany({
@@ -104,7 +118,11 @@ export const achievementsRouter = router({
   }),
 
   // Get achievement summary (for profile display)
-  getSummary: protectedProcedure.query(async ({ ctx }) => {
+  getSummary: protectedProcedure
+    .meta({ openapi: { method: "GET", path: "/achievements/summary" } })
+    .input(z.void())
+    .output(z.any())
+    .query(async ({ ctx }) => {
     const [achievementCount, user] = await Promise.all([
       ctx.prisma.achievement.count({
         where: { userId: ctx.user.id },
@@ -130,7 +148,11 @@ export const achievementsRouter = router({
   }),
 
   // Get partner's achievements for joint badge view
-  getPartnerAchievements: protectedProcedure.query(async ({ ctx }) => {
+  getPartnerAchievements: protectedProcedure
+    .meta({ openapi: { method: "GET", path: "/achievements/partner" } })
+    .input(z.void())
+    .output(z.any())
+    .query(async ({ ctx }) => {
     // Get current user to find partner
     const user = await ctx.prisma.user.findUnique({
       where: { id: ctx.user.id },

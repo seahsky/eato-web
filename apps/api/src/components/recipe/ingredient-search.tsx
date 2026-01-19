@@ -196,7 +196,7 @@ export function IngredientSearch({ onSelect, onClose }: IngredientSearchProps) {
                 <span>Instant results</span>
               </div>
             )}
-            {displayData.products.slice(0, 5).map((product, index) => (
+            {displayData.products.slice(0, 5).map((product: FoodProduct, index: number) => (
               <motion.button
                 key={product.id || index}
                 type="button"

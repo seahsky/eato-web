@@ -10,6 +10,20 @@ import { toast } from "sonner";
 import { format } from "date-fns";
 import { Skeleton } from "@/components/ui/skeleton";
 
+interface PendingEntry {
+  id: string;
+  name: string;
+  brand: string | null;
+  imageUrl: string | null;
+  calories: number;
+  protein: number;
+  carbs: number;
+  fat: number;
+  loggedAt: Date;
+  loggedByName: string | null;
+  mealType: string;
+}
+
 export function ApprovalsList() {
   const utils = trpc.useUtils();
   const { data: entries, isLoading } = trpc.food.getPendingApprovals.useQuery();
@@ -23,8 +37,8 @@ export function ApprovalsList() {
       const previousEntries = utils.food.getPendingApprovals.getData();
 
       // Optimistically remove from the list
-      utils.food.getPendingApprovals.setData(undefined, (old) =>
-        old?.filter((e) => e.id !== entryId)
+      utils.food.getPendingApprovals.setData(undefined, (old: PendingEntry[] | undefined) =>
+        old?.filter((e: PendingEntry) => e.id !== entryId)
       );
 
       return { previousEntries };
@@ -54,8 +68,8 @@ export function ApprovalsList() {
       const previousEntries = utils.food.getPendingApprovals.getData();
 
       // Optimistically remove from the list
-      utils.food.getPendingApprovals.setData(undefined, (old) =>
-        old?.filter((e) => e.id !== entryId)
+      utils.food.getPendingApprovals.setData(undefined, (old: PendingEntry[] | undefined) =>
+        old?.filter((e: PendingEntry) => e.id !== entryId)
       );
 
       return { previousEntries };
@@ -97,7 +111,7 @@ export function ApprovalsList() {
 
   return (
     <div className="space-y-3">
-      {entries.map((entry) => (
+      {entries.map((entry: PendingEntry) => (
         <Card key={entry.id} className="overflow-hidden">
           <CardContent className="p-4">
             <div className="flex items-start justify-between mb-2">

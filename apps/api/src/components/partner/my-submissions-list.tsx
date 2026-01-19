@@ -10,6 +10,22 @@ import { toast } from "sonner";
 import { format } from "date-fns";
 import { Skeleton } from "@/components/ui/skeleton";
 
+interface SubmissionEntry {
+  id: string;
+  name: string;
+  brand: string | null;
+  imageUrl: string | null;
+  calories: number;
+  protein: number;
+  carbs: number;
+  fat: number;
+  loggedAt: Date;
+  mealType: string;
+  approvalStatus: string;
+  rejectionNote: string | null;
+  user: { name: string | null };
+}
+
 export function MySubmissionsList() {
   const utils = trpc.useUtils();
   const { data: entries, isLoading } = trpc.food.getMyPendingSubmissions.useQuery();
@@ -46,7 +62,7 @@ export function MySubmissionsList() {
 
   return (
     <div className="space-y-3">
-      {entries.map((entry) => (
+      {entries.map((entry: SubmissionEntry) => (
         <Card key={entry.id} className="overflow-hidden">
           <CardContent className="p-4">
             <div className="flex items-start justify-between mb-2">

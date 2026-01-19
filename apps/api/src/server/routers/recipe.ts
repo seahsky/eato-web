@@ -47,7 +47,9 @@ const logRecipeSchema = z.object({
 export const recipeRouter = router({
   // Create a new recipe
   create: protectedProcedure
+    .meta({ openapi: { method: "POST", path: "/recipes" } })
     .input(createRecipeSchema)
+    .output(z.any())
     .mutation(async ({ ctx, input }) => {
       // Validate percentage ingredients have valid base references
       const percentageIngredients = input.ingredients.filter((i) => i.isPercentage);
@@ -125,7 +127,11 @@ export const recipeRouter = router({
     }),
 
   // Get all recipes (user's + partner's)
-  list: protectedProcedure.query(async ({ ctx }) => {
+  list: protectedProcedure
+    .meta({ openapi: { method: "GET", path: "/recipes" } })
+    .input(z.void())
+    .output(z.any())
+    .query(async ({ ctx }) => {
     // Get user's recipes
     const userRecipes = await ctx.prisma.recipe.findMany({
       where: { userId: ctx.user.id },
@@ -162,7 +168,9 @@ export const recipeRouter = router({
 
   // Get single recipe by ID
   getById: protectedProcedure
+    .meta({ openapi: { method: "GET", path: "/recipes/{id}" } })
     .input(z.object({ id: z.string() }))
+    .output(z.any())
     .query(async ({ ctx, input }) => {
       const recipe = await ctx.prisma.recipe.findFirst({
         where: {
@@ -197,12 +205,14 @@ export const recipeRouter = router({
 
   // Update recipe
   update: protectedProcedure
+    .meta({ openapi: { method: "PUT", path: "/recipes/{id}" } })
     .input(
       z.object({
         id: z.string(),
         data: createRecipeSchema,
       })
     )
+    .output(z.any())
     .mutation(async ({ ctx, input }) => {
       // Verify ownership
       const existing = await ctx.prisma.recipe.findFirst({
@@ -297,7 +307,9 @@ export const recipeRouter = router({
 
   // Delete recipe
   delete: protectedProcedure
+    .meta({ openapi: { method: "DELETE", path: "/recipes/{id}" } })
     .input(z.object({ id: z.string() }))
+    .output(z.object({ success: z.boolean() }))
     .mutation(async ({ ctx, input }) => {
       // Verify ownership
       const recipe = await ctx.prisma.recipe.findFirst({
@@ -321,7 +333,9 @@ export const recipeRouter = router({
 
   // Log a portion of a recipe as a food entry
   log: protectedProcedure
+    .meta({ openapi: { method: "POST", path: "/recipes/log" } })
     .input(logRecipeSchema)
+    .output(z.any())
     .mutation(async ({ ctx, input }) => {
       // Get recipe (allow logging partner's recipes)
       const recipe = await ctx.prisma.recipe.findFirst({
@@ -422,7 +436,9 @@ export const recipeRouter = router({
 
   // Get recent recipes for quick access carousel
   getRecent: protectedProcedure
+    .meta({ openapi: { method: "GET", path: "/recipes/recent" } })
     .input(z.object({ limit: z.number().min(1).max(10).default(5) }))
+    .output(z.any())
     .query(async ({ ctx, input }) => {
       // Get user's most recently updated recipes
       const recipes = await ctx.prisma.recipe.findMany({
@@ -448,7 +464,9 @@ export const recipeRouter = router({
 
   // Search recipes by name
   search: protectedProcedure
+    .meta({ openapi: { method: "GET", path: "/recipes/search" } })
     .input(z.object({ query: z.string().min(1) }))
+    .output(z.any())
     .query(async ({ ctx, input }) => {
       const recipes = await ctx.prisma.recipe.findMany({
         where: {
@@ -477,12 +495,14 @@ export const recipeRouter = router({
 
   // Preview nutrition calculation (for recipe builder UI)
   previewNutrition: protectedProcedure
+    .meta({ openapi: { method: "POST", path: "/recipes/preview-nutrition" } })
     .input(
       z.object({
         ingredients: z.array(ingredientSchema),
         yieldWeight: z.number().min(1),
       })
     )
+    .output(z.any())
     .query(async ({ input }) => {
       const ingredientsForCalc: IngredientInput[] = input.ingredients.map((i) => ({
         id: i.id,

@@ -201,7 +201,7 @@ export function MealSwapSheet({
                     <span>Instant results</span>
                   </div>
                 )}
-                {products.map((product, index) => {
+                {products.map((product: FoodProduct, index: number) => {
                   const isSelected = ingredient?.matchedProduct?.id === product.id;
                   const grams = ingredient?.normalizedGrams ?? 100;
                   const calories = Math.round((product.caloriesPer100g * grams) / 100);

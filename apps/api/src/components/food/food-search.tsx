@@ -213,7 +213,7 @@ export function FoodSearch({ onSelect, defaultMealType = "LUNCH" }: FoodSearchPr
                 </div>
               )}
             </div>
-            {displayData.products.map((product, index) => (
+            {displayData.products.map((product: FoodProduct, index: number) => (
               <motion.div
                 key={product.id}
                 initial={{ opacity: 0, y: 10 }}

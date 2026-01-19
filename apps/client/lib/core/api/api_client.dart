@@ -1,6 +1,7 @@
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 
+import '../config/env.dart';
 import 'interceptors/auth_interceptor.dart';
 
 class ApiClient {
@@ -33,11 +34,7 @@ class ApiClient {
   }
 
   static String _getBaseUrl() {
-    // TODO: Configure from environment
-    if (kDebugMode) {
-      return 'http://localhost:3000/api/rest';
-    }
-    return 'https://eato.app/api/rest';
+    return '${Env.apiBaseUrl}/api/rest';
   }
 
   // Auth endpoints
@@ -86,6 +83,11 @@ class ApiClient {
     return response.data as Map<String, dynamic>;
   }
 
+  Future<Map<String, dynamic>> getFoodEntry(String id) async {
+    final response = await dio.get('/food/entries/$id');
+    return response.data as Map<String, dynamic>;
+  }
+
   Future<Map<String, dynamic>> updateFoodEntry(String id, Map<String, dynamic> data) async {
     final response = await dio.put('/food/entries/$id', data: data);
     return response.data as Map<String, dynamic>;
@@ -109,6 +111,79 @@ class ApiClient {
   Future<Map<String, dynamic>> getPartnerDailySummary(String date) async {
     final response = await dio.get('/stats/partner/daily', queryParameters: {'date': date});
     return response.data as Map<String, dynamic>;
+  }
+
+  // Approval endpoints
+  Future<List<dynamic>> getPendingApprovals() async {
+    final response = await dio.get('/food/pending-approvals');
+    return response.data as List<dynamic>;
+  }
+
+  Future<int> getPendingApprovalCount() async {
+    final response = await dio.get('/food/pending-approvals/count');
+    return response.data['count'] as int;
+  }
+
+  Future<List<dynamic>> getMyPendingSubmissions() async {
+    final response = await dio.get('/food/my-pending-submissions');
+    return response.data as List<dynamic>;
+  }
+
+  Future<void> approveEntry(String entryId) async {
+    await dio.post('/food/entries/$entryId/approve');
+  }
+
+  Future<void> rejectEntry(String entryId, {String? note}) async {
+    await dio.post('/food/entries/$entryId/reject', data: {'note': note});
+  }
+
+  Future<void> resubmitEntry(String entryId) async {
+    await dio.post('/food/entries/$entryId/resubmit');
+  }
+
+  // Nudge endpoints
+  Future<Map<String, dynamic>> sendNudge({String? message}) async {
+    final response = await dio.post('/notifications/nudge', data: {'message': message});
+    return response.data as Map<String, dynamic>;
+  }
+
+  Future<Map<String, dynamic>?> getLastNudge() async {
+    final response = await dio.get('/notifications/nudge/last');
+    return response.data as Map<String, dynamic>?;
+  }
+
+  // Notification settings endpoints
+  Future<Map<String, dynamic>> getNotificationSettings() async {
+    final response = await dio.get('/notifications/settings');
+    return response.data as Map<String, dynamic>;
+  }
+
+  Future<Map<String, dynamic>> updateNotificationSettings(Map<String, dynamic> data) async {
+    final response = await dio.put('/notifications/settings', data: data);
+    return response.data as Map<String, dynamic>;
+  }
+
+  Future<void> subscribeExpoNotifications({
+    required String expoToken,
+    String? deviceId,
+    String? userAgent,
+  }) async {
+    await dio.post('/notifications/subscribe-expo', data: {
+      'expoToken': expoToken,
+      if (deviceId != null) 'deviceId': deviceId,
+      if (userAgent != null) 'userAgent': userAgent,
+    });
+  }
+
+  Future<void> unsubscribeNotifications({String? expoToken}) async {
+    await dio.post('/notifications/unsubscribe', data: {
+      if (expoToken != null) 'expoToken': expoToken,
+    });
+  }
+
+  Future<bool> hasNotificationSubscription() async {
+    final response = await dio.get('/notifications/has-subscription');
+    return response.data as bool;
   }
 }
 

@@ -587,7 +587,11 @@ export const foodRouter = router({
   }),
 
   // Get entries I logged for partner that are pending/rejected
-  getMyPendingSubmissions: protectedProcedure.query(async ({ ctx }) => {
+  getMyPendingSubmissions: protectedProcedure
+    .meta({ openapi: { method: "GET", path: "/food/my-pending-submissions" } })
+    .input(z.void())
+    .output(z.any())
+    .query(async ({ ctx }) => {
     const entries = await ctx.prisma.foodEntry.findMany({
       where: {
         loggedByUserId: ctx.user.id,
@@ -603,7 +607,9 @@ export const foodRouter = router({
 
   // Approve an entry
   approveEntry: protectedProcedure
+    .meta({ openapi: { method: "POST", path: "/food/entries/{entryId}/approve" } })
     .input(z.object({ entryId: z.string() }))
+    .output(z.object({ success: z.boolean() }))
     .mutation(async ({ ctx, input }) => {
       const entry = await ctx.prisma.foodEntry.findFirst({
         where: {
@@ -659,12 +665,14 @@ export const foodRouter = router({
 
   // Reject an entry
   rejectEntry: protectedProcedure
+    .meta({ openapi: { method: "POST", path: "/food/entries/{entryId}/reject" } })
     .input(
       z.object({
         entryId: z.string(),
         note: z.string().optional(),
       })
     )
+    .output(z.object({ success: z.boolean() }))
     .mutation(async ({ ctx, input }) => {
       const entry = await ctx.prisma.foodEntry.findFirst({
         where: {
@@ -708,7 +716,9 @@ export const foodRouter = router({
 
   // Resubmit a rejected entry
   resubmitEntry: protectedProcedure
+    .meta({ openapi: { method: "POST", path: "/food/entries/{entryId}/resubmit" } })
     .input(z.object({ entryId: z.string() }))
+    .output(z.object({ success: z.boolean() }))
     .mutation(async ({ ctx, input }) => {
       const entry = await ctx.prisma.foodEntry.findFirst({
         where: {
@@ -738,12 +748,14 @@ export const foodRouter = router({
 
   // Clone meal to partner
   cloneMealToPartner: protectedProcedure
+    .meta({ openapi: { method: "POST", path: "/food/clone-meal-to-partner" } })
     .input(
       z.object({
         mealType: z.enum(["BREAKFAST", "LUNCH", "DINNER", "SNACK"]),
         date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Date must be in YYYY-MM-DD format").optional(),
       })
     )
+    .output(z.object({ clonedCount: z.number(), partnerName: z.string().nullable() }))
     .mutation(async ({ ctx, input }) => {
       // If no date provided, use today's date in a timezone-safe way
       const dateStr = input.date ?? new Date().toISOString().split("T")[0];
@@ -847,7 +859,11 @@ export const foodRouter = router({
     }),
 
   // Get recent unique foods (last 14 days)
-  getRecentFoods: protectedProcedure.query(async ({ ctx }) => {
+  getRecentFoods: protectedProcedure
+    .meta({ openapi: { method: "GET", path: "/food/recent" } })
+    .input(z.void())
+    .output(z.any())
+    .query(async ({ ctx }) => {
     const fourteenDaysAgo = new Date();
     fourteenDaysAgo.setDate(fourteenDaysAgo.getDate() - 14);
 
@@ -952,7 +968,11 @@ export const foodRouter = router({
   }),
 
   // Get frequently logged foods (3+ times in last 30 days)
-  getFrequentFoods: protectedProcedure.query(async ({ ctx }) => {
+  getFrequentFoods: protectedProcedure
+    .meta({ openapi: { method: "GET", path: "/food/frequent" } })
+    .input(z.void())
+    .output(z.any())
+    .query(async ({ ctx }) => {
     const thirtyDaysAgo = new Date();
     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
 
@@ -1065,7 +1085,11 @@ export const foodRouter = router({
   }),
 
   // Get user's favorite foods
-  getFavoriteFoods: protectedProcedure.query(async ({ ctx }) => {
+  getFavoriteFoods: protectedProcedure
+    .meta({ openapi: { method: "GET", path: "/food/favorites" } })
+    .input(z.void())
+    .output(z.any())
+    .query(async ({ ctx }) => {
     const favorites = await ctx.prisma.favoriteFood.findMany({
       where: { userId: ctx.user.id },
       orderBy: { createdAt: "desc" },
@@ -1104,6 +1128,7 @@ export const foodRouter = router({
 
   // Toggle favorite status for a food
   toggleFavorite: protectedProcedure
+    .meta({ openapi: { method: "POST", path: "/food/favorites/toggle" } })
     .input(
       z.object({
         name: z.string(),
@@ -1125,6 +1150,7 @@ export const foodRouter = router({
         defaultServingUnit: z.string().default("g"),
       })
     )
+    .output(z.object({ isFavorite: z.boolean() }))
     .mutation(async ({ ctx, input }) => {
       // Check if already favorited
       const existing = await ctx.prisma.favoriteFood.findUnique({
@@ -1173,6 +1199,7 @@ export const foodRouter = router({
 
   // Copy a partner's food entry to your log
   copyPartnerFood: protectedProcedure
+    .meta({ openapi: { method: "POST", path: "/food/copy-partner-food" } })
     .input(
       z.object({
         entryId: z.string(),
@@ -1180,6 +1207,7 @@ export const foodRouter = router({
         consumedAt: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Date must be in YYYY-MM-DD format").optional(),
       })
     )
+    .output(z.object({ success: z.boolean(), entry: z.any(), foodName: z.string() }))
     .mutation(async ({ ctx, input }) => {
       // Get partner relationship
       const user = await ctx.prisma.user.findUnique({
@@ -1291,11 +1319,13 @@ export const foodRouter = router({
 
   // Clear search cache for debugging
   clearSearchCache: protectedProcedure
+    .meta({ openapi: { method: "POST", path: "/food/clear-search-cache" } })
     .input(
       z.object({
         query: z.string().optional(),
       })
     )
+    .output(z.object({ cleared: z.number(), query: z.string().nullable() }))
     .mutation(async ({ ctx, input }) => {
       if (input.query) {
         // Clear specific query cache

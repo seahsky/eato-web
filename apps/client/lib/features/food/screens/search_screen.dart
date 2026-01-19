@@ -1,15 +1,19 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
-class SearchScreen extends StatefulWidget {
+import '../../../core/api/models/models.dart';
+import '../providers/food_provider.dart';
+
+class SearchScreen extends ConsumerStatefulWidget {
   const SearchScreen({super.key});
 
   @override
-  State<SearchScreen> createState() => _SearchScreenState();
+  ConsumerState<SearchScreen> createState() => _SearchScreenState();
 }
 
-class _SearchScreenState extends State<SearchScreen> {
+class _SearchScreenState extends ConsumerState<SearchScreen> {
   final _searchController = TextEditingController();
-  bool _isSearching = false;
 
   @override
   void dispose() {
@@ -17,27 +21,21 @@ class _SearchScreenState extends State<SearchScreen> {
     super.dispose();
   }
 
-  void _onSearch(String query) {
-    if (query.trim().isEmpty) return;
+  void _onSearchChanged(String query) {
+    ref.read(foodSearchProvider.notifier).search(query);
+  }
 
-    setState(() {
-      _isSearching = true;
-    });
-
-    // TODO: Implement search API call
-    Future.delayed(const Duration(seconds: 1), () {
-      if (mounted) {
-        setState(() {
-          _isSearching = false;
-        });
-      }
-    });
+  void _onProductSelected(FoodProduct product) {
+    // Set the product in the form provider
+    ref.read(foodEntryFormProvider.notifier).selectProduct(product);
+    // Navigate to add food screen
+    context.push('/add');
   }
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-    final textTheme = Theme.of(context).textTheme;
+    final searchState = ref.watch(foodSearchProvider);
+    final recentSearches = ref.watch(recentSearchesProvider);
 
     return Scaffold(
       appBar: AppBar(
@@ -58,80 +56,250 @@ class _SearchScreenState extends State<SearchScreen> {
                         icon: const Icon(Icons.clear),
                         onPressed: () {
                           _searchController.clear();
-                          setState(() {});
+                          ref.read(foodSearchProvider.notifier).clearSearch();
                         },
                       )
                     : null,
               ),
               textInputAction: TextInputAction.search,
-              onSubmitted: _onSearch,
-              onChanged: (value) => setState(() {}),
+              onChanged: _onSearchChanged,
             ),
           ),
-
-          // Barcode scan button
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: OutlinedButton.icon(
-              onPressed: () {
-                // TODO: Implement barcode scanning
-              },
-              icon: const Icon(Icons.qr_code_scanner),
-              label: const Text('Scan Barcode'),
-            ),
-          ),
-          const SizedBox(height: 16),
 
           // Results area
           Expanded(
-            child: _isSearching
+            child: searchState.isSearching
                 ? const Center(child: CircularProgressIndicator())
-                : _searchController.text.isEmpty
-                    ? _buildRecentSearches(context)
-                    : _buildSearchResults(context),
+                : searchState.error != null
+                    ? _buildErrorState(context, searchState.error!)
+                    : searchState.query.isEmpty
+                        ? _buildRecentSearches(context, recentSearches)
+                        : _buildSearchResults(context, searchState.results),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildRecentSearches(BuildContext context) {
+  Widget _buildErrorState(BuildContext context, String error) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.error_outline,
+              size: 48,
+              color: Theme.of(context).colorScheme.error,
+            ),
+            const SizedBox(height: 16),
+            Text(
+              error,
+              textAlign: TextAlign.center,
+              style: Theme.of(context).textTheme.bodyMedium,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildRecentSearches(BuildContext context, List<String> recentSearches) {
     final textTheme = Theme.of(context).textTheme;
     final colorScheme = Theme.of(context).colorScheme;
+
+    if (recentSearches.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.search,
+              size: 64,
+              color: colorScheme.onSurfaceVariant,
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'Search for food to get started',
+              style: textTheme.bodyLarge?.copyWith(
+                color: colorScheme.onSurfaceVariant,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
 
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
-        Text(
-          'Recent Searches',
-          style: textTheme.titleMedium?.copyWith(
-            fontWeight: FontWeight.w600,
-          ),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              'Recent Searches',
+              style: textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            TextButton(
+              onPressed: () {
+                ref.read(foodSearchProvider.notifier).clearRecentSearches();
+              },
+              child: const Text('Clear'),
+            ),
+          ],
         ),
-        const SizedBox(height: 12),
-        ListTile(
-          leading: Icon(Icons.history, color: colorScheme.onSurfaceVariant),
-          title: const Text('Chicken breast'),
-          onTap: () {
-            _searchController.text = 'Chicken breast';
-            _onSearch('Chicken breast');
-          },
-        ),
-        ListTile(
-          leading: Icon(Icons.history, color: colorScheme.onSurfaceVariant),
-          title: const Text('Brown rice'),
-          onTap: () {
-            _searchController.text = 'Brown rice';
-            _onSearch('Brown rice');
-          },
-        ),
+        const SizedBox(height: 8),
+        ...recentSearches.map((query) => ListTile(
+              leading: Icon(Icons.history, color: colorScheme.onSurfaceVariant),
+              title: Text(query),
+              trailing: IconButton(
+                icon: const Icon(Icons.close, size: 18),
+                onPressed: () {
+                  ref.read(foodSearchProvider.notifier).removeFromRecentSearches(query);
+                },
+              ),
+              onTap: () {
+                _searchController.text = query;
+                _onSearchChanged(query);
+              },
+            )),
       ],
     );
   }
 
-  Widget _buildSearchResults(BuildContext context) {
-    return const Center(
-      child: Text('No results found'),
+  Widget _buildSearchResults(BuildContext context, List<FoodProduct> results) {
+    final textTheme = Theme.of(context).textTheme;
+    final colorScheme = Theme.of(context).colorScheme;
+
+    if (results.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.search_off,
+              size: 64,
+              color: colorScheme.onSurfaceVariant,
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'No results found',
+              style: textTheme.titleMedium,
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Try a different search term',
+              style: textTheme.bodyMedium?.copyWith(
+                color: colorScheme.onSurfaceVariant,
+              ),
+            ),
+            const SizedBox(height: 24),
+            OutlinedButton.icon(
+              onPressed: () => context.push('/add'),
+              icon: const Icon(Icons.add),
+              label: const Text('Add Manually'),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return ListView.builder(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      itemCount: results.length,
+      itemBuilder: (context, index) {
+        final product = results[index];
+        return _FoodProductTile(
+          product: product,
+          onTap: () => _onProductSelected(product),
+        );
+      },
+    );
+  }
+
+}
+
+class _FoodProductTile extends StatelessWidget {
+  final FoodProduct product;
+  final VoidCallback onTap;
+
+  const _FoodProductTile({
+    required this.product,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final textTheme = Theme.of(context).textTheme;
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return Card(
+      margin: const EdgeInsets.only(bottom: 8),
+      child: ListTile(
+        leading: product.imageUrl != null
+            ? ClipRRect(
+                borderRadius: BorderRadius.circular(8),
+                child: Image.network(
+                  product.imageUrl!,
+                  width: 48,
+                  height: 48,
+                  fit: BoxFit.cover,
+                  errorBuilder: (_, __, ___) => Container(
+                    width: 48,
+                    height: 48,
+                    decoration: BoxDecoration(
+                      color: colorScheme.surfaceContainerHighest,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: const Icon(Icons.fastfood),
+                  ),
+                ),
+              )
+            : Container(
+                width: 48,
+                height: 48,
+                decoration: BoxDecoration(
+                  color: colorScheme.surfaceContainerHighest,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: const Icon(Icons.fastfood),
+              ),
+        title: Text(
+          product.name,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+        ),
+        subtitle: Text(
+          product.brand ?? '${product.caloriesPer100g.toInt()} kcal/100g',
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: textTheme.bodySmall?.copyWith(
+            color: colorScheme.onSurfaceVariant,
+          ),
+        ),
+        trailing: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.end,
+          children: [
+            Text(
+              '${product.caloriesPer100g.toInt()}',
+              style: textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            Text(
+              'kcal/100g',
+              style: textTheme.bodySmall?.copyWith(
+                color: colorScheme.onSurfaceVariant,
+              ),
+            ),
+          ],
+        ),
+        onTap: onTap,
+      ),
     );
   }
 }
