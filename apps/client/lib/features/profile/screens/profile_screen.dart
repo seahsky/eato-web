@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../core/api/models/models.dart';
 import '../../auth/providers/auth_provider.dart';
+import '../../gamification/widgets/streak_display.dart';
 import '../providers/profile_provider.dart';
 
 class ProfileScreen extends ConsumerWidget {
@@ -84,6 +85,13 @@ class ProfileScreen extends ConsumerWidget {
                               ],
                             ),
                           ),
+                        ),
+                        const SizedBox(height: 16),
+
+                        // Achievements/Streak Card
+                        StreakCard(
+                          onViewBadges: () => context.push('/badges'),
+                          onViewStreakDetails: () => context.push('/streak'),
                         ),
                         const SizedBox(height: 24),
 

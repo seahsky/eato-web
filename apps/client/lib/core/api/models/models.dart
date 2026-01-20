@@ -9,3 +9,5 @@ export 'food_product.dart';
 export 'partner.dart';
 export 'approval.dart';
 export 'nudge.dart';
+export 'recipe.dart';
+export 'gamification.dart';

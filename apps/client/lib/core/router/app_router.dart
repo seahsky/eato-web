@@ -9,13 +9,19 @@ import '../../features/dashboard/screens/dashboard_screen.dart';
 import '../../features/food/screens/search_screen.dart';
 import '../../features/food/screens/add_food_screen.dart';
 import '../../features/food/screens/edit_food_screen.dart';
+import '../../features/gamification/screens/badge_showcase_screen.dart';
+import '../../features/gamification/screens/streak_detail_screen.dart';
 import '../../features/partner/screens/partner_screen.dart';
 import '../../features/partner/screens/approvals_screen.dart';
 import '../../features/partner/screens/my_submissions_screen.dart';
+import '../../features/partner/screens/partner_weekly_screen.dart';
 import '../../features/notifications/screens/notification_permission_screen.dart';
 import '../../features/notifications/screens/notification_settings_screen.dart';
 import '../../features/profile/screens/profile_screen.dart';
 import '../../features/profile/screens/profile_setup_screen.dart';
+import '../../features/recipes/screens/recipe_list_screen.dart';
+import '../../features/recipes/screens/recipe_detail_screen.dart';
+import '../../features/recipes/screens/recipe_form_screen.dart';
 import '../widgets/main_shell.dart';
 
 final appRouterProvider = Provider<GoRouter>((ref) {
@@ -93,6 +99,11 @@ final appRouterProvider = Provider<GoRouter>((ref) {
             builder: (context, state) => const MySubmissionsScreen(),
           ),
           GoRoute(
+            path: '/partner/weekly',
+            name: 'partner-weekly',
+            builder: (context, state) => const PartnerWeeklyScreen(),
+          ),
+          GoRoute(
             path: '/profile',
             name: 'profile',
             builder: (context, state) => const ProfileScreen(),
@@ -101,6 +112,44 @@ final appRouterProvider = Provider<GoRouter>((ref) {
             path: '/notifications/settings',
             name: 'notification-settings',
             builder: (context, state) => const NotificationSettingsScreen(),
+          ),
+          // Recipe routes
+          GoRoute(
+            path: '/recipes',
+            name: 'recipes',
+            builder: (context, state) => const RecipeListScreen(),
+          ),
+          GoRoute(
+            path: '/recipes/new',
+            name: 'recipe-new',
+            builder: (context, state) => const RecipeFormScreen(),
+          ),
+          GoRoute(
+            path: '/recipes/:id',
+            name: 'recipe-detail',
+            builder: (context, state) {
+              final recipeId = state.pathParameters['id']!;
+              return RecipeDetailScreen(recipeId: recipeId);
+            },
+          ),
+          GoRoute(
+            path: '/recipes/:id/edit',
+            name: 'recipe-edit',
+            builder: (context, state) {
+              final recipeId = state.pathParameters['id']!;
+              return RecipeFormScreen(recipeId: recipeId);
+            },
+          ),
+          // Gamification routes
+          GoRoute(
+            path: '/badges',
+            name: 'badges',
+            builder: (context, state) => const BadgeShowcaseScreen(),
+          ),
+          GoRoute(
+            path: '/streak',
+            name: 'streak',
+            builder: (context, state) => const StreakDetailScreen(),
           ),
         ],
       ),

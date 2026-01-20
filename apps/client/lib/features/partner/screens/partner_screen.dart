@@ -269,48 +269,71 @@ class _PartnerScreenState extends ConsumerState<PartnerScreen> {
 
             if (partnerSummary != null) ...[
               Card(
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    children: [
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceAround,
-                        children: [
-                          _StatItem(
-                            label: 'Calories',
-                            value: partnerSummary.totalCalories.toInt().toString(),
-                            unit: 'kcal',
-                          ),
-                          _StatItem(
-                            label: 'Protein',
-                            value: partnerSummary.totalProtein.toInt().toString(),
-                            unit: 'g',
-                          ),
-                          _StatItem(
-                            label: 'Progress',
-                            value: (partnerSummary.calorieProgress * 100).toInt().toString(),
-                            unit: '%',
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 16),
-                      // Progress bar
-                      ClipRRect(
-                        borderRadius: BorderRadius.circular(4),
-                        child: LinearProgressIndicator(
-                          value: partnerSummary.calorieProgress.clamp(0.0, 1.0),
-                          minHeight: 8,
-                          backgroundColor: colorScheme.surfaceContainerHighest,
+                child: InkWell(
+                  onTap: () => context.push('/partner/weekly'),
+                  borderRadius: BorderRadius.circular(12),
+                  child: Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Column(
+                      children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceAround,
+                          children: [
+                            _StatItem(
+                              label: 'Calories',
+                              value: partnerSummary.totalCalories.toInt().toString(),
+                              unit: 'kcal',
+                            ),
+                            _StatItem(
+                              label: 'Protein',
+                              value: partnerSummary.totalProtein.toInt().toString(),
+                              unit: 'g',
+                            ),
+                            _StatItem(
+                              label: 'Progress',
+                              value: (partnerSummary.calorieProgress * 100).toInt().toString(),
+                              unit: '%',
+                            ),
+                          ],
                         ),
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        '${partnerSummary.totalCalories.toInt()} / ${partnerSummary.calorieGoal.toInt()} kcal',
-                        style: textTheme.bodySmall?.copyWith(
-                          color: colorScheme.onSurfaceVariant,
+                        const SizedBox(height: 16),
+                        // Progress bar
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(4),
+                          child: LinearProgressIndicator(
+                            value: partnerSummary.calorieProgress.clamp(0.0, 1.0),
+                            minHeight: 8,
+                            backgroundColor: colorScheme.surfaceContainerHighest,
+                          ),
                         ),
-                      ),
-                    ],
+                        const SizedBox(height: 8),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Text(
+                              '${partnerSummary.totalCalories.toInt()} / ${partnerSummary.calorieGoal.toInt()} kcal',
+                              style: textTheme.bodySmall?.copyWith(
+                                color: colorScheme.onSurfaceVariant,
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Icon(
+                              Icons.chevron_right,
+                              size: 16,
+                              color: colorScheme.onSurfaceVariant,
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          'Tap for weekly view',
+                          style: textTheme.bodySmall?.copyWith(
+                            color: colorScheme.primary,
+                            fontSize: 11,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ),
@@ -480,6 +503,19 @@ class _PartnerScreenState extends ConsumerState<PartnerScreen> {
     return Card(
       child: Column(
         children: [
+          ListTile(
+            leading: const Icon(Icons.bar_chart),
+            title: const Text('Weekly Summary'),
+            subtitle: Text(
+              "View your partner's weekly stats",
+              style: textTheme.bodySmall?.copyWith(
+                color: colorScheme.onSurfaceVariant,
+              ),
+            ),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () => context.push('/partner/weekly'),
+          ),
+          const Divider(height: 1),
           ListTile(
             leading: Badge(
               isLabelVisible: pendingCount > 0,

@@ -1,17 +1,50 @@
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' hide Badge;
+import 'package:flutter/material.dart' as material show Badge;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../features/gamification/providers/gamification_provider.dart';
+import '../../features/gamification/widgets/badge_unlock_celebration.dart';
 import '../../features/partner/providers/approval_provider.dart';
-import 'foreground_notification_handler.dart';
 
-class MainShell extends ConsumerWidget {
+class MainShell extends ConsumerStatefulWidget {
   final Widget child;
 
   const MainShell({
     super.key,
     required this.child,
   });
+
+  @override
+  ConsumerState<MainShell> createState() => _MainShellState();
+}
+
+class _MainShellState extends ConsumerState<MainShell> {
+  bool _hasCheckedRecentAchievements = false;
+
+  @override
+  void initState() {
+    super.initState();
+    // Check for recent achievements on app start
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _checkRecentAchievements();
+    });
+  }
+
+  Future<void> _checkRecentAchievements() async {
+    if (_hasCheckedRecentAchievements) return;
+    _hasCheckedRecentAchievements = true;
+
+    await ref.read(recentAchievementsProvider.notifier).fetch();
+    final state = ref.read(recentAchievementsProvider);
+
+    if (state.badges.isNotEmpty && state.hasUnseen) {
+      // Celebrate the badges
+      badgeCelebrationController.celebrateBadges(state.badges);
+      // Mark them as seen
+      ref.read(recentAchievementsProvider.notifier).markAsSeen();
+    }
+  }
 
   int _getSelectedIndex(BuildContext context) {
     final location = GoRouterState.of(context).uri.path;
@@ -47,13 +80,21 @@ class MainShell extends ConsumerWidget {
   }
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     final selectedIndex = _getSelectedIndex(context);
     final pendingCount = ref.watch(pendingApprovalCountProvider);
 
-    return ForegroundNotificationHandler(
+    // Listen to recent achievements and trigger celebrations
+    ref.listen<RecentAchievementsState>(recentAchievementsProvider, (previous, next) {
+      if (next.badges.isNotEmpty && next.hasUnseen) {
+        badgeCelebrationController.celebrateBadges(next.badges);
+        ref.read(recentAchievementsProvider.notifier).markAsSeen();
+      }
+    });
+
+    return BadgeCelebrationListener(
       child: Scaffold(
-        body: child,
+        body: widget.child,
         bottomNavigationBar: NavigationBar(
           selectedIndex: selectedIndex,
           onDestinationSelected: (index) => _onItemTapped(context, index),
@@ -74,12 +115,12 @@ class MainShell extends ConsumerWidget {
               label: 'Log',
             ),
             NavigationDestination(
-              icon: Badge(
+              icon: material.Badge(
                 isLabelVisible: pendingCount > 0,
                 label: Text('$pendingCount'),
                 child: const Icon(Icons.people_outline),
               ),
-              selectedIcon: Badge(
+              selectedIcon: material.Badge(
                 isLabelVisible: pendingCount > 0,
                 label: Text('$pendingCount'),
                 child: const Icon(Icons.people),

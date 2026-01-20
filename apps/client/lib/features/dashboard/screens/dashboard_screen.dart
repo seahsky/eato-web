@@ -3,6 +3,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/api/models/models.dart';
+import '../../../core/widgets/shimmer_loading.dart';
+import '../../gamification/providers/gamification_provider.dart';
+import '../../gamification/widgets/streak_display.dart';
 import '../../profile/providers/profile_provider.dart';
 import '../providers/dashboard_provider.dart';
 
@@ -18,10 +21,25 @@ class DashboardScreen extends ConsumerWidget {
     final isToday = ref.watch(isSelectedDateTodayProvider);
     final profile = ref.watch(currentProfileProvider);
 
+    // Fetch achievement summary on first load
+    ref.listen(dashboardProvider, (prev, next) {
+      if (prev?.dailySummary == null && next.dailySummary != null) {
+        ref.read(achievementSummaryProvider.notifier).fetch();
+      }
+    });
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Dashboard'),
         actions: [
+          // Streak display in app bar
+          Padding(
+            padding: const EdgeInsets.only(right: 8),
+            child: StreakDisplay(
+              showMilestone: false,
+              onTap: () => context.push('/streak'),
+            ),
+          ),
           IconButton(
             icon: const Icon(Icons.calendar_today),
             onPressed: () => _selectDate(context, ref),
@@ -29,9 +47,12 @@ class DashboardScreen extends ConsumerWidget {
         ],
       ),
       body: RefreshIndicator(
-        onRefresh: () => ref.read(dashboardProvider.notifier).refresh(),
+        onRefresh: () async {
+          await ref.read(dashboardProvider.notifier).refresh();
+          await ref.read(achievementSummaryProvider.notifier).refresh();
+        },
         child: dashboardState.isLoading && dashboardState.dailySummary == null
-            ? const Center(child: CircularProgressIndicator())
+            ? const DashboardSkeleton()
             : dashboardState.error != null
                 ? _buildErrorState(context, ref, dashboardState.error!)
                 : SingleChildScrollView(

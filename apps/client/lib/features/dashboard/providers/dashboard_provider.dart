@@ -3,6 +3,7 @@ import 'package:intl/intl.dart';
 
 import '../../../core/api/api_client.dart';
 import '../../../core/api/models/models.dart';
+import '../../../core/storage/cache_service.dart';
 import '../../auth/providers/auth_provider.dart';
 
 /// State for the dashboard
@@ -50,20 +51,39 @@ class DashboardNotifier extends StateNotifier<DashboardState> {
   /// Format date for API requests (YYYY-MM-DD)
   String _formatDate(DateTime date) => DateFormat('yyyy-MM-dd').format(date);
 
-  /// Load daily summary for the selected date
+  /// Load daily summary for the selected date (cache-first)
   Future<void> loadDailySummary() async {
-    state = state.copyWith(isLoading: true, error: null);
+    final dateStr = _formatDate(state.selectedDate);
+    final cache = CacheService.instance;
 
+    // Try to load from cache first for instant display
+    final cached = cache.getCachedDailySummary(dateStr);
+    if (cached != null) {
+      state = state.copyWith(dailySummary: cached, isLoading: true, error: null);
+    } else {
+      state = state.copyWith(isLoading: true, error: null);
+    }
+
+    // Then fetch fresh data from API
     try {
-      final dateStr = _formatDate(state.selectedDate);
       final data = await _apiClient.getDailySummary(dateStr);
       final summary = DailySummary.fromJson(data);
+
+      // Update state with fresh data
       state = state.copyWith(dailySummary: summary, isLoading: false);
+
+      // Cache the fresh data
+      await cache.cacheDailySummary(dateStr, summary);
     } catch (e) {
-      state = state.copyWith(
-        isLoading: false,
-        error: 'Failed to load daily summary: ${e.toString()}',
-      );
+      // If we have cached data, keep showing it with an error indicator
+      if (cached != null) {
+        state = state.copyWith(isLoading: false);
+      } else {
+        state = state.copyWith(
+          isLoading: false,
+          error: 'Failed to load daily summary: ${e.toString()}',
+        );
+      }
     }
   }
 

@@ -93,8 +93,8 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
     if (success && mounted) {
       // Refresh auth state to update needsOnboarding
       await ref.read(authProvider.notifier).refreshUser();
-      // Navigate to dashboard
-      context.go('/dashboard');
+      // Navigate to notification permission screen (then to dashboard)
+      context.go('/notification-permission?redirectTo=/dashboard');
     }
   }
 

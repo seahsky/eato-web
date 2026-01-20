@@ -6,6 +6,7 @@ import '../../../core/api/api_client.dart';
 import '../../../core/api/models/models.dart';
 import '../../auth/providers/auth_provider.dart';
 import '../../dashboard/providers/dashboard_provider.dart';
+import '../../gamification/providers/gamification_provider.dart';
 
 /// State for food search
 class FoodSearchState {
@@ -277,6 +278,9 @@ class FoodEntryFormNotifier extends StateNotifier<FoodEntryFormState> {
 
       // Refresh the dashboard
       _ref.read(dashboardProvider.notifier).refresh();
+      
+      // Check for new achievements (food logging can unlock badges)
+      _ref.read(recentAchievementsProvider.notifier).refresh();
 
       state = state.copyWith(isSaving: false);
       return true;
@@ -324,6 +328,9 @@ class FoodEntryFormNotifier extends StateNotifier<FoodEntryFormState> {
 
       // Refresh the dashboard
       _ref.read(dashboardProvider.notifier).refresh();
+      
+      // Check for new achievements (food logging can unlock badges)
+      _ref.read(recentAchievementsProvider.notifier).refresh();
 
       state = state.copyWith(isSaving: false);
       return true;

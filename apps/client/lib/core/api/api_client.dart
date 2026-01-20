@@ -113,6 +113,21 @@ class ApiClient {
     return response.data as Map<String, dynamic>;
   }
 
+  Future<Map<String, dynamic>> getPartnerWeeklySummary(String startDate) async {
+    final response = await dio.get('/stats/partner/weekly', queryParameters: {'startDate': startDate});
+    return response.data as Map<String, dynamic>;
+  }
+
+  Future<Map<String, dynamic>> getStreakData() async {
+    final response = await dio.get('/stats/streak');
+    return response.data as Map<String, dynamic>;
+  }
+
+  Future<Map<String, dynamic>?> getPartnerStreakData() async {
+    final response = await dio.get('/stats/partner/streak');
+    return response.data as Map<String, dynamic>?;
+  }
+
   // Approval endpoints
   Future<List<dynamic>> getPendingApprovals() async {
     final response = await dio.get('/food/pending-approvals');
@@ -184,6 +199,77 @@ class ApiClient {
   Future<bool> hasNotificationSubscription() async {
     final response = await dio.get('/notifications/has-subscription');
     return response.data as bool;
+  }
+
+  // Recipe endpoints
+  Future<Map<String, dynamic>> createRecipe(Map<String, dynamic> data) async {
+    final response = await dio.post('/recipes', data: data);
+    return response.data as Map<String, dynamic>;
+  }
+
+  Future<Map<String, dynamic>> listRecipes() async {
+    final response = await dio.get('/recipes');
+    return response.data as Map<String, dynamic>;
+  }
+
+  Future<Map<String, dynamic>> getRecipe(String id) async {
+    final response = await dio.get('/recipes/$id');
+    return response.data as Map<String, dynamic>;
+  }
+
+  Future<Map<String, dynamic>> updateRecipe(String id, Map<String, dynamic> data) async {
+    final response = await dio.put('/recipes/$id', data: {'id': id, 'data': data});
+    return response.data as Map<String, dynamic>;
+  }
+
+  Future<void> deleteRecipe(String id) async {
+    await dio.delete('/recipes/$id');
+  }
+
+  Future<Map<String, dynamic>> logRecipe(Map<String, dynamic> data) async {
+    final response = await dio.post('/recipes/log', data: data);
+    return response.data as Map<String, dynamic>;
+  }
+
+  Future<List<dynamic>> searchRecipes(String query) async {
+    final response = await dio.get('/recipes/search', queryParameters: {'query': query});
+    return response.data as List<dynamic>;
+  }
+
+  Future<List<dynamic>> getRecentRecipes({int limit = 5}) async {
+    final response = await dio.get('/recipes/recent', queryParameters: {'limit': limit});
+    return response.data as List<dynamic>;
+  }
+
+  Future<Map<String, dynamic>> previewRecipeNutrition(Map<String, dynamic> data) async {
+    final response = await dio.post('/recipes/preview-nutrition', data: data);
+    return response.data as Map<String, dynamic>;
+  }
+
+  // Achievement/Gamification endpoints
+  Future<Map<String, dynamic>> getAllAchievements() async {
+    final response = await dio.get('/achievements');
+    return response.data as Map<String, dynamic>;
+  }
+
+  Future<Map<String, dynamic>> getAchievementsByCategory() async {
+    final response = await dio.get('/achievements/by-category');
+    return response.data as Map<String, dynamic>;
+  }
+
+  Future<List<dynamic>> getRecentAchievements() async {
+    final response = await dio.get('/achievements/recent');
+    return response.data as List<dynamic>;
+  }
+
+  Future<Map<String, dynamic>> getAchievementSummary() async {
+    final response = await dio.get('/achievements/summary');
+    return response.data as Map<String, dynamic>;
+  }
+
+  Future<Map<String, dynamic>?> getPartnerAchievements() async {
+    final response = await dio.get('/achievements/partner');
+    return response.data as Map<String, dynamic>?;
   }
 }
 
