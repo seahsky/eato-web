@@ -64,6 +64,23 @@ class NotificationNotifier extends StateNotifier<NotificationState> {
     await _pushService.initialize();
     await checkPermissionStatus();
     await checkSubscription();
+    _setupTokenRefreshHandler();
+  }
+
+  /// Listen for FCM token refreshes and re-register with backend
+  void _setupTokenRefreshHandler() {
+    _pushService.onTokenRefresh.listen((String newToken) async {
+      if (state.hasSubscription) {
+        // Re-register the new token with backend
+        try {
+          await _apiClient.subscribeExpoNotifications(
+            expoToken: 'ExponentPushToken[$newToken]',
+          );
+        } catch (e) {
+          // Silently fail - token refresh registration is best-effort
+        }
+      }
+    });
   }
 
   /// Check current permission status

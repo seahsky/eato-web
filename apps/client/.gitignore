@@ -43,3 +43,10 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+
+# Environment files with secrets
+.env.local
+.env.*.local
+
+# Generated Firebase config (contains API keys)
+web/firebase-config.js

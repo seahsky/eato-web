@@ -17,6 +17,13 @@ class PushNotificationService {
   static PushNotificationService? _instance;
   final FirebaseMessaging _messaging = FirebaseMessaging.instance;
 
+  /// VAPID key for web push notifications
+  /// Set via: flutter build web --dart-define=FIREBASE_VAPID_KEY=your_key
+  static const String _vapidKey = String.fromEnvironment(
+    'FIREBASE_VAPID_KEY',
+    defaultValue: '',
+  );
+
   StreamController<RemoteMessage>? _messageController;
   StreamController<String>? _tokenController;
 
@@ -147,16 +154,23 @@ class PushNotificationService {
       // For web, we need to pass the VAPID key
       // For mobile, no additional parameters needed
       if (kIsWeb) {
-        // Note: You need to set your VAPID key here for web push
-        // Get it from Firebase Console > Project Settings > Cloud Messaging > Web Push certificates
+        // Use VAPID key from compile-time constant (set via --dart-define)
         _currentToken = await _messaging.getToken(
-          // vapidKey: 'YOUR_VAPID_KEY_HERE',
+          vapidKey: _vapidKey.isNotEmpty ? _vapidKey : null,
         );
+        if (_vapidKey.isEmpty) {
+          debugPrint('Warning: VAPID key not set. Web push may not work.');
+          debugPrint('Build with: flutter build web --dart-define=FIREBASE_VAPID_KEY=your_key');
+        }
       } else {
         _currentToken = await _messaging.getToken();
       }
 
-      debugPrint('FCM Token obtained: ${_currentToken?.substring(0, 20)}...');
+      if (_currentToken != null && _currentToken!.length > 20) {
+        debugPrint('FCM Token obtained: ${_currentToken!.substring(0, 20)}...');
+      } else {
+        debugPrint('FCM Token obtained: $_currentToken');
+      }
       return _currentToken;
     } catch (e) {
       debugPrint('Failed to get FCM token: $e');
