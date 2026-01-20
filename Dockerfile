@@ -46,8 +46,11 @@ RUN chmod +x scripts/generate-firebase-config.sh && \
 FROM node:20-alpine AS nextjs-build
 WORKDIR /app
 
-# Install dependencies first (for better caching)
+# Copy package files AND prisma schema (needed for postinstall prisma generate)
 COPY apps/api/package*.json ./
+COPY apps/api/prisma ./prisma
+
+# Install dependencies (postinstall runs prisma generate)
 RUN npm ci
 
 # Copy source and build
