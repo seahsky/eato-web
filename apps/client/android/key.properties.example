@@ -1,0 +1,43 @@
+# Android Release Signing Configuration
+# =====================================
+# Copy this file to 'key.properties' and fill in your actual values.
+# IMPORTANT: Never commit 'key.properties' to version control!
+#
+# This file is required for building release APKs and App Bundles
+# for Play Store deployment.
+
+# =============================================================================
+# GENERATING A KEYSTORE
+# =============================================================================
+# Run this command to generate a new keystore file:
+#
+#   keytool -genkey -v -keystore my-release-key.jks -keyalg RSA \
+#     -keysize 2048 -validity 10000 -alias my-key-alias
+#
+# You will be prompted to:
+#   1. Create a keystore password
+#   2. Enter your name, organization, and location info
+#   3. Create a key password (can be the same as keystore password)
+#
+# IMPORTANT: Store your keystore file and passwords securely!
+# If you lose them, you cannot update your app on the Play Store.
+# =============================================================================
+
+# The password for the keystore file
+# (Set during keystore generation)
+storePassword=your_keystore_password_here
+
+# The password for the signing key within the keystore
+# (Set during keystore generation, often the same as storePassword)
+keyPassword=your_key_password_here
+
+# The alias name for your signing key
+# (Set during keystore generation with -alias flag)
+keyAlias=my-key-alias
+
+# Path to your keystore file (relative to the android/ directory)
+# Example: If your keystore is at android/my-release-key.jks, use:
+#   storeFile=my-release-key.jks
+# Or use an absolute path:
+#   storeFile=/path/to/my-release-key.jks
+storeFile=my-release-key.jks

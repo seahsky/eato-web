@@ -1,4 +1,13 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Network access for API calls and Firebase -->
+    <uses-permission android:name="android.permission.INTERNET"/>
+
+    <!-- Push notifications (required for Android 13+) -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
+
+    <!-- Camera access for barcode scanning -->
+    <uses-permission android:name="android.permission.CAMERA"/>
+
     <application
         android:label="eato"
         android:name="${applicationName}"

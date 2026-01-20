@@ -45,5 +45,14 @@
 	<true/>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>fetch</string>
+		<string>remote-notification</string>
+	</array>
+	<key>NSCameraUsageDescription</key>
+	<string>Eato uses your camera to scan food barcodes for quick and easy calorie tracking.</string>
+	<key>NSUserNotificationUsageDescription</key>
+	<string>Eato sends notifications for partner nudges and daily meal logging reminders to help you stay on track with your health goals.</string>
 </dict>
 </plist>
