@@ -1,0 +1,5 @@
+{
+  "$schema": "https://zbpack.zeabur.com/schema.json",
+  "build_command": "chmod +x scripts/generate-firebase-config.sh && ./scripts/generate-firebase-config.sh && flutter build web --release --dart-define=CLERK_PUBLISHABLE_KEY=$CLERK_PUBLISHABLE_KEY --dart-define=API_BASE_URL=$API_BASE_URL --dart-define=FIREBASE_VAPID_KEY=$FIREBASE_VAPID_KEY && cp web/firebase-config.js build/web/",
+  "output_dir": "build/web"
+}
