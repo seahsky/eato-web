@@ -46,6 +46,9 @@ RUN chmod +x scripts/generate-firebase-config.sh && \
 FROM node:20-alpine AS nextjs-build
 WORKDIR /app
 
+# Install OpenSSL for Prisma query engine (required during static page generation)
+RUN apk add --no-cache openssl
+
 # Copy package files AND prisma schema (needed for postinstall prisma generate)
 COPY apps/api/package*.json ./
 COPY apps/api/prisma ./prisma
@@ -62,8 +65,8 @@ RUN npm run build
 # -----------------------------------------------------------------------------
 FROM node:20-alpine AS runtime
 
-# Install nginx
-RUN apk add --no-cache nginx
+# Install nginx and OpenSSL for Prisma query engine
+RUN apk add --no-cache nginx openssl
 
 WORKDIR /app
 
