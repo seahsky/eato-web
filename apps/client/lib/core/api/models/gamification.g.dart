@@ -246,3 +246,60 @@ Map<String, dynamic> _$ShieldEligibilityToJson(ShieldEligibility instance) =>
       'reason': instance.reason,
       'targetDate': instance.targetDate?.toIso8601String(),
     };
+
+PartnerShieldStatus _$PartnerShieldStatusFromJson(Map<String, dynamic> json) =>
+    PartnerShieldStatus(
+      userShields: (json['userShields'] as num).toInt(),
+      partnerShields: (json['partnerShields'] as num).toInt(),
+      partnerName: json['partnerName'] as String?,
+      userCanShield: ShieldEligibility.fromJson(
+          json['userCanShield'] as Map<String, dynamic>),
+      partnerCanShield: ShieldEligibility.fromJson(
+          json['partnerCanShield'] as Map<String, dynamic>),
+    );
+
+Map<String, dynamic> _$PartnerShieldStatusToJson(
+        PartnerShieldStatus instance) =>
+    <String, dynamic>{
+      'userShields': instance.userShields,
+      'partnerShields': instance.partnerShields,
+      'partnerName': instance.partnerName,
+      'userCanShield': instance.userCanShield,
+      'partnerCanShield': instance.partnerCanShield,
+    };
+
+ShieldHistoryEntry _$ShieldHistoryEntryFromJson(Map<String, dynamic> json) =>
+    ShieldHistoryEntry(
+      date: DateTime.parse(json['date'] as String),
+      createdAt: DateTime.parse(json['createdAt'] as String),
+      partnerName: json['partnerName'] as String,
+    );
+
+Map<String, dynamic> _$ShieldHistoryEntryToJson(ShieldHistoryEntry instance) =>
+    <String, dynamic>{
+      'date': instance.date.toIso8601String(),
+      'createdAt': instance.createdAt.toIso8601String(),
+      'partnerName': instance.partnerName,
+    };
+
+PartnerShieldHistory _$PartnerShieldHistoryFromJson(
+        Map<String, dynamic> json) =>
+    PartnerShieldHistory(
+      shieldsGiven: (json['shieldsGiven'] as List<dynamic>?)
+              ?.map(
+                  (e) => ShieldHistoryEntry.fromJson(e as Map<String, dynamic>))
+              .toList() ??
+          const [],
+      shieldsReceived: (json['shieldsReceived'] as List<dynamic>?)
+              ?.map(
+                  (e) => ShieldHistoryEntry.fromJson(e as Map<String, dynamic>))
+              .toList() ??
+          const [],
+    );
+
+Map<String, dynamic> _$PartnerShieldHistoryToJson(
+        PartnerShieldHistory instance) =>
+    <String, dynamic>{
+      'shieldsGiven': instance.shieldsGiven,
+      'shieldsReceived': instance.shieldsReceived,
+    };

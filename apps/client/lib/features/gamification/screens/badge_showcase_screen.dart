@@ -2,6 +2,7 @@ import 'package:flutter/material.dart' hide Badge;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/api/models/models.dart';
+import '../../../core/widgets/shimmer_loading.dart';
 import '../providers/gamification_provider.dart';
 
 class BadgeShowcaseScreen extends ConsumerStatefulWidget {
@@ -55,7 +56,7 @@ class _BadgeShowcaseScreenState extends ConsumerState<BadgeShowcaseScreen>
           ),
         ],
         body: categoryState.isLoading
-            ? const Center(child: CircularProgressIndicator())
+            ? const ShimmerBadgeGrid(count: 6)
             : categoryState.error != null
                 ? _buildError(categoryState.error!)
                 : TabBarView(

@@ -271,6 +271,32 @@ class ApiClient {
     final response = await dio.get('/achievements/partner');
     return response.data as Map<String, dynamic>?;
   }
+
+  // Partner shield endpoints
+  Future<Map<String, dynamic>> getPartnerShieldStatus() async {
+    final response = await dio.get('/stats/partner-shields');
+    return response.data as Map<String, dynamic>;
+  }
+
+  Future<void> usePartnerShield(String targetDate) async {
+    await dio.post('/stats/partner-shields/use', data: {'targetDate': targetDate});
+  }
+
+  Future<Map<String, dynamic>> getPartnerShieldHistory() async {
+    final response = await dio.get('/stats/partner-shields/history');
+    return response.data as Map<String, dynamic>;
+  }
+
+  // Theme and Avatar Frame endpoints
+  Future<Map<String, dynamic>> updateTheme(String theme) async {
+    final response = await dio.put('/achievements/theme', data: {'theme': theme});
+    return response.data as Map<String, dynamic>;
+  }
+
+  Future<Map<String, dynamic>> updateAvatarFrame(String avatarFrame) async {
+    final response = await dio.put('/achievements/avatar-frame', data: {'avatarFrame': avatarFrame});
+    return response.data as Map<String, dynamic>;
+  }
 }
 
 class _LoggingInterceptor extends Interceptor {

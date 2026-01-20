@@ -406,3 +406,59 @@ class ShieldEligibility {
       _$ShieldEligibilityFromJson(json);
   Map<String, dynamic> toJson() => _$ShieldEligibilityToJson(this);
 }
+
+/// Partner shield status response
+@JsonSerializable()
+class PartnerShieldStatus {
+  final int userShields;
+  final int partnerShields;
+  final String? partnerName;
+  final ShieldEligibility userCanShield;
+  final ShieldEligibility partnerCanShield;
+
+  const PartnerShieldStatus({
+    required this.userShields,
+    required this.partnerShields,
+    this.partnerName,
+    required this.userCanShield,
+    required this.partnerCanShield,
+  });
+
+  factory PartnerShieldStatus.fromJson(Map<String, dynamic> json) =>
+      _$PartnerShieldStatusFromJson(json);
+  Map<String, dynamic> toJson() => _$PartnerShieldStatusToJson(this);
+}
+
+/// Single shield history entry
+@JsonSerializable()
+class ShieldHistoryEntry {
+  final DateTime date;
+  final DateTime createdAt;
+  final String partnerName;
+
+  const ShieldHistoryEntry({
+    required this.date,
+    required this.createdAt,
+    required this.partnerName,
+  });
+
+  factory ShieldHistoryEntry.fromJson(Map<String, dynamic> json) =>
+      _$ShieldHistoryEntryFromJson(json);
+  Map<String, dynamic> toJson() => _$ShieldHistoryEntryToJson(this);
+}
+
+/// Partner shield history response
+@JsonSerializable()
+class PartnerShieldHistory {
+  final List<ShieldHistoryEntry> shieldsGiven;
+  final List<ShieldHistoryEntry> shieldsReceived;
+
+  const PartnerShieldHistory({
+    this.shieldsGiven = const [],
+    this.shieldsReceived = const [],
+  });
+
+  factory PartnerShieldHistory.fromJson(Map<String, dynamic> json) =>
+      _$PartnerShieldHistoryFromJson(json);
+  Map<String, dynamic> toJson() => _$PartnerShieldHistoryToJson(this);
+}

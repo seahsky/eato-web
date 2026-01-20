@@ -5,7 +5,11 @@ import {
   getTotalBadgeCount,
   getAvatarFrame,
   getUnlockedThemes,
+  AVATAR_FRAME_THRESHOLDS,
+  THEME_UNLOCK_THRESHOLDS,
   type BadgeCategory,
+  type AvatarFrame,
+  type ThemeId,
 } from "@/lib/gamification/badges";
 
 import { z } from "zod";
@@ -201,4 +205,69 @@ export const achievementsRouter = router({
       sharedCount,
     };
   }),
+
+  // Update user's selected theme
+  updateTheme: protectedProcedure
+    .meta({ openapi: { method: "PUT", path: "/achievements/theme" } })
+    .input(z.object({ theme: z.string() }))
+    .output(z.any())
+    .mutation(async ({ ctx, input }) => {
+      const { theme } = input;
+
+      // Validate theme exists
+      if (!(theme in THEME_UNLOCK_THRESHOLDS)) {
+        throw new Error(`Invalid theme: ${theme}`);
+      }
+
+      // Get user's longest streak to check if theme is unlocked
+      const user = await ctx.prisma.user.findUnique({
+        where: { id: ctx.user.id },
+        select: { longestStreak: true },
+      });
+
+      const requiredStreak = THEME_UNLOCK_THRESHOLDS[theme as ThemeId];
+      if ((user?.longestStreak ?? 0) < requiredStreak) {
+        throw new Error(`Theme "${theme}" requires a ${requiredStreak}-day streak to unlock`);
+      }
+
+      // Update theme
+      await ctx.prisma.user.update({
+        where: { id: ctx.user.id },
+        data: { unlockedTheme: theme },
+      });
+
+      return { success: true, theme };
+    }),
+
+  // Update user's selected avatar frame
+  updateAvatarFrame: protectedProcedure
+    .meta({ openapi: { method: "PUT", path: "/achievements/avatar-frame" } })
+    .input(z.object({ avatarFrame: z.string() }))
+    .output(z.any())
+    .mutation(async ({ ctx, input }) => {
+      const { avatarFrame } = input;
+
+      // Validate frame exists
+      if (!(avatarFrame in AVATAR_FRAME_THRESHOLDS)) {
+        throw new Error(`Invalid avatar frame: ${avatarFrame}`);
+      }
+
+      // Get user's badge count to check if frame is unlocked
+      const badgeCount = await ctx.prisma.achievement.count({
+        where: { userId: ctx.user.id },
+      });
+
+      const requiredBadges = AVATAR_FRAME_THRESHOLDS[avatarFrame as AvatarFrame];
+      if (badgeCount < requiredBadges) {
+        throw new Error(`Avatar frame "${avatarFrame}" requires ${requiredBadges} badges to unlock`);
+      }
+
+      // Update avatar frame
+      await ctx.prisma.user.update({
+        where: { id: ctx.user.id },
+        data: { avatarFrame },
+      });
+
+      return { success: true, avatarFrame };
+    }),
 });

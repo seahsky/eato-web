@@ -9,8 +9,10 @@ import '../../features/dashboard/screens/dashboard_screen.dart';
 import '../../features/food/screens/search_screen.dart';
 import '../../features/food/screens/add_food_screen.dart';
 import '../../features/food/screens/edit_food_screen.dart';
+import '../../features/gamification/screens/avatar_frame_screen.dart';
 import '../../features/gamification/screens/badge_showcase_screen.dart';
 import '../../features/gamification/screens/streak_detail_screen.dart';
+import '../../features/gamification/screens/theme_customization_screen.dart';
 import '../../features/partner/screens/partner_screen.dart';
 import '../../features/partner/screens/approvals_screen.dart';
 import '../../features/partner/screens/my_submissions_screen.dart';
@@ -22,6 +24,8 @@ import '../../features/profile/screens/profile_setup_screen.dart';
 import '../../features/recipes/screens/recipe_list_screen.dart';
 import '../../features/recipes/screens/recipe_detail_screen.dart';
 import '../../features/recipes/screens/recipe_form_screen.dart';
+import '../../features/recipes/screens/recipe_search_screen.dart';
+import '../../features/recipes/screens/recipe_log_screen.dart';
 import '../widgets/main_shell.dart';
 
 final appRouterProvider = Provider<GoRouter>((ref) {
@@ -140,6 +144,19 @@ final appRouterProvider = Provider<GoRouter>((ref) {
               return RecipeFormScreen(recipeId: recipeId);
             },
           ),
+          GoRoute(
+            path: '/recipes/:id/log',
+            name: 'recipe-log',
+            builder: (context, state) {
+              final recipeId = state.pathParameters['id']!;
+              return RecipeLogScreen(recipeId: recipeId);
+            },
+          ),
+          GoRoute(
+            path: '/recipes/search',
+            name: 'recipe-search',
+            builder: (context, state) => const RecipeSearchScreen(),
+          ),
           // Gamification routes
           GoRoute(
             path: '/badges',
@@ -150,6 +167,16 @@ final appRouterProvider = Provider<GoRouter>((ref) {
             path: '/streak',
             name: 'streak',
             builder: (context, state) => const StreakDetailScreen(),
+          ),
+          GoRoute(
+            path: '/theme',
+            name: 'theme',
+            builder: (context, state) => const ThemeCustomizationScreen(),
+          ),
+          GoRoute(
+            path: '/avatar-frame',
+            name: 'avatar-frame',
+            builder: (context, state) => const AvatarFrameScreen(),
           ),
         ],
       ),

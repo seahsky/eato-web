@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/widgets/shimmer_loading.dart';
 import '../providers/approval_provider.dart';
 import '../providers/nudge_provider.dart';
 import '../providers/partner_provider.dart';
@@ -32,7 +33,7 @@ class _PartnerScreenState extends ConsumerState<PartnerScreen> {
         title: const Text('Partner'),
       ),
       body: partnerState.isLoading
-          ? const Center(child: CircularProgressIndicator())
+          ? const PartnerSkeleton()
           : partnerState.hasPartner
               ? _buildPartnerView(context, partnerState)
               : _buildNoPartnerView(context, partnerState),

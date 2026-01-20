@@ -350,3 +350,161 @@ class FoodSearchSkeleton extends StatelessWidget {
     );
   }
 }
+
+/// Profile screen skeleton
+class ProfileSkeleton extends StatelessWidget {
+  const ProfileSkeleton({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return ShimmerWrapper(
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          children: [
+            // Avatar
+            const ShimmerBox(width: 100, height: 100, borderRadius: 50),
+            const SizedBox(height: 16),
+            // Name
+            const ShimmerBox(width: 150, height: 24),
+            const SizedBox(height: 8),
+            // Email
+            const ShimmerBox(width: 200, height: 16),
+            const SizedBox(height: 32),
+            // Stats row
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: [
+                _buildStatItem(),
+                _buildStatItem(),
+                _buildStatItem(),
+              ],
+            ),
+            const SizedBox(height: 24),
+            // Settings sections
+            for (var i = 0; i < 4; i++) ...[
+              const ShimmerBox(width: double.infinity, height: 60, borderRadius: 12),
+              const SizedBox(height: 12),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildStatItem() {
+    return Column(
+      children: [
+        const ShimmerBox(width: 40, height: 40, borderRadius: 20),
+        const SizedBox(height: 8),
+        const ShimmerBox(width: 60, height: 14),
+        const SizedBox(height: 4),
+        const ShimmerBox(width: 40, height: 12),
+      ],
+    );
+  }
+}
+
+/// Partner screen skeleton
+class PartnerSkeleton extends StatelessWidget {
+  const PartnerSkeleton({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return ShimmerWrapper(
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Partner card
+            const ShimmerBox(width: double.infinity, height: 120, borderRadius: 16),
+            const SizedBox(height: 24),
+            // Actions section
+            const ShimmerBox(width: 120, height: 20),
+            const SizedBox(height: 16),
+            Row(
+              children: [
+                Expanded(child: const ShimmerBox(width: double.infinity, height: 80, borderRadius: 12)),
+                const SizedBox(width: 12),
+                Expanded(child: const ShimmerBox(width: double.infinity, height: 80, borderRadius: 12)),
+              ],
+            ),
+            const SizedBox(height: 24),
+            // Stats section
+            const ShimmerBox(width: 100, height: 20),
+            const SizedBox(height: 16),
+            const ShimmerBox(width: double.infinity, height: 160, borderRadius: 16),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Streak detail skeleton
+class StreakDetailSkeleton extends StatelessWidget {
+  const StreakDetailSkeleton({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return ShimmerWrapper(
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          children: [
+            // Streak display
+            const ShimmerBox(width: double.infinity, height: 200, borderRadius: 16),
+            const SizedBox(height: 24),
+            // Milestone progress
+            const ShimmerBox(width: 150, height: 20),
+            const SizedBox(height: 12),
+            const ShimmerBox(width: double.infinity, height: 12, borderRadius: 6),
+            const SizedBox(height: 24),
+            // Stats grid
+            Row(
+              children: [
+                Expanded(child: const ShimmerBox(width: double.infinity, height: 100, borderRadius: 12)),
+                const SizedBox(width: 12),
+                Expanded(child: const ShimmerBox(width: double.infinity, height: 100, borderRadius: 12)),
+              ],
+            ),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                Expanded(child: const ShimmerBox(width: double.infinity, height: 100, borderRadius: 12)),
+                const SizedBox(width: 12),
+                Expanded(child: const ShimmerBox(width: double.infinity, height: 100, borderRadius: 12)),
+              ],
+            ),
+            const SizedBox(height: 24),
+            // Rest days section
+            const ShimmerBox(width: 120, height: 20),
+            const SizedBox(height: 12),
+            const ShimmerBox(width: double.infinity, height: 100, borderRadius: 12),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Notification settings skeleton
+class NotificationSettingsSkeleton extends StatelessWidget {
+  const NotificationSettingsSkeleton({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return ShimmerWrapper(
+      child: ListView(
+        padding: const EdgeInsets.all(16),
+        children: [
+          for (var i = 0; i < 6; i++) ...[
+            const ShimmerBox(width: double.infinity, height: 64, borderRadius: 12),
+            const SizedBox(height: 12),
+          ],
+        ],
+      ),
+    );
+  }
+}

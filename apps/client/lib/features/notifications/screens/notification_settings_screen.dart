@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/api/models/models.dart';
+import '../../../core/widgets/shimmer_loading.dart';
 import '../providers/notification_provider.dart';
 
 class NotificationSettingsScreen extends ConsumerStatefulWidget {
@@ -32,7 +33,7 @@ class _NotificationSettingsScreenState
         title: const Text('Notification Settings'),
       ),
       body: notificationState.isLoading && settings == null
-          ? const Center(child: CircularProgressIndicator())
+          ? const NotificationSettingsSkeleton()
           : SingleChildScrollView(
               padding: const EdgeInsets.all(16),
               child: Column(

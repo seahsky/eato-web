@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/api/models/models.dart';
+import '../../../core/widgets/shimmer_loading.dart';
 import '../providers/gamification_provider.dart';
 
 /// Milestones for daily streaks
@@ -23,6 +25,7 @@ class _StreakDetailScreenState extends ConsumerState<StreakDetailScreen> {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       ref.read(streakProvider.notifier).fetch();
+      ref.read(partnerShieldStatusProvider.notifier).fetch();
     });
   }
 
@@ -43,7 +46,7 @@ class _StreakDetailScreenState extends ConsumerState<StreakDetailScreen> {
         ],
       ),
       body: state.isLoading && state.data == null
-          ? const Center(child: CircularProgressIndicator())
+          ? const StreakDetailSkeleton()
           : state.error != null && state.data == null
               ? _buildError(state.error!)
               : RefreshIndicator(
@@ -429,6 +432,8 @@ class _StreakDetailScreenState extends ConsumerState<StreakDetailScreen> {
   }
 
   Widget _buildToolsSection(StreakState state, ThemeData theme) {
+    final shieldStatus = ref.watch(partnerShieldStatusProvider);
+
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(16),
@@ -461,7 +466,7 @@ class _StreakDetailScreenState extends ConsumerState<StreakDetailScreen> {
                     iconColor: Colors.cyan,
                     label: 'Streak Freezes',
                     value: '${state.streakFreezes}',
-                    description: 'Earned every 7-day streak',
+                    description: 'Auto-used when you miss a day',
                   ),
                 ),
                 const SizedBox(width: 12),
@@ -477,22 +482,254 @@ class _StreakDetailScreenState extends ConsumerState<StreakDetailScreen> {
               ],
             ),
             const SizedBox(height: 12),
-            Row(
-              children: [
-                Expanded(
-                  child: _ToolCard(
-                    icon: Icons.shield,
-                    iconColor: Colors.amber,
-                    label: 'Partner Shields',
-                    value: '${state.partnerShields}',
-                    description: 'Save partner\'s streak',
-                  ),
+
+            // Partner shield section
+            _buildPartnerShieldSection(shieldStatus, theme),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPartnerShieldSection(
+    PartnerShieldStatusState shieldStatus,
+    ThemeData theme,
+  ) {
+    final status = shieldStatus.data;
+
+    if (shieldStatus.isLoading && status == null) {
+      return Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: const Center(
+          child: SizedBox(
+            width: 24,
+            height: 24,
+            child: CircularProgressIndicator(strokeWidth: 2),
+          ),
+        ),
+      );
+    }
+
+    if (status == null) {
+      return Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Row(
+          children: [
+            Icon(Icons.shield, color: Colors.amber, size: 24),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                'Link with a partner to use shields',
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
                 ),
-                const Expanded(child: SizedBox()),
-              ],
+              ),
             ),
           ],
         ),
+      );
+    }
+
+    final canShield =
+        status.userCanShield.canUseShield && status.userShields > 0;
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: canShield
+            ? Colors.amber.withValues(alpha: 0.1)
+            : theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
+        borderRadius: BorderRadius.circular(12),
+        border: canShield ? Border.all(color: Colors.amber, width: 1) : null,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Header with shields count
+          Row(
+            children: [
+              Icon(Icons.shield, color: Colors.amber, size: 24),
+              const SizedBox(width: 8),
+              Text(
+                'Partner Shields',
+                style: theme.textTheme.titleSmall?.copyWith(
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const Spacer(),
+              // Shield indicators
+              Row(
+                children: List.generate(2, (i) {
+                  return Padding(
+                    padding: const EdgeInsets.only(left: 4),
+                    child: Icon(
+                      i < status.userShields
+                          ? Icons.shield
+                          : Icons.shield_outlined,
+                      color: i < status.userShields
+                          ? Colors.amber
+                          : Colors.grey,
+                      size: 20,
+                    ),
+                  );
+                }),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+
+          // Action area
+          if (canShield) ...[
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: theme.colorScheme.surface,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          '${status.partnerName ?? "Partner"} missed yesterday!',
+                          style: theme.textTheme.bodyMedium?.copyWith(
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          'Use a shield to save their streak',
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: theme.colorScheme.onSurfaceVariant,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  FilledButton(
+                    onPressed: shieldStatus.isUsingShield
+                        ? null
+                        : () => _showUseShieldDialog(status),
+                    child: shieldStatus.isUsingShield
+                        ? const SizedBox(
+                            width: 16,
+                            height: 16,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: Colors.white,
+                            ),
+                          )
+                        : const Text('Use Shield'),
+                  ),
+                ],
+              ),
+            ),
+          ] else ...[
+            Text(
+              status.userShields == 0
+                  ? 'No shields remaining this month. They reset on the 1st!'
+                  : status.userCanShield.reason ?? 'Partner\'s streak is safe',
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
+          ],
+
+          // Error message
+          if (shieldStatus.error != null) ...[
+            const SizedBox(height: 8),
+            Text(
+              shieldStatus.error!,
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.error,
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  void _showUseShieldDialog(PartnerShieldStatus status) {
+    final targetDate = status.userCanShield.targetDate;
+    if (targetDate == null) return;
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Row(
+          children: [
+            const Icon(Icons.shield, color: Colors.amber),
+            const SizedBox(width: 8),
+            const Text('Use Shield?'),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'This will use 1 of your shields to save ${status.partnerName ?? "your partner"}\'s streak.',
+            ),
+            const SizedBox(height: 12),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.amber.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Row(
+                children: [
+                  const Icon(Icons.info_outline, size: 20),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'Shields reset monthly. You have ${status.userShields} remaining.',
+                      style: Theme.of(context).textTheme.bodySmall,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () async {
+              Navigator.of(context).pop();
+              final success = await ref
+                  .read(partnerShieldStatusProvider.notifier)
+                  .useShield(targetDate);
+              if (success && mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(
+                      'Shield used! ${status.partnerName ?? "Partner"}\'s streak is saved!',
+                    ),
+                    behavior: SnackBarBehavior.floating,
+                    backgroundColor: Colors.green,
+                  ),
+                );
+              }
+            },
+            child: const Text('Use Shield'),
+          ),
+        ],
       ),
     );
   }

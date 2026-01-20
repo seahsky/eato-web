@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/api/models/models.dart';
+import '../../../core/widgets/shimmer_loading.dart';
 import '../providers/food_provider.dart';
 
 class SearchScreen extends ConsumerStatefulWidget {
@@ -69,7 +70,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
           // Results area
           Expanded(
             child: searchState.isSearching
-                ? const Center(child: CircularProgressIndicator())
+                ? const FoodSearchSkeleton()
                 : searchState.error != null
                     ? _buildErrorState(context, searchState.error!)
                     : searchState.query.isEmpty

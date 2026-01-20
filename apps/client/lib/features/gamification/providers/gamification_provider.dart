@@ -507,3 +507,296 @@ final badgeCountProvider = Provider<int>((ref) {
 final hasUnseenAchievementsProvider = Provider<bool>((ref) {
   return ref.watch(recentAchievementsProvider).hasUnseen;
 });
+
+/// State for partner shield status
+class PartnerShieldStatusState {
+  final PartnerShieldStatus? data;
+  final bool isLoading;
+  final String? error;
+  final bool isUsingShield;
+
+  const PartnerShieldStatusState({
+    this.data,
+    this.isLoading = false,
+    this.error,
+    this.isUsingShield = false,
+  });
+
+  PartnerShieldStatusState copyWith({
+    PartnerShieldStatus? data,
+    bool? isLoading,
+    String? error,
+    bool? isUsingShield,
+  }) {
+    return PartnerShieldStatusState(
+      data: data ?? this.data,
+      isLoading: isLoading ?? this.isLoading,
+      error: error,
+      isUsingShield: isUsingShield ?? this.isUsingShield,
+    );
+  }
+}
+
+/// Partner shield status notifier
+class PartnerShieldStatusNotifier extends StateNotifier<PartnerShieldStatusState> {
+  final ApiClient _apiClient;
+  final Ref _ref;
+
+  PartnerShieldStatusNotifier(this._apiClient, this._ref)
+      : super(const PartnerShieldStatusState());
+
+  /// Fetch partner shield status
+  Future<void> fetch() async {
+    if (state.isLoading) return;
+
+    state = state.copyWith(isLoading: true, error: null);
+
+    try {
+      final json = await _apiClient.getPartnerShieldStatus();
+      final data = PartnerShieldStatus.fromJson(json);
+      state = state.copyWith(data: data, isLoading: false);
+    } catch (e) {
+      state = state.copyWith(
+        isLoading: false,
+        error: 'Failed to load shield status: ${e.toString()}',
+      );
+    }
+  }
+
+  /// Use a partner shield
+  Future<bool> useShield(DateTime targetDate) async {
+    if (state.isUsingShield) return false;
+
+    state = state.copyWith(isUsingShield: true, error: null);
+
+    try {
+      await _apiClient.usePartnerShield(targetDate.toIso8601String());
+      
+      // Refresh shield status
+      await fetch();
+      
+      // Also refresh streak data since shield affects streak
+      _ref.read(streakProvider.notifier).refresh();
+      _ref.read(partnerStreakProvider.notifier).refresh();
+
+      state = state.copyWith(isUsingShield: false);
+      return true;
+    } catch (e) {
+      state = state.copyWith(
+        isUsingShield: false,
+        error: 'Failed to use shield: ${e.toString()}',
+      );
+      return false;
+    }
+  }
+
+  /// Refresh
+  Future<void> refresh() => fetch();
+}
+
+/// State for partner shield history
+class PartnerShieldHistoryState {
+  final PartnerShieldHistory? data;
+  final bool isLoading;
+  final String? error;
+
+  const PartnerShieldHistoryState({
+    this.data,
+    this.isLoading = false,
+    this.error,
+  });
+
+  PartnerShieldHistoryState copyWith({
+    PartnerShieldHistory? data,
+    bool? isLoading,
+    String? error,
+  }) {
+    return PartnerShieldHistoryState(
+      data: data ?? this.data,
+      isLoading: isLoading ?? this.isLoading,
+      error: error,
+    );
+  }
+}
+
+/// Partner shield history notifier
+class PartnerShieldHistoryNotifier extends StateNotifier<PartnerShieldHistoryState> {
+  final ApiClient _apiClient;
+
+  PartnerShieldHistoryNotifier(this._apiClient)
+      : super(const PartnerShieldHistoryState());
+
+  /// Fetch shield history
+  Future<void> fetch() async {
+    if (state.isLoading) return;
+
+    state = state.copyWith(isLoading: true, error: null);
+
+    try {
+      final json = await _apiClient.getPartnerShieldHistory();
+      final data = PartnerShieldHistory.fromJson(json);
+      state = state.copyWith(data: data, isLoading: false);
+    } catch (e) {
+      state = state.copyWith(
+        isLoading: false,
+        error: 'Failed to load shield history: ${e.toString()}',
+      );
+    }
+  }
+
+  /// Refresh
+  Future<void> refresh() => fetch();
+}
+
+/// Partner shield status provider
+final partnerShieldStatusProvider =
+    StateNotifierProvider<PartnerShieldStatusNotifier, PartnerShieldStatusState>((ref) {
+  final apiClient = ref.watch(apiClientProvider);
+  return PartnerShieldStatusNotifier(apiClient, ref);
+});
+
+/// Partner shield history provider
+final partnerShieldHistoryProvider =
+    StateNotifierProvider<PartnerShieldHistoryNotifier, PartnerShieldHistoryState>((ref) {
+  final apiClient = ref.watch(apiClientProvider);
+  return PartnerShieldHistoryNotifier(apiClient);
+});
+
+/// State for theme and avatar frame customization
+class CustomizationState {
+  final ThemeId currentTheme;
+  final List<ThemeId> unlockedThemes;
+  final AvatarFrame currentAvatarFrame;
+  final AvatarFrame maxAvatarFrame;
+  final int badgeCount;
+  final int longestStreak;
+  final bool isUpdating;
+  final String? error;
+
+  const CustomizationState({
+    this.currentTheme = ThemeId.defaultTheme,
+    this.unlockedThemes = const [ThemeId.defaultTheme],
+    this.currentAvatarFrame = AvatarFrame.none,
+    this.maxAvatarFrame = AvatarFrame.none,
+    this.badgeCount = 0,
+    this.longestStreak = 0,
+    this.isUpdating = false,
+    this.error,
+  });
+
+  CustomizationState copyWith({
+    ThemeId? currentTheme,
+    List<ThemeId>? unlockedThemes,
+    AvatarFrame? currentAvatarFrame,
+    AvatarFrame? maxAvatarFrame,
+    int? badgeCount,
+    int? longestStreak,
+    bool? isUpdating,
+    String? error,
+  }) {
+    return CustomizationState(
+      currentTheme: currentTheme ?? this.currentTheme,
+      unlockedThemes: unlockedThemes ?? this.unlockedThemes,
+      currentAvatarFrame: currentAvatarFrame ?? this.currentAvatarFrame,
+      maxAvatarFrame: maxAvatarFrame ?? this.maxAvatarFrame,
+      badgeCount: badgeCount ?? this.badgeCount,
+      longestStreak: longestStreak ?? this.longestStreak,
+      isUpdating: isUpdating ?? this.isUpdating,
+      error: error,
+    );
+  }
+}
+
+/// Customization notifier for themes and avatar frames
+class CustomizationNotifier extends StateNotifier<CustomizationState> {
+  final ApiClient _apiClient;
+  final Ref _ref;
+
+  CustomizationNotifier(this._apiClient, this._ref) : super(const CustomizationState());
+
+  /// Load customization data from achievements
+  Future<void> fetch() async {
+    try {
+      final json = await _apiClient.getAllAchievements();
+      final data = AchievementsResponse.fromJson(json);
+
+      // Get user streak data for theme unlocks
+      final streakJson = await _apiClient.getStreakData();
+      final streakData = StreakData.fromJson(streakJson);
+
+      state = state.copyWith(
+        currentTheme: data.currentTheme,
+        unlockedThemes: data.unlockedThemes,
+        currentAvatarFrame: data.currentAvatarFrame,
+        maxAvatarFrame: data.avatarFrame,
+        badgeCount: data.unlockedCount,
+        longestStreak: streakData.longestStreak,
+        error: null,
+      );
+    } catch (e) {
+      state = state.copyWith(
+        error: 'Failed to load customization data: ${e.toString()}',
+      );
+    }
+  }
+
+  /// Update selected theme
+  Future<bool> updateTheme(ThemeId theme) async {
+    if (state.isUpdating) return false;
+
+    state = state.copyWith(isUpdating: true, error: null);
+
+    try {
+      await _apiClient.updateTheme(theme.name == 'defaultTheme' ? 'default' : theme.name);
+      state = state.copyWith(
+        currentTheme: theme,
+        isUpdating: false,
+      );
+
+      // Refresh achievements data
+      _ref.read(achievementsProvider.notifier).refresh();
+      return true;
+    } catch (e) {
+      state = state.copyWith(
+        isUpdating: false,
+        error: 'Failed to update theme: ${e.toString()}',
+      );
+      return false;
+    }
+  }
+
+  /// Update selected avatar frame
+  Future<bool> updateAvatarFrame(AvatarFrame frame) async {
+    if (state.isUpdating) return false;
+
+    state = state.copyWith(isUpdating: true, error: null);
+
+    try {
+      await _apiClient.updateAvatarFrame(frame.name);
+      state = state.copyWith(
+        currentAvatarFrame: frame,
+        isUpdating: false,
+      );
+
+      // Refresh achievements data
+      _ref.read(achievementsProvider.notifier).refresh();
+      return true;
+    } catch (e) {
+      state = state.copyWith(
+        isUpdating: false,
+        error: 'Failed to update avatar frame: ${e.toString()}',
+      );
+      return false;
+    }
+  }
+
+  /// Refresh
+  Future<void> refresh() => fetch();
+}
+
+/// Customization provider
+final customizationProvider =
+    StateNotifierProvider<CustomizationNotifier, CustomizationState>((ref) {
+  final apiClient = ref.watch(apiClientProvider);
+  return CustomizationNotifier(apiClient, ref);
+});

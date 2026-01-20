@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/api/models/models.dart';
+import '../../../core/widgets/shimmer_loading.dart';
 import '../../auth/providers/auth_provider.dart';
 import '../../gamification/widgets/streak_display.dart';
 import '../providers/profile_provider.dart';
@@ -26,7 +27,7 @@ class ProfileScreen extends ConsumerWidget {
         title: const Text('Profile'),
       ),
       body: profileState.isLoading && profile == null
-          ? const Center(child: CircularProgressIndicator())
+          ? const ProfileSkeleton()
           : profileState.error != null && profile == null
               ? _buildErrorState(context, ref, profileState.error!)
               : RefreshIndicator(
