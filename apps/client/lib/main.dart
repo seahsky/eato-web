@@ -1,9 +1,10 @@
-import 'package:clerk_flutter/clerk_flutter.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+// Conditional import for clerk_flutter (not supported on web)
+import 'core/auth/clerk_wrapper.dart';
 import 'core/config/env.dart';
 import 'core/router/app_router.dart';
 import 'core/storage/cache_service.dart';
@@ -13,15 +14,17 @@ import 'core/widgets/foreground_notification_handler.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Initialize Firebase for push notifications
-  try {
-    await Firebase.initializeApp();
-    if (kDebugMode) {
-      debugPrint('Firebase initialized successfully');
-    }
-  } catch (e) {
-    if (kDebugMode) {
-      debugPrint('Firebase initialization failed: $e');
+  // Initialize Firebase for push notifications (skip on web for now)
+  if (!kIsWeb) {
+    try {
+      await Firebase.initializeApp();
+      if (kDebugMode) {
+        debugPrint('Firebase initialized successfully');
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('Firebase initialization failed: $e');
+      }
     }
   }
 
@@ -34,12 +37,10 @@ void main() async {
   }
 
   runApp(
-    ClerkAuth(
-      config: ClerkAuthConfig(
-        publishableKey: Env.clerkPublishableKey.isNotEmpty
-            ? Env.clerkPublishableKey
-            : 'pk_test_placeholder', // Placeholder for development
-      ),
+    ClerkWrapper(
+      publishableKey: Env.clerkPublishableKey.isNotEmpty
+          ? Env.clerkPublishableKey
+          : 'pk_test_placeholder',
       child: const ProviderScope(
         child: EatoApp(),
       ),

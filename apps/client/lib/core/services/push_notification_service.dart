@@ -15,7 +15,14 @@ Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
 /// Service for handling push notifications via Firebase Cloud Messaging
 class PushNotificationService {
   static PushNotificationService? _instance;
-  final FirebaseMessaging _messaging = FirebaseMessaging.instance;
+
+  // Lazy initialization to avoid accessing FirebaseMessaging.instance on web
+  // where Firebase may not be initialized
+  FirebaseMessaging? _messaging;
+  FirebaseMessaging get _getMessaging {
+    _messaging ??= FirebaseMessaging.instance;
+    return _messaging!;
+  }
 
   /// VAPID key for web push notifications
   /// Set via: flutter build web --dart-define=FIREBASE_VAPID_KEY=your_key
@@ -76,14 +83,14 @@ class PushNotificationService {
       });
 
       // Listen for token refreshes
-      _messaging.onTokenRefresh.listen((String token) {
+      _getMessaging.onTokenRefresh.listen((String token) {
         debugPrint('Token refreshed');
         _currentToken = token;
         _tokenController?.add(token);
       });
 
       // Check if app was opened from a terminated state via notification
-      final initialMessage = await _messaging.getInitialMessage();
+      final initialMessage = await _getMessaging.getInitialMessage();
       if (initialMessage != null) {
         debugPrint('App opened from terminated state via notification');
         _messageController?.add(initialMessage);
@@ -99,7 +106,7 @@ class PushNotificationService {
   /// Request notification permissions from the user
   Future<NotificationPermissionStatus> requestPermission() async {
     try {
-      final settings = await _messaging.requestPermission(
+      final settings = await _getMessaging.requestPermission(
         alert: true,
         announcement: false,
         badge: true,
@@ -130,7 +137,7 @@ class PushNotificationService {
   /// Get the current permission status
   Future<NotificationPermissionStatus> getPermissionStatus() async {
     try {
-      final settings = await _messaging.getNotificationSettings();
+      final settings = await _getMessaging.getNotificationSettings();
 
       switch (settings.authorizationStatus) {
         case AuthorizationStatus.authorized:
@@ -155,7 +162,7 @@ class PushNotificationService {
       // For mobile, no additional parameters needed
       if (kIsWeb) {
         // Use VAPID key from compile-time constant (set via --dart-define)
-        _currentToken = await _messaging.getToken(
+        _currentToken = await _getMessaging.getToken(
           vapidKey: _vapidKey.isNotEmpty ? _vapidKey : null,
         );
         if (_vapidKey.isEmpty) {
@@ -163,7 +170,7 @@ class PushNotificationService {
           debugPrint('Build with: flutter build web --dart-define=FIREBASE_VAPID_KEY=your_key');
         }
       } else {
-        _currentToken = await _messaging.getToken();
+        _currentToken = await _getMessaging.getToken();
       }
 
       if (_currentToken != null && _currentToken!.length > 20) {
@@ -181,7 +188,7 @@ class PushNotificationService {
   /// Delete the FCM token (used when logging out)
   Future<void> deleteToken() async {
     try {
-      await _messaging.deleteToken();
+      await _getMessaging.deleteToken();
       _currentToken = null;
       debugPrint('FCM token deleted');
     } catch (e) {
@@ -198,7 +205,7 @@ class PushNotificationService {
     }
 
     try {
-      await _messaging.subscribeToTopic(topic);
+      await _getMessaging.subscribeToTopic(topic);
       debugPrint('Subscribed to topic: $topic');
     } catch (e) {
       debugPrint('Failed to subscribe to topic: $e');
@@ -213,7 +220,7 @@ class PushNotificationService {
     }
 
     try {
-      await _messaging.unsubscribeFromTopic(topic);
+      await _getMessaging.unsubscribeFromTopic(topic);
       debugPrint('Unsubscribed from topic: $topic');
     } catch (e) {
       debugPrint('Failed to unsubscribe from topic: $e');

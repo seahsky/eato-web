@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -35,6 +36,9 @@ class _ForegroundNotificationHandlerState
   }
 
   void _setupNotificationListener() {
+    // Skip notification setup on web - Firebase Messaging not properly supported
+    if (kIsWeb) return;
+
     final pushService = ref.read(pushNotificationServiceProvider);
 
     _messageSubscription = pushService.onMessage.listen((RemoteMessage message) {

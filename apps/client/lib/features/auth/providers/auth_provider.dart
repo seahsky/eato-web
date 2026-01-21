@@ -1,9 +1,10 @@
 import 'dart:async';
 
-import 'package:clerk_flutter/clerk_flutter.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+// Platform-aware clerk types (stub on web, real on native)
+import 'clerk_types.dart';
 import '../../../core/api/api_client.dart';
 import '../../../core/api/interceptors/auth_interceptor.dart';
 

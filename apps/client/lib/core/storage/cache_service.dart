@@ -25,7 +25,13 @@ class CacheService {
     if (_initialized) return;
 
     try {
-      await Hive.initFlutter();
+      if (kIsWeb) {
+        // On web, Hive uses IndexedDB and doesn't need a file path.
+        // Hive.initFlutter() fails on web without path_provider_web.
+        Hive.init('');
+      } else {
+        await Hive.initFlutter();
+      }
 
       // Open all boxes
       await Future.wait([
