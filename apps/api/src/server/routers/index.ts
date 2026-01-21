@@ -7,8 +7,10 @@ import { recipeRouter } from "./recipe";
 import { notificationRouter } from "./notification";
 import { mealEstimationRouter } from "./meal-estimation";
 import { achievementsRouter } from "./achievements";
+import { healthRouter } from "./health";
 
 export const appRouter = router({
+  health: healthRouter,
   auth: authRouter,
   profile: profileRouter,
   food: foodRouter,
