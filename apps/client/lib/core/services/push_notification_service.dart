@@ -64,6 +64,13 @@ class PushNotificationService {
 
   /// Initialize the push notification service
   Future<void> initialize() async {
+    // Skip all Firebase Messaging on web - not properly supported
+    if (kIsWeb) {
+      _initialized = true;
+      debugPrint('Push notifications disabled on web');
+      return;
+    }
+
     if (_initialized) return;
 
     try {
