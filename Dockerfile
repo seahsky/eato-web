@@ -21,6 +21,7 @@ ARG FIREBASE_MESSAGING_SENDER_ID
 ARG FIREBASE_APP_ID
 ARG FIREBASE_VAPID_KEY
 ARG CLERK_PUBLISHABLE_KEY
+ARG DEBUG=false
 
 # Export ARGs as ENV for the shell script
 ENV FIREBASE_API_KEY=$FIREBASE_API_KEY \
@@ -30,7 +31,8 @@ ENV FIREBASE_API_KEY=$FIREBASE_API_KEY \
     FIREBASE_MESSAGING_SENDER_ID=$FIREBASE_MESSAGING_SENDER_ID \
     FIREBASE_APP_ID=$FIREBASE_APP_ID \
     FIREBASE_VAPID_KEY=$FIREBASE_VAPID_KEY \
-    CLERK_PUBLISHABLE_KEY=$CLERK_PUBLISHABLE_KEY
+    CLERK_PUBLISHABLE_KEY=$CLERK_PUBLISHABLE_KEY \
+    DEBUG=$DEBUG
 
 # Generate firebase config, build Flutter web, copy config to output
 RUN chmod +x scripts/generate-firebase-config.sh && \
@@ -38,7 +40,8 @@ RUN chmod +x scripts/generate-firebase-config.sh && \
     flutter build web --release \
       --dart-define=CLERK_PUBLISHABLE_KEY=$CLERK_PUBLISHABLE_KEY \
       --dart-define=API_BASE_URL= \
-      --dart-define=FIREBASE_VAPID_KEY=$FIREBASE_VAPID_KEY && \
+      --dart-define=FIREBASE_VAPID_KEY=$FIREBASE_VAPID_KEY \
+      --dart-define=DEBUG=$DEBUG && \
     cp web/firebase-config.js build/web/
 
 # -----------------------------------------------------------------------------
