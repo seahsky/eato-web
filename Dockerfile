@@ -42,7 +42,8 @@ RUN chmod +x scripts/generate-firebase-config.sh && \
       --dart-define=API_BASE_URL= \
       --dart-define=FIREBASE_VAPID_KEY=$FIREBASE_VAPID_KEY \
       --dart-define=DEBUG=$DEBUG && \
-    cp web/firebase-config.js build/web/
+    cp web/firebase-config.js build/web/ && \
+    sed -i "s|__CLERK_PUBLISHABLE_KEY__|$CLERK_PUBLISHABLE_KEY|g" build/web/index.html
 
 # -----------------------------------------------------------------------------
 # Stage 2: Build Next.js API
