@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 // Platform-aware clerk types (stub on web, real on native)
 import 'clerk_types.dart';
+import 'token_refresh.dart' as token_refresh;
 import '../../../core/api/api_client.dart';
 import '../../../core/api/interceptors/auth_interceptor.dart';
 
@@ -159,8 +160,14 @@ class AuthNotifier extends StateNotifier<AuthState> with WidgetsBindingObserver 
     }
   }
 
-  /// Set the Clerk auth provider for session management
+  /// Set the Clerk auth provider for session management (native platforms)
   void setClerkAuth(ClerkAuthState clerkAuth) {
+    _clerkAuth = clerkAuth;
+  }
+
+  /// Set the Clerk auth provider for session management (web platform)
+  /// On web, ClerkAuthState is the web implementation with async getToken()
+  void setClerkAuthWeb(ClerkAuthState clerkAuth) {
     _clerkAuth = clerkAuth;
   }
 
@@ -233,21 +240,24 @@ class AuthNotifier extends StateNotifier<AuthState> with WidgetsBindingObserver 
   }
 
   /// Refresh the token from Clerk
+  /// Uses platform-aware abstraction for native vs web token access
   Future<void> _refreshTokenFromClerk() async {
     if (_clerkAuth == null) return;
 
     try {
-      final session = _clerkAuth!.session;
-      if (session != null) {
-        final token = session.lastActiveToken;
-        if (token != null && token.isNotExpired) {
-          await updateToken(token.jwt);
-        } else {
-          // Token expired, sign out
-          await signOut();
-        }
-      } else {
+      // Check if session is still valid
+      if (!token_refresh.isSessionValid(_clerkAuth!)) {
         // No active session, sign out
+        await signOut();
+        return;
+      }
+
+      // Get token using platform-specific method (sync on native, async on web)
+      final token = await token_refresh.getTokenFromClerk(_clerkAuth!);
+      if (token != null) {
+        await updateToken(token);
+      } else {
+        // Token not available, sign out
         await signOut();
       }
     } catch (e) {

@@ -1,13 +1,127 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
-/// Web-specific login screen.
-/// clerk_flutter does not support web, so we show a "coming soon" message.
-class LoginScreenPlatform extends ConsumerWidget {
+import '../providers/auth_provider.dart';
+import '../providers/clerk_types.dart';
+
+/// Web-specific login screen with Clerk.js authentication.
+class LoginScreenPlatform extends ConsumerStatefulWidget {
   const LoginScreenPlatform({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<LoginScreenPlatform> createState() =>
+      _LoginScreenPlatformState();
+}
+
+class _LoginScreenPlatformState extends ConsumerState<LoginScreenPlatform> {
+  final ClerkAuthState _clerkAuth = ClerkAuthState();
+  bool _isInitializing = true;
+  bool _isAuthenticating = false;
+  String? _error;
+  StreamSubscription<bool>? _authSubscription;
+
+  @override
+  void initState() {
+    super.initState();
+    _initializeClerk();
+  }
+
+  @override
+  void dispose() {
+    _authSubscription?.cancel();
+    _clerkAuth.dispose();
+    super.dispose();
+  }
+
+  Future<void> _initializeClerk() async {
+    try {
+      final success = await _clerkAuth.initialize();
+
+      if (!success) {
+        setState(() {
+          _error = 'Failed to initialize authentication';
+          _isInitializing = false;
+        });
+        return;
+      }
+
+      // Listen for auth state changes
+      _authSubscription = _clerkAuth.authStateChanges.listen((isSignedIn) {
+        if (isSignedIn && mounted) {
+          _handleSignIn();
+        }
+      });
+
+      // Check if already signed in
+      if (_clerkAuth.isSignedIn) {
+        await _handleSignIn();
+      } else {
+        setState(() {
+          _isInitializing = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _error = 'Authentication error: $e';
+          _isInitializing = false;
+        });
+      }
+    }
+  }
+
+  Future<void> _handleSignIn() async {
+    if (_isAuthenticating) return;
+
+    setState(() {
+      _isAuthenticating = true;
+      _error = null;
+    });
+
+    try {
+      // Get the session token
+      final token = await _clerkAuth.getToken();
+
+      if (token == null) {
+        setState(() {
+          _error = 'Failed to get authentication token';
+          _isAuthenticating = false;
+        });
+        return;
+      }
+
+      // Sign in with our auth provider
+      final authNotifier = ref.read(authProvider.notifier);
+      authNotifier.setClerkAuthWeb(_clerkAuth);
+      await authNotifier.signIn(token);
+
+      // Navigate to dashboard
+      if (mounted) {
+        context.go('/dashboard');
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _error = 'Sign in failed: $e';
+          _isAuthenticating = false;
+        });
+      }
+    }
+  }
+
+  void _openSignIn() {
+    _clerkAuth.openSignIn();
+  }
+
+  void _openSignUp() {
+    _clerkAuth.openSignUp();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
 
@@ -45,68 +159,52 @@ class LoginScreenPlatform extends ConsumerWidget {
                 ),
                 const SizedBox(height: 48),
 
-                // Web notice
-                Container(
-                  padding: const EdgeInsets.all(24),
-                  decoration: BoxDecoration(
-                    color: colorScheme.surfaceContainerHighest,
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(
-                      color: colorScheme.outlineVariant,
+                // Loading state
+                if (_isInitializing || _isAuthenticating) ...[
+                  const CircularProgressIndicator(),
+                  const SizedBox(height: 16),
+                  Text(
+                    _isInitializing
+                        ? 'Initializing...'
+                        : 'Signing you in...',
+                    style: textTheme.bodyMedium?.copyWith(
+                      color: colorScheme.onSurfaceVariant,
                     ),
                   ),
-                  child: Column(
-                    children: [
-                      Icon(
-                        Icons.phone_android,
-                        size: 48,
-                        color: colorScheme.primary,
-                      ),
-                      const SizedBox(height: 16),
-                      Text(
-                        'Mobile App Available',
-                        style: textTheme.titleLarge?.copyWith(
-                          fontWeight: FontWeight.bold,
-                          color: colorScheme.onSurface,
+                ]
+                // Error state
+                else if (_error != null) ...[
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: colorScheme.errorContainer,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.error_outline,
+                          color: colorScheme.onErrorContainer,
                         ),
-                        textAlign: TextAlign.center,
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        'Eato is currently available as a mobile app for iOS and Android. Web support is coming soon!',
-                        style: textTheme.bodyMedium?.copyWith(
-                          color: colorScheme.onSurfaceVariant,
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Text(
+                            _error!,
+                            style: TextStyle(
+                              color: colorScheme.onErrorContainer,
+                            ),
+                          ),
                         ),
-                        textAlign: TextAlign.center,
-                      ),
-                      const SizedBox(height: 24),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          _PlatformBadge(
-                            icon: Icons.apple,
-                            label: 'iOS',
-                            colorScheme: colorScheme,
-                          ),
-                          const SizedBox(width: 16),
-                          _PlatformBadge(
-                            icon: Icons.android,
-                            label: 'Android',
-                            colorScheme: colorScheme,
-                          ),
-                        ],
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
-                ),
-                const SizedBox(height: 24),
-                Text(
-                  'Download the app to get started',
-                  style: textTheme.bodySmall?.copyWith(
-                    color: colorScheme.onSurfaceVariant,
-                  ),
-                  textAlign: TextAlign.center,
-                ),
+                  const SizedBox(height: 24),
+                  _buildAuthButtons(colorScheme, textTheme),
+                ]
+                // Ready state - show auth buttons
+                else ...[
+                  _buildAuthButtons(colorScheme, textTheme),
+                ],
               ],
             ),
           ),
@@ -114,45 +212,67 @@ class LoginScreenPlatform extends ConsumerWidget {
       ),
     );
   }
-}
 
-class _PlatformBadge extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final ColorScheme colorScheme;
-
-  const _PlatformBadge({
-    required this.icon,
-    required this.label,
-    required this.colorScheme,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      decoration: BoxDecoration(
-        color: colorScheme.primaryContainer,
-        borderRadius: BorderRadius.circular(20),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(
-            icon,
-            size: 20,
-            color: colorScheme.onPrimaryContainer,
-          ),
-          const SizedBox(width: 8),
-          Text(
-            label,
-            style: TextStyle(
-              color: colorScheme.onPrimaryContainer,
-              fontWeight: FontWeight.w500,
+  Widget _buildAuthButtons(ColorScheme colorScheme, TextTheme textTheme) {
+    return Column(
+      children: [
+        // Sign In Button
+        SizedBox(
+          width: double.infinity,
+          height: 56,
+          child: FilledButton(
+            onPressed: _openSignIn,
+            style: FilledButton.styleFrom(
+              backgroundColor: colorScheme.primary,
+              foregroundColor: colorScheme.onPrimary,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+            child: Text(
+              'Sign In',
+              style: textTheme.titleMedium?.copyWith(
+                color: colorScheme.onPrimary,
+                fontWeight: FontWeight.w600,
+              ),
             ),
           ),
-        ],
-      ),
+        ),
+        const SizedBox(height: 16),
+
+        // Sign Up Button
+        SizedBox(
+          width: double.infinity,
+          height: 56,
+          child: OutlinedButton(
+            onPressed: _openSignUp,
+            style: OutlinedButton.styleFrom(
+              foregroundColor: colorScheme.primary,
+              side: BorderSide(color: colorScheme.outline),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+            child: Text(
+              'Create Account',
+              style: textTheme.titleMedium?.copyWith(
+                color: colorScheme.primary,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(height: 32),
+
+        // Info text
+        Text(
+          'Sign in to track your calories and sync with your partner',
+          style: textTheme.bodySmall?.copyWith(
+            color: colorScheme.onSurfaceVariant,
+          ),
+          textAlign: TextAlign.center,
+        ),
+      ],
     );
   }
 }

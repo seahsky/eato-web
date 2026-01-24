@@ -1,16 +1,16 @@
 import 'package:flutter/widgets.dart';
 
-/// Web platform stub - clerk_flutter is not supported on web.
-/// This bypasses ClerkAuth and renders the child directly.
+/// Web platform wrapper - Clerk.js is loaded via index.html script tag.
+/// The actual authentication is handled by the login screen using ClerkJS interop.
 ///
-/// TODO: Implement web-specific authentication when clerk_flutter adds web support
-/// or use an alternative authentication method for web.
+/// This wrapper simply returns the child since Clerk.js initialization
+/// happens globally in the browser context.
 Widget buildClerkWrapper({
   required String publishableKey,
   required Widget child,
 }) {
-  // On web, clerk_flutter is not available.
-  // Simply return the child without ClerkAuth wrapper.
-  // The auth system will need to handle this case gracefully.
+  // On web, Clerk.js is loaded via the script tag in index.html
+  // and initialized by clerk_init.js.
+  // The ClerkAuthState in clerk_types_web.dart handles the interop.
   return child;
 }
