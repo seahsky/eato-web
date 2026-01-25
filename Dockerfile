@@ -34,16 +34,16 @@ ENV FIREBASE_API_KEY=$FIREBASE_API_KEY \
     CLERK_PUBLISHABLE_KEY=$CLERK_PUBLISHABLE_KEY \
     DEBUG=$DEBUG
 
-# Generate firebase config, build Flutter web, copy config to output
+# Generate firebase config, substitute Clerk key in source HTML, then build Flutter web
 RUN chmod +x scripts/generate-firebase-config.sh && \
     ./scripts/generate-firebase-config.sh && \
+    sed -i "s|__CLERK_PUBLISHABLE_KEY__|$CLERK_PUBLISHABLE_KEY|g" web/index.html && \
     flutter build web --release \
       --dart-define=CLERK_PUBLISHABLE_KEY=$CLERK_PUBLISHABLE_KEY \
       --dart-define=API_BASE_URL= \
       --dart-define=FIREBASE_VAPID_KEY=$FIREBASE_VAPID_KEY \
       --dart-define=DEBUG=$DEBUG && \
-    cp web/firebase-config.js build/web/ && \
-    sed -i "s|__CLERK_PUBLISHABLE_KEY__|$CLERK_PUBLISHABLE_KEY|g" build/web/index.html
+    cp web/firebase-config.js build/web/
 
 # -----------------------------------------------------------------------------
 # Stage 2: Build Next.js API
@@ -70,8 +70,13 @@ RUN npm run build
 # -----------------------------------------------------------------------------
 FROM node:20-alpine AS runtime
 
-# Install nginx and OpenSSL for Prisma query engine
-RUN apk add --no-cache nginx openssl
+# Install nginx, OpenSSL for Prisma query engine, and curl for health checks
+RUN apk add --no-cache nginx openssl curl
+
+# Create nginx log directory and set permissions
+RUN mkdir -p /var/log/nginx && \
+    mkdir -p /run/nginx && \
+    chown -R node:node /var/log/nginx /run/nginx
 
 WORKDIR /app
 
@@ -90,8 +95,15 @@ COPY nginx.conf /etc/nginx/nginx.conf
 COPY start.sh /start.sh
 RUN chmod +x /start.sh
 
+# Set production environment
+ENV NODE_ENV=production
+
 # Expose the Nginx port (Zeabur expects 8080)
 EXPOSE 8080
+
+# Health check for container orchestration
+HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
+  CMD curl -f http://localhost:8080/api/rest/health || exit 1
 
 # Start both services
 CMD ["/start.sh"]

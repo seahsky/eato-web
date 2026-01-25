@@ -8,8 +8,9 @@
 
 ### Pre-Submission Checklist
 - Always run type checking before completing any task
-- Always run `npm run build` to verify there are no build errors
-- Fix all TypeScript errors and warnings before handing in work
+- For API: Run `npm run build` in `apps/api` to verify no build errors
+- For Flutter: Run `flutter analyze` in `apps/client` to verify no lint errors
+- Fix all TypeScript/Dart errors and warnings before handing in work
 
 ### Bug Investigation Protocol
 - When asked to fix a bug or issue, **find the root cause first**
@@ -28,32 +29,94 @@
 
 ## Project Overview
 
-Eato is a mobile-first Progressive Web App (PWA) designed for couples to track their daily calorie intake and reach health goals together. The app combines personal diet tracking with partner collaboration features.
+Eato is a mobile-first cross-platform app for couples to track their daily calorie intake and reach health goals together. The app features a Flutter frontend (iOS, Android, Web) with a Next.js API backend.
 
 ### Core Features
-- Calorie tracking with food database search and manual entry
+- Calorie tracking with FatSecret food database search and manual entry
 - BMR (Basal Metabolic Rate) and TDEE (Total Daily Energy Expenditure) calculator
+- Recipe builder with per-100g nutrition calculation
 - Partner mode for linking accounts and viewing shared progress
+- Partner food logging with approval workflow
+- Push notifications (Firebase Cloud Messaging + Web Push)
+- Gamification system (streaks, achievements, partner shields)
 - Daily and weekly statistics with visual progress indicators
-- PWA installation with offline support
+
+---
+
+## Monorepo Structure
+
+```
+eato/
+├── apps/
+│   ├── api/                   # Next.js backend (tRPC + REST API)
+│   │   ├── src/
+│   │   │   ├── app/api/       # API routes (tRPC, REST, webhooks, cron)
+│   │   │   ├── server/        # tRPC routers and services
+│   │   │   ├── lib/           # Shared utilities
+│   │   │   └── trpc/          # tRPC client configuration
+│   │   └── prisma/            # Database schema
+│   └── client/                # Flutter app (iOS, Android, Web)
+│       ├── lib/
+│       │   ├── core/          # Shared infrastructure
+│       │   │   ├── api/       # API client, models, interceptors
+│       │   │   ├── auth/      # Clerk authentication wrappers
+│       │   │   ├── router/    # GoRouter configuration
+│       │   │   └── theme/     # App theming
+│       │   └── features/      # Feature modules
+│       │       ├── auth/      # Login screens and providers
+│       │       ├── dashboard/ # Home screen and stats
+│       │       ├── food/      # Food search, add, edit
+│       │       ├── profile/   # Profile setup and settings
+│       │       ├── partner/   # Partner linking and tracking
+│       │       ├── recipes/   # Recipe builder
+│       │       ├── gamification/   # Streaks and badges
+│       │       └── notifications/  # Push notification settings
+│       └── web/               # Flutter web assets
+├── Dockerfile                 # Multi-stage build (Flutter + Next.js)
+├── nginx.conf                 # Nginx reverse proxy config
+├── start.sh                   # Container startup script
+└── docs/                      # Additional documentation
+```
 
 ---
 
 ## Tech Stack
 
+### Backend (apps/api/)
+
 | Layer | Technology |
 |-------|------------|
-| Framework | Next.js 16 (App Router), React 19 |
-| API | tRPC with protected procedures |
+| Framework | Next.js 16 (App Router) |
+| API | tRPC + trpc-openapi (REST endpoints) |
 | Database | MongoDB with Prisma ORM |
-| Authentication | Clerk with webhook sync |
-| UI Components | shadcn/ui, Radix UI primitives |
-| Styling | Tailwind CSS v4 |
-| Animations | Framer Motion |
-| State Management | TanStack React Query |
-| PWA | Serwist (Service Worker) |
-| External API | Open Food Facts |
+| Authentication | Clerk (webhooks for user sync) |
+| Push Notifications | Web Push (VAPID) + Expo Push |
+| Food Database | FatSecret Platform API |
+| Translation | Google Cloud Translation API |
 | Validation | Zod |
+| Job Scheduling | Agenda (MongoDB-backed) |
+
+### Frontend (apps/client/)
+
+| Layer | Technology |
+|-------|------------|
+| Framework | Flutter 3 (iOS, Android, Web) |
+| State Management | Riverpod + riverpod_generator |
+| Navigation | GoRouter |
+| HTTP Client | Dio with interceptors |
+| Authentication | clerk_flutter (native) + JS interop (web) |
+| Push Notifications | Firebase Cloud Messaging |
+| Local Storage | Hive + SharedPreferences + SecureStorage |
+| Charts | fl_chart |
+
+### Deployment
+
+| Component | Technology |
+|-----------|------------|
+| Container | Docker multi-stage build |
+| Web Server | Nginx (serves Flutter, proxies API) |
+| Runtime | Node.js 20 Alpine |
+| Port | 8080 (Nginx) → 3000 (Next.js internal) |
 
 ---
 
@@ -61,60 +124,115 @@ Eato is a mobile-first Progressive Web App (PWA) designed for couples to track t
 
 ### Authentication Flow
 - Clerk manages all user authentication (OAuth providers and email/password)
+- Flutter uses `clerk_flutter` package for native apps, JS interop for web
 - A webhook endpoint receives Clerk lifecycle events (user created, updated, deleted)
 - On user creation in Clerk, a corresponding user record is created in MongoDB
-- On user deletion, the system first unlinks any partner relationship, then cascades deletion to all related data (profile, food entries, daily logs)
+- On user deletion, the system first unlinks any partner relationship, then cascades deletion to all related data
 - All tRPC procedures marked as protected require both valid Clerk authentication AND an existing database user record
 
 ### Data Model Relationships
-- **User**: Central entity linked to Clerk via clerkId. Contains partner linking fields.
-- **Profile**: One-to-one relationship with User. Stores physical metrics (age, weight, height, gender, activity level) and calculated values (BMR, TDEE, calorie goal).
-- **FoodEntry**: Many-to-one with both User and DailyLog. Represents individual food items logged with full nutritional data.
-- **DailyLog**: Many-to-one with User. Aggregated daily totals with a unique constraint on userId + date combination.
+- **User**: Central entity linked to Clerk via clerkId. Contains partner linking, gamification stats, and notification settings.
+- **Profile**: One-to-one with User. Stores physical metrics, calculated BMR/TDEE, calorie goal, and display preferences.
+- **FoodEntry**: Many-to-one with User and DailyLog. Individual food items with full nutritional data and approval status.
+- **DailyLog**: Many-to-one with User. Aggregated daily totals with unique constraint on userId + date.
+- **Recipe**: Many-to-one with User. Custom recipes with ingredients and per-100g nutrition.
+- **Achievement**: Many-to-one with User. Unlocked badges and milestones.
+- **PushSubscription**: Many-to-one with User. Web Push or Expo Push tokens per device.
 
 ### Partner System Logic
-- Users can generate a 6-character alphanumeric partner link code
-- Generated codes expire after 24 hours
-- When User B enters User A's code, bidirectional linking occurs (both users reference each other via partnerId)
-- The link code and expiry are cleared from User A after successful linking
-- Unlinking removes partner references from both users
-- Partners can view each other's daily and weekly summaries but cannot modify each other's data
-
-### BMR/TDEE Calculation Logic
-- BMR is calculated using the Mifflin-St Jeor equation, factoring in weight (kg), height (cm), age, and gender
-- TDEE is derived by multiplying BMR by an activity level multiplier (ranging from sedentary to very active)
-- Users can accept the calculated TDEE as their calorie goal or set a custom goal
-- Macro nutrient targets (protein, carbs, fat) are calculated as percentage splits of the calorie goal
+- Users generate a 6-character alphanumeric partner link code (expires in 24 hours)
+- When User B enters User A's code, bidirectional linking occurs
+- Partners can log food for each other (requires approval workflow)
+- Partners can view each other's daily and weekly summaries
+- Partner shields can protect a partner's streak from breaking
 
 ### Food Logging Logic
-- Food entries originate from two sources: Open Food Facts database search or manual entry
-- When a food entry is logged, the system either creates a new DailyLog for that date or finds the existing one
-- DailyLog totals (calories, protein, carbs, fat, fiber) are atomically incremented when entries are created
-- When updating an entry, the system calculates the nutritional difference and adjusts the DailyLog accordingly
-- Deleting an entry decrements the DailyLog totals by the entry's values
+- Food entries originate from: FatSecret database search, barcode scan, manual entry, or recipes
+- DailyLog totals are atomically incremented/decremented when entries are created/updated/deleted
+- Partner-logged entries start with PENDING approval status
+- Approved entries count toward daily totals; rejected entries are excluded
+
+### Gamification System
+- **Daily Streaks**: Consecutive days with at least one logged entry
+- **Goal Streaks**: Consecutive days meeting calorie goal
+- **Weekly Streaks**: Logging on 5+ days per week
+- **Partner Shields**: Protect partner's streak (2 per month)
+- **Achievements/Badges**: Unlocked for milestones (first entry, week warrior, etc.)
+- **Rest Days**: Users can declare up to 6 rest days per month (streak protection)
 
 ### API Router Structure
-- **auth router**: Partner code generation, partner linking/unlinking, current user retrieval with profile and partner info
-- **profile router**: Profile creation and updates, BMR/TDEE preview calculations, calorie goal updates
-- **food router**: Open Food Facts search and barcode lookup, food entry CRUD operations
-- **stats router**: Daily summary with meal breakdown, weekly summary with averages, partner daily/weekly summaries
+- **health**: Health check endpoints for container monitoring
+- **auth**: Partner code generation, linking/unlinking, current user with profile
+- **profile**: Profile CRUD, BMR/TDEE calculations, calorie goal updates
+- **food**: FatSecret search, barcode lookup, food entry CRUD, favorites, partner logging
+- **stats**: Daily/weekly summaries with meal breakdown, partner summaries
+- **recipe**: Recipe CRUD with ingredient management and nutrition calculation
+- **notification**: Push subscription management, nudges, reminder settings
+- **mealEstimation**: Meal calculator for estimating nutrition from ingredient list
+- **achievements**: Badge queries and unlock checking
 
-### Frontend Architecture
-- Route groups separate authentication pages from protected dashboard pages
-- Mobile-first layout with a fixed bottom navigation bar
-- Five main navigation sections: Dashboard (home), Search, Log (add food), Partner, Profile
-- Data fetching uses tRPC query hooks with React Query for caching (5-second stale time)
-- Form state is managed with useState hooks and submitted via tRPC mutations
-- Mutations invalidate related queries on success to maintain data consistency
-- Toast notifications provide user feedback for actions
+### Flutter Architecture
+- **Feature-based structure**: Each feature module contains screens, providers, and widgets
+- **Riverpod providers**: State management with code generation for type safety
+- **GoRouter**: Declarative navigation with route guards for authentication
+- **Dio interceptors**: Automatic auth token injection and refresh
+- **Platform-specific code**: Conditional imports for web vs native (Clerk, notifications)
 
 ### Data Flow Patterns
-- Server components can fetch data directly via tRPC server caller for initial page loads
-- Client components use tRPC query hooks that leverage React Query's caching layer
-- Search functionality uses debounced queries (300ms delay) to minimize API calls
-- Query invalidation after mutations ensures UI stays synchronized with server state
+- Riverpod providers fetch data via Dio HTTP client
+- API returns JSON parsed into Dart model classes
+- Provider state drives UI rebuilds
+- Mutations trigger provider refresh to sync state
+- Optimistic updates for better UX where appropriate
 
 ### External Integrations
-- **Clerk**: Handles all authentication, provides user management UI, sends webhook events for user lifecycle
-- **Open Food Facts**: Provides food product search by name and barcode lookup; responses are cached (1 hour for search, 24 hours for barcode)
-- **MongoDB**: Document database accessed through Prisma ORM with typed queries and relations
+- **Clerk**: Authentication with webhook sync for user lifecycle
+- **FatSecret**: Primary food database API (OAuth 2.0)
+- **Firebase**: Push notifications for iOS/Android/Web
+- **Google Translate**: Non-English food search translation
+- **MongoDB**: Document database via Prisma ORM
+
+---
+
+## Deployment
+
+### Dockerfile Architecture
+The app uses a multi-stage Docker build:
+1. **Stage 1 (flutter-build)**: Builds Flutter web app with environment variables
+2. **Stage 2 (nextjs-build)**: Builds Next.js API with Prisma generation
+3. **Stage 3 (runtime)**: Combines both into a production container
+
+### Container Services
+- **Nginx** (port 8080): Serves Flutter static files, proxies `/api/*` to Next.js
+- **Next.js** (port 3000 internal): Runs API server with Prisma client
+
+### Required Environment Variables
+
+#### Build-time (Dockerfile ARGs)
+```env
+FIREBASE_API_KEY
+FIREBASE_AUTH_DOMAIN
+FIREBASE_PROJECT_ID
+FIREBASE_STORAGE_BUCKET
+FIREBASE_MESSAGING_SENDER_ID
+FIREBASE_APP_ID
+FIREBASE_VAPID_KEY
+CLERK_PUBLISHABLE_KEY
+DEBUG=false
+```
+
+#### Runtime (Container ENV)
+```env
+DATABASE_URL=mongodb+srv://...
+CLERK_SECRET_KEY=sk_...
+CLERK_WEBHOOK_SECRET=whsec_...
+FATSECRET_CLIENT_ID=...
+FATSECRET_CLIENT_SECRET=...
+GOOGLE_TRANSLATE_API_KEY=...
+NEXT_PUBLIC_VAPID_PUBLIC_KEY=...
+VAPID_PRIVATE_KEY=...
+```
+
+### Health Check
+- Endpoint: `GET /api/rest/health`
+- Returns: `{ "status": "ok", "timestamp": "...", "uptime": "..." }`
