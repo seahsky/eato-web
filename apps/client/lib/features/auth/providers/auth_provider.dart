@@ -175,10 +175,17 @@ class AuthNotifier extends StateNotifier<AuthState> with WidgetsBindingObserver 
   Future<void> _checkAuthStatus() async {
     state = state.copyWith(status: AuthStatus.loading);
 
-    final token = await AuthInterceptor.getToken();
-    if (token != null) {
-      await refreshUser();
-    } else {
+    try {
+      final token = await AuthInterceptor.getToken();
+      if (token != null) {
+        await refreshUser();
+      } else {
+        state = state.copyWith(status: AuthStatus.unauthenticated);
+      }
+    } catch (e) {
+      // If token retrieval fails (e.g. FlutterSecureStorage on web),
+      // fall through to unauthenticated so the login screen shows.
+      debugPrint('Auth status check failed: $e');
       state = state.copyWith(status: AuthStatus.unauthenticated);
     }
   }

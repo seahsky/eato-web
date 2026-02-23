@@ -40,6 +40,8 @@ class _LoginScreenPlatformState extends ConsumerState<LoginScreenPlatform> {
     try {
       final success = await _clerkAuth.initialize();
 
+      if (!mounted) return;
+
       if (!success) {
         setState(() {
           _error = 'Failed to initialize authentication';
@@ -55,13 +57,14 @@ class _LoginScreenPlatformState extends ConsumerState<LoginScreenPlatform> {
         }
       });
 
+      // Mark initialization complete before handling sign-in
+      setState(() {
+        _isInitializing = false;
+      });
+
       // Check if already signed in
       if (_clerkAuth.isSignedIn) {
         await _handleSignIn();
-      } else {
-        setState(() {
-          _isInitializing = false;
-        });
       }
     } catch (e) {
       if (mounted) {
