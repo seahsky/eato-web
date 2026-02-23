@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -95,6 +96,8 @@ class AuthNotifier extends StateNotifier<AuthState> with WidgetsBindingObserver 
   ClerkAuthState? _clerkAuth;
   DateTime? _lastTokenRefresh;
   bool _isInBackground = false;
+  int _consecutiveRefreshFailures = 0;
+  static const _maxRefreshFailures = 3;
 
   AuthNotifier(this._apiClient) : super(const AuthState()) {
     // Register global logout callback
@@ -175,6 +178,14 @@ class AuthNotifier extends StateNotifier<AuthState> with WidgetsBindingObserver 
   Future<void> _checkAuthStatus() async {
     state = state.copyWith(status: AuthStatus.loading);
 
+    // On web, stored tokens are always expired (Clerk tokens last ~60s).
+    // Skip straight to unauthenticated so the login screen's Clerk
+    // auto-sign-in can handle auth with a fresh token.
+    if (kIsWeb) {
+      state = state.copyWith(status: AuthStatus.unauthenticated);
+      return;
+    }
+
     try {
       final token = await AuthInterceptor.getToken();
       if (token != null) {
@@ -222,17 +233,24 @@ class AuthNotifier extends StateNotifier<AuthState> with WidgetsBindingObserver 
   Future<void> signIn(String token) async {
     state = state.copyWith(status: AuthStatus.loading);
 
-    // Store the token for API requests
-    await AuthInterceptor.setToken(token);
-    state = state.copyWith(token: token);
-    _lastTokenRefresh = DateTime.now();
+    try {
+      // Store the token for API requests
+      await AuthInterceptor.setToken(token);
+      state = state.copyWith(token: token);
+      _lastTokenRefresh = DateTime.now();
+      _consecutiveRefreshFailures = 0;
 
-    // Fetch user data from our API
-    await refreshUser();
+      // Fetch user data from our API
+      await refreshUser();
 
-    // Start token refresh timer if authenticated
-    if (state.isAuthenticated) {
-      _startTokenRefreshTimer();
+      // Start token refresh timer if authenticated
+      if (state.isAuthenticated) {
+        _startTokenRefreshTimer();
+      }
+    } catch (e) {
+      debugPrint('signIn failed: $e');
+      await AuthInterceptor.clearToken();
+      state = const AuthState(status: AuthStatus.unauthenticated);
     }
   }
 
@@ -247,14 +265,16 @@ class AuthNotifier extends StateNotifier<AuthState> with WidgetsBindingObserver 
   }
 
   /// Refresh the token from Clerk
-  /// Uses platform-aware abstraction for native vs web token access
+  /// Uses platform-aware abstraction for native vs web token access.
+  /// Tolerates transient failures — only signs out after [_maxRefreshFailures]
+  /// consecutive failures (the timer retries every 50s).
   Future<void> _refreshTokenFromClerk() async {
     if (_clerkAuth == null) return;
 
     try {
       // Check if session is still valid
       if (!token_refresh.isSessionValid(_clerkAuth!)) {
-        // No active session, sign out
+        // No active session — this is definitive, sign out immediately
         await signOut();
         return;
       }
@@ -262,14 +282,26 @@ class AuthNotifier extends StateNotifier<AuthState> with WidgetsBindingObserver 
       // Get token using platform-specific method (sync on native, async on web)
       final token = await token_refresh.getTokenFromClerk(_clerkAuth!);
       if (token != null) {
+        _consecutiveRefreshFailures = 0;
         await updateToken(token);
       } else {
-        // Token not available, sign out
-        await signOut();
+        _consecutiveRefreshFailures++;
+        debugPrint(
+          'Token refresh returned null '
+          '($_consecutiveRefreshFailures/$_maxRefreshFailures)',
+        );
+        if (_consecutiveRefreshFailures >= _maxRefreshFailures) {
+          await signOut();
+        }
       }
     } catch (e) {
-      // Token refresh failed, sign out
-      await signOut();
+      _consecutiveRefreshFailures++;
+      debugPrint(
+        'Token refresh error ($_consecutiveRefreshFailures/$_maxRefreshFailures): $e',
+      );
+      if (_consecutiveRefreshFailures >= _maxRefreshFailures) {
+        await signOut();
+      }
     }
   }
 

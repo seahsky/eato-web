@@ -13,6 +13,10 @@ class AuthInterceptor extends Interceptor {
   /// Track if we're already handling a 401 to prevent loops
   static bool _isHandling401 = false;
 
+  /// Cooldown: skip 401 handling if last sign-out was within 5 seconds.
+  /// Prevents cascading sign-outs when multiple requests fail simultaneously.
+  static DateTime? _last401Handled;
+
   @override
   Future<void> onRequest(
     RequestOptions options,
@@ -41,13 +45,18 @@ class AuthInterceptor extends Interceptor {
 
     // Handle 401 Unauthorized
     if (statusCode == 401) {
-      if (!_isHandling401) {
+      final now = DateTime.now();
+      final withinCooldown = _last401Handled != null &&
+          now.difference(_last401Handled!).inSeconds < 5;
+
+      if (!_isHandling401 && !withinCooldown) {
         _isHandling401 = true;
         try {
           // Call the global logout callback
           if (globalLogoutCallback != null) {
             await globalLogoutCallback!();
           }
+          _last401Handled = DateTime.now();
         } finally {
           _isHandling401 = false;
         }
