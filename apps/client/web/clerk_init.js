@@ -3,34 +3,45 @@
 // Store for auth state change callbacks
 window._clerkAuthCallbacks = [];
 
+// Helper: wrap a promise with a timeout
+function withTimeout(promise, ms, label) {
+  return Promise.race([
+    promise,
+    new Promise((_, reject) =>
+      setTimeout(() => reject(new Error(label + ' timed out after ' + ms + 'ms')), ms)
+    ),
+  ]);
+}
+
 // Wait for Clerk to be fully loaded and initialized
 window.waitForClerk = function() {
   return new Promise((resolve, reject) => {
-    // Check if already loaded
+    // Check if already loaded and initialized
     if (window.Clerk && window.Clerk.loaded) {
       resolve(window.Clerk);
       return;
     }
 
-    // If Clerk object exists but not loaded, wait for it
+    // If Clerk object exists but not loaded, call load() with timeout
     if (window.Clerk) {
-      window.Clerk.load()
+      withTimeout(window.Clerk.load(), 15000, 'Clerk.load()')
         .then(() => resolve(window.Clerk))
         .catch(reject);
       return;
     }
 
     // Wait for the script to load
-    const timeout = setTimeout(() => {
-      reject(new Error('Clerk failed to load within timeout'));
+    const scriptTimeout = setTimeout(() => {
+      reject(new Error('Clerk script failed to load within 10s. Check network and publishable key.'));
     }, 10000);
 
     window.addEventListener('clerk-loaded', function onClerkLoaded() {
       window.removeEventListener('clerk-loaded', onClerkLoaded);
-      clearTimeout(timeout);
+      clearTimeout(scriptTimeout);
 
       if (window.Clerk) {
-        window.Clerk.load()
+        // Clerk script loaded, now wait for .load() to complete with timeout
+        withTimeout(window.Clerk.load(), 15000, 'Clerk.load()')
           .then(() => resolve(window.Clerk))
           .catch(reject);
       } else {

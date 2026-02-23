@@ -1,3 +1,4 @@
+import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
@@ -12,12 +13,14 @@ class DashboardState {
   final DateTime selectedDate;
   final bool isLoading;
   final String? error;
+  final bool isOffline;
 
   const DashboardState({
     this.dailySummary,
     required this.selectedDate,
     this.isLoading = false,
     this.error,
+    this.isOffline = false,
   });
 
   DashboardState copyWith({
@@ -25,12 +28,14 @@ class DashboardState {
     DateTime? selectedDate,
     bool? isLoading,
     String? error,
+    bool? isOffline,
   }) {
     return DashboardState(
       dailySummary: dailySummary ?? this.dailySummary,
       selectedDate: selectedDate ?? this.selectedDate,
       isLoading: isLoading ?? this.isLoading,
       error: error,
+      isOffline: isOffline ?? this.isOffline,
     );
   }
 
@@ -69,22 +74,45 @@ class DashboardNotifier extends StateNotifier<DashboardState> {
       final data = await _apiClient.getDailySummary(dateStr);
       final summary = DailySummary.fromJson(data);
 
-      // Update state with fresh data
-      state = state.copyWith(dailySummary: summary, isLoading: false);
+      // Update state with fresh data and clear offline flag
+      state = state.copyWith(
+        dailySummary: summary,
+        isLoading: false,
+        isOffline: false,
+      );
 
       // Cache the fresh data
       await cache.cacheDailySummary(dateStr, summary);
     } catch (e) {
-      // If we have cached data, keep showing it with an error indicator
+      final isNetworkError = _isNetworkError(e);
+
+      // If we have cached data, show it with offline indicator
       if (cached != null) {
-        state = state.copyWith(isLoading: false);
+        state = state.copyWith(
+          isLoading: false,
+          isOffline: isNetworkError,
+        );
       } else {
         state = state.copyWith(
           isLoading: false,
-          error: 'Failed to load daily summary: ${e.toString()}',
+          isOffline: isNetworkError,
+          error: isNetworkError
+              ? null
+              : 'Failed to load daily summary: ${e.toString()}',
         );
       }
     }
+  }
+
+  /// Check if an error is a network/connectivity error
+  bool _isNetworkError(Object e) {
+    if (e is DioException) {
+      return e.type == DioExceptionType.connectionTimeout ||
+          e.type == DioExceptionType.receiveTimeout ||
+          e.type == DioExceptionType.sendTimeout ||
+          e.type == DioExceptionType.connectionError;
+    }
+    return false;
   }
 
   /// Change the selected date and reload data
@@ -150,6 +178,11 @@ final isSelectedDateTodayProvider = Provider<bool>((ref) {
   return selectedDate.year == now.year &&
          selectedDate.month == now.month &&
          selectedDate.day == now.day;
+});
+
+/// Whether the dashboard is showing cached data due to being offline
+final isDashboardOfflineProvider = Provider<bool>((ref) {
+  return ref.watch(dashboardProvider).isOffline;
 });
 
 /// Format selected date for display

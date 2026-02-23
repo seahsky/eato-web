@@ -187,13 +187,28 @@ class ApiClient {
       'expoToken': expoToken,
       if (deviceId != null) 'deviceId': deviceId,
       if (userAgent != null) 'userAgent': userAgent,
-    });
+    },);
+  }
+
+  /// Subscribe with Web Push (VAPID) subscription data
+  Future<void> subscribeWebPush({
+    required String endpoint,
+    required String p256dh,
+    required String auth,
+    String? userAgent,
+  }) async {
+    await dio.post('/notifications/subscribe', data: {
+      'endpoint': endpoint,
+      'p256dh': p256dh,
+      'auth': auth,
+      if (userAgent != null) 'userAgent': userAgent,
+    },);
   }
 
   Future<void> unsubscribeNotifications({String? expoToken}) async {
     await dio.post('/notifications/unsubscribe', data: {
       if (expoToken != null) 'expoToken': expoToken,
-    });
+    },);
   }
 
   Future<bool> hasNotificationSubscription() async {

@@ -4,6 +4,8 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
 
+import 'web_push_service.dart';
+
 /// Background message handler - must be a top-level function
 @pragma('vm:entry-point')
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
@@ -12,7 +14,9 @@ Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   debugPrint('Background message: ${message.messageId}');
 }
 
-/// Service for handling push notifications via Firebase Cloud Messaging
+/// Service for handling push notifications.
+/// On native platforms, uses Firebase Cloud Messaging.
+/// On web, uses the native browser Push API via WebPushService.
 class PushNotificationService {
   static PushNotificationService? _instance;
 
@@ -24,18 +28,14 @@ class PushNotificationService {
     return _messaging!;
   }
 
-  /// VAPID key for web push notifications
-  /// Set via: flutter build web --dart-define=FIREBASE_VAPID_KEY=your_key
-  static const String _vapidKey = String.fromEnvironment(
-    'FIREBASE_VAPID_KEY',
-    defaultValue: '',
-  );
-
   StreamController<RemoteMessage>? _messageController;
   StreamController<String>? _tokenController;
 
   String? _currentToken;
   bool _initialized = false;
+
+  /// Web Push subscription data (only used on web)
+  WebPushSubscription? _webPushSubscription;
 
   PushNotificationService._internal();
 
@@ -56,22 +56,28 @@ class PushNotificationService {
     return _tokenController!.stream;
   }
 
-  /// Current FCM token
+  /// Current FCM token (native) or endpoint identifier (web)
   String? get currentToken => _currentToken;
 
   /// Whether the service has been initialized
   bool get isInitialized => _initialized;
 
+  /// Whether we're running on web with Web Push
+  bool get isWebPush => kIsWeb;
+
+  /// The current web push subscription (only available on web)
+  WebPushSubscription? get webPushSubscription => _webPushSubscription;
+
   /// Initialize the push notification service
   Future<void> initialize() async {
-    // Skip all Firebase Messaging on web - not properly supported
+    if (_initialized) return;
+
     if (kIsWeb) {
+      // On web, use native Push API - no Firebase initialization needed
       _initialized = true;
-      debugPrint('Push notifications disabled on web');
+      debugPrint('Push notifications: Web Push API mode');
       return;
     }
-
-    if (_initialized) return;
 
     try {
       // Set up background message handler
@@ -112,6 +118,10 @@ class PushNotificationService {
 
   /// Request notification permissions from the user
   Future<NotificationPermissionStatus> requestPermission() async {
+    if (kIsWeb) {
+      return _requestWebPermission();
+    }
+
     try {
       final settings = await _getMessaging.requestPermission(
         alert: true,
@@ -141,8 +151,29 @@ class PushNotificationService {
     }
   }
 
+  /// Request permission on web using the browser Notification API
+  Future<NotificationPermissionStatus> _requestWebPermission() async {
+    if (!WebPushService.isSupported) {
+      return NotificationPermissionStatus.denied;
+    }
+
+    final result = await WebPushService.requestPermission();
+    switch (result) {
+      case 'granted':
+        return NotificationPermissionStatus.granted;
+      case 'denied':
+        return NotificationPermissionStatus.denied;
+      default:
+        return NotificationPermissionStatus.notDetermined;
+    }
+  }
+
   /// Get the current permission status
   Future<NotificationPermissionStatus> getPermissionStatus() async {
+    if (kIsWeb) {
+      return _getWebPermissionStatus();
+    }
+
     try {
       final settings = await _getMessaging.getNotificationSettings();
 
@@ -162,23 +193,33 @@ class PushNotificationService {
     }
   }
 
-  /// Get the FCM token for this device
+  /// Get permission status on web
+  Future<NotificationPermissionStatus> _getWebPermissionStatus() async {
+    if (!WebPushService.isSupported) {
+      return NotificationPermissionStatus.denied;
+    }
+
+    final permission = WebPushService.getPermission();
+    switch (permission) {
+      case 'granted':
+        return NotificationPermissionStatus.granted;
+      case 'denied':
+        return NotificationPermissionStatus.denied;
+      default:
+        return NotificationPermissionStatus.notDetermined;
+    }
+  }
+
+  /// Get the push token/subscription.
+  /// On native, returns an FCM token string.
+  /// On web, subscribes via Push API and stores the WebPushSubscription.
   Future<String?> getToken() async {
+    if (kIsWeb) {
+      return _getWebPushToken();
+    }
+
     try {
-      // For web, we need to pass the VAPID key
-      // For mobile, no additional parameters needed
-      if (kIsWeb) {
-        // Use VAPID key from compile-time constant (set via --dart-define)
-        _currentToken = await _getMessaging.getToken(
-          vapidKey: _vapidKey.isNotEmpty ? _vapidKey : null,
-        );
-        if (_vapidKey.isEmpty) {
-          debugPrint('Warning: VAPID key not set. Web push may not work.');
-          debugPrint('Build with: flutter build web --dart-define=FIREBASE_VAPID_KEY=your_key');
-        }
-      } else {
-        _currentToken = await _getMessaging.getToken();
-      }
+      _currentToken = await _getMessaging.getToken();
 
       if (_currentToken != null && _currentToken!.length > 20) {
         debugPrint('FCM Token obtained: ${_currentToken!.substring(0, 20)}...');
@@ -192,8 +233,28 @@ class PushNotificationService {
     }
   }
 
-  /// Delete the FCM token (used when logging out)
+  /// Subscribe to Web Push and return the endpoint as the "token" identifier
+  Future<String?> _getWebPushToken() async {
+    final subscription = await WebPushService.subscribe();
+    if (subscription == null) return null;
+
+    _webPushSubscription = subscription;
+    _currentToken = subscription.endpoint;
+
+    debugPrint('Web Push subscription obtained');
+    return _currentToken;
+  }
+
+  /// Delete the push token/subscription
   Future<void> deleteToken() async {
+    if (kIsWeb) {
+      await WebPushService.unsubscribe();
+      _webPushSubscription = null;
+      _currentToken = null;
+      debugPrint('Web Push subscription deleted');
+      return;
+    }
+
     try {
       await _getMessaging.deleteToken();
       _currentToken = null;
@@ -206,7 +267,6 @@ class PushNotificationService {
   /// Subscribe to a topic
   Future<void> subscribeToTopic(String topic) async {
     if (kIsWeb) {
-      // Web doesn't support topics in the same way
       debugPrint('Topic subscription not supported on web');
       return;
     }

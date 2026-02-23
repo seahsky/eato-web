@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/api/api_client.dart';
@@ -64,14 +65,15 @@ class NotificationNotifier extends StateNotifier<NotificationState> {
     await _pushService.initialize();
     await checkPermissionStatus();
     await checkSubscription();
-    _setupTokenRefreshHandler();
+    if (!kIsWeb) {
+      _setupTokenRefreshHandler();
+    }
   }
 
-  /// Listen for FCM token refreshes and re-register with backend
+  /// Listen for FCM token refreshes and re-register with backend (native only)
   void _setupTokenRefreshHandler() {
     _pushService.onTokenRefresh.listen((String newToken) async {
       if (state.hasSubscription) {
-        // Re-register the new token with backend
         try {
           await _apiClient.subscribeExpoNotifications(
             expoToken: 'ExponentPushToken[$newToken]',
@@ -117,7 +119,7 @@ class NotificationNotifier extends StateNotifier<NotificationState> {
         return false;
       }
 
-      // Get FCM token
+      // Get push token/subscription
       final token = await _pushService.getToken();
       if (token == null) {
         state = state.copyWith(
@@ -127,13 +129,28 @@ class NotificationNotifier extends StateNotifier<NotificationState> {
         return false;
       }
 
-      // Register with backend
-      // Note: For FCM, we use the Expo-style registration since the backend
-      // expects ExponentPushToken format. For production, you may want to
-      // update the backend to handle FCM tokens directly.
-      await _apiClient.subscribeExpoNotifications(
-        expoToken: 'ExponentPushToken[$token]',
-      );
+      // Register with backend using the appropriate endpoint
+      if (_pushService.isWebPush) {
+        // Web: use native Web Push subscription
+        final subscription = _pushService.webPushSubscription;
+        if (subscription == null) {
+          state = state.copyWith(
+            isRegistering: false,
+            error: 'Failed to get Web Push subscription',
+          );
+          return false;
+        }
+        await _apiClient.subscribeWebPush(
+          endpoint: subscription.endpoint,
+          p256dh: subscription.p256dh,
+          auth: subscription.auth,
+        );
+      } else {
+        // Native: use Expo-style registration
+        await _apiClient.subscribeExpoNotifications(
+          expoToken: 'ExponentPushToken[$token]',
+        );
+      }
 
       state = state.copyWith(
         isRegistering: false,
@@ -192,10 +209,14 @@ class NotificationNotifier extends StateNotifier<NotificationState> {
   Future<void> unregister() async {
     try {
       final token = _pushService.currentToken;
-      if (token != null) {
+      if (token != null && !_pushService.isWebPush) {
         await _apiClient.unsubscribeNotifications(
           expoToken: 'ExponentPushToken[$token]',
         );
+      } else if (_pushService.isWebPush) {
+        // For web push, unsubscribe via the browser API
+        // The backend subscription will become stale and fail silently on send
+        await _apiClient.unsubscribeNotifications();
       }
       await _pushService.deleteToken();
       state = state.copyWith(hasSubscription: false);

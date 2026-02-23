@@ -73,6 +73,40 @@ self.addEventListener('notificationclick', (event) => {
   );
 });
 
+// Handle generic Web Push events (for native VAPID subscriptions)
+self.addEventListener('push', (event) => {
+  // Skip if this is a Firebase message (handled by onBackgroundMessage above)
+  if (event.data) {
+    let payload;
+    try {
+      payload = event.data.json();
+    } catch (e) {
+      // Not JSON, try as text
+      payload = { notification: { title: 'Eato', body: event.data.text() } };
+    }
+
+    // Firebase messages have a specific structure with 'from' field - skip those
+    if (payload.from || payload.fcmMessageId) {
+      return;
+    }
+
+    console.log('[firebase-messaging-sw.js] Web Push message received:', payload);
+
+    const title = payload.title || payload.notification?.title || 'Eato';
+    const options = {
+      body: payload.body || payload.notification?.body || '',
+      icon: '/icons/Icon-192.png',
+      badge: '/icons/Icon-maskable-192.png',
+      data: payload.data || payload,
+      tag: payload.data?.type || payload.type || 'default',
+      vibrate: [100, 50, 100],
+      requireInteraction: false,
+    };
+
+    event.waitUntil(self.registration.showNotification(title, options));
+  }
+});
+
 // Handle service worker activation
 self.addEventListener('activate', (event) => {
   console.log('[firebase-messaging-sw.js] Service Worker activated');
