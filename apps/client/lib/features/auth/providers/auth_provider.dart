@@ -310,16 +310,22 @@ class AuthNotifier extends StateNotifier<AuthState> with WidgetsBindingObserver 
     await signOut();
   }
 
-  /// Sign out and clear all auth state
-  Future<void> signOut() async {
+  /// Sign out and clear all auth state.
+  ///
+  /// When [fromUser] is true (explicit sign-out from profile screen),
+  /// the Clerk session is also destroyed so the user must re-authenticate.
+  /// When false (error-triggered: 401, token refresh failure), the Clerk
+  /// session is preserved so auto-sign-in can recover with a fresh token.
+  Future<void> signOut({bool fromUser = false}) async {
     _tokenRefreshTimer?.cancel();
     _tokenRefreshTimer = null;
 
     // Clear local token
     await AuthInterceptor.clearToken();
 
-    // Sign out from Clerk if available
-    if (_clerkAuth != null) {
+    // Only destroy Clerk session on explicit user sign-out.
+    // Error-triggered signouts preserve the session for auto-recovery.
+    if (fromUser && _clerkAuth != null) {
       try {
         await _clerkAuth!.signOut();
       } catch (e) {

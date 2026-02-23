@@ -23,6 +23,10 @@ class _LoginScreenPlatformState extends ConsumerState<LoginScreenPlatform> {
   String? _error;
   StreamSubscription<bool>? _authSubscription;
 
+  /// Guard against infinite auto-sign-in loops.
+  /// Each LoginScreen instance allows only one auto-sign-in attempt.
+  bool _autoSignInAttempted = false;
+
   @override
   void initState() {
     super.initState();
@@ -50,9 +54,9 @@ class _LoginScreenPlatformState extends ConsumerState<LoginScreenPlatform> {
         return;
       }
 
-      // Listen for auth state changes
+      // Listen for auth state changes (e.g. user completes Clerk modal)
       _authSubscription = _clerkAuth.authStateChanges.listen((isSignedIn) {
-        if (isSignedIn && mounted) {
+        if (isSignedIn && mounted && !_isAuthenticating) {
           _handleSignIn();
         }
       });
@@ -62,8 +66,9 @@ class _LoginScreenPlatformState extends ConsumerState<LoginScreenPlatform> {
         _isInitializing = false;
       });
 
-      // Check if already signed in
-      if (_clerkAuth.isSignedIn) {
+      // Check if already signed in (one auto-attempt per screen instance)
+      if (_clerkAuth.isSignedIn && !_autoSignInAttempted) {
+        _autoSignInAttempted = true;
         await _handleSignIn();
       }
     } catch (e) {
@@ -101,9 +106,17 @@ class _LoginScreenPlatformState extends ConsumerState<LoginScreenPlatform> {
       authNotifier.setClerkAuthWeb(_clerkAuth);
       await authNotifier.signIn(token);
 
-      // Navigate to dashboard
-      if (mounted) {
+      if (!mounted) return;
+
+      // Only navigate to dashboard if auth actually succeeded.
+      // If refreshUser failed, stay on login and show buttons.
+      if (ref.read(authProvider).isAuthenticated) {
         context.go('/dashboard');
+      } else {
+        setState(() {
+          _error = 'Could not verify your account. Please try again.';
+          _isAuthenticating = false;
+        });
       }
     } catch (e) {
       if (mounted) {
