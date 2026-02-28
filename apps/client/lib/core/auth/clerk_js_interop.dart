@@ -45,6 +45,7 @@ external JSBoolean _clerkIsReady();
 /// Dart wrapper class for Clerk.js SDK
 class ClerkJS {
   static bool _initialized = false;
+  static JSNumber? _callbackHandle;
   static final StreamController<bool> _authStateController =
       StreamController<bool>.broadcast();
 
@@ -73,7 +74,7 @@ class ClerkJS {
       _authStateController.add(isSignedIn.toDart);
     }).toJS;
 
-    _clerkAddAuthCallback(callback);
+    _callbackHandle = _clerkAddAuthCallback(callback);
   }
 
   /// Check if Clerk is ready
@@ -129,6 +130,10 @@ class ClerkJS {
 
   /// Dispose resources
   static void dispose() {
+    if (_callbackHandle != null) {
+      _clerkRemoveAuthCallback(_callbackHandle!);
+      _callbackHandle = null;
+    }
     _authStateController.close();
   }
 }

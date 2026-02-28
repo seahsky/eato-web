@@ -112,6 +112,7 @@ class AuthNotifier extends StateNotifier<AuthState> with WidgetsBindingObserver 
     _tokenRefreshTimer?.cancel();
     WidgetsBinding.instance.removeObserver(this);
     globalLogoutCallback = null;
+    _clerkAuth?.dispose();
     super.dispose();
   }
 
@@ -344,13 +345,13 @@ class AuthNotifier extends StateNotifier<AuthState> with WidgetsBindingObserver 
   }
 
   /// Handle Clerk session changes
-  void handleSessionChange(ClerkAuthState clerkAuth) {
+  Future<void> handleSessionChange(ClerkAuthState clerkAuth) async {
     _clerkAuth = clerkAuth;
     final session = clerkAuth.session;
 
     if (session == null && state.isAuthenticated) {
       // Session ended externally, sign out
-      signOut();
+      await signOut();
     }
   }
 }

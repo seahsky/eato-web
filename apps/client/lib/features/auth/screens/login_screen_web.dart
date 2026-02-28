@@ -55,6 +55,7 @@ class _LoginScreenPlatformState extends ConsumerState<LoginScreenPlatform> {
       }
 
       // Listen for auth state changes (e.g. user completes Clerk modal)
+      _authSubscription?.cancel();
       _authSubscription = _clerkAuth.authStateChanges.listen((isSignedIn) {
         if (isSignedIn && mounted && !_isAuthenticating) {
           _handleSignIn();
