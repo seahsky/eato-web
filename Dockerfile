@@ -1,72 +1,67 @@
 # =============================================================================
-# Multi-stage Dockerfile for Flutter + Next.js Monorepo
-# Serves Flutter web via Nginx, proxies /api/* to Next.js
+# Multi-stage Dockerfile for Vue + Next.js Monorepo
+# Serves Vue (Vite) web via Nginx, proxies /api/* to Next.js
 # =============================================================================
 
 # -----------------------------------------------------------------------------
-# Stage 1: Build Flutter Web App
+# Stage 1: Build Vue Web App + Next.js API
 # -----------------------------------------------------------------------------
-FROM ghcr.io/cirruslabs/flutter:stable AS flutter-build
-WORKDIR /app
+FROM node:20-alpine AS build
 
-# Copy Flutter client source
-COPY apps/client/ ./
-
-# Firebase config build args (Zeabur passes these automatically)
-ARG FIREBASE_API_KEY
-ARG FIREBASE_AUTH_DOMAIN
-ARG FIREBASE_PROJECT_ID
-ARG FIREBASE_STORAGE_BUCKET
-ARG FIREBASE_MESSAGING_SENDER_ID
-ARG FIREBASE_APP_ID
-ARG FIREBASE_VAPID_KEY
-ARG CLERK_PUBLISHABLE_KEY
-ARG DEBUG=false
-
-# Export ARGs as ENV for the shell script
-ENV FIREBASE_API_KEY=$FIREBASE_API_KEY \
-    FIREBASE_AUTH_DOMAIN=$FIREBASE_AUTH_DOMAIN \
-    FIREBASE_PROJECT_ID=$FIREBASE_PROJECT_ID \
-    FIREBASE_STORAGE_BUCKET=$FIREBASE_STORAGE_BUCKET \
-    FIREBASE_MESSAGING_SENDER_ID=$FIREBASE_MESSAGING_SENDER_ID \
-    FIREBASE_APP_ID=$FIREBASE_APP_ID \
-    FIREBASE_VAPID_KEY=$FIREBASE_VAPID_KEY \
-    CLERK_PUBLISHABLE_KEY=$CLERK_PUBLISHABLE_KEY \
-    DEBUG=$DEBUG
-
-# Generate firebase config, substitute Clerk key in source HTML, then build Flutter web
-RUN chmod +x scripts/generate-firebase-config.sh && \
-    ./scripts/generate-firebase-config.sh && \
-    sed -i "s|__CLERK_PUBLISHABLE_KEY__|$CLERK_PUBLISHABLE_KEY|g" web/index.html && \
-    flutter build web --release \
-      --dart-define=CLERK_PUBLISHABLE_KEY=$CLERK_PUBLISHABLE_KEY \
-      --dart-define=API_BASE_URL= \
-      --dart-define=FIREBASE_VAPID_KEY=$FIREBASE_VAPID_KEY \
-      --dart-define=DEBUG=$DEBUG && \
-    cp web/firebase-config.js build/web/
-
-# -----------------------------------------------------------------------------
-# Stage 2: Build Next.js API
-# -----------------------------------------------------------------------------
-FROM node:20-alpine AS nextjs-build
-WORKDIR /app
-
-# Install OpenSSL for Prisma query engine (required during static page generation)
+# Install OpenSSL for Prisma query engine
 RUN apk add --no-cache openssl
 
-# Copy package files AND prisma schema (needed for postinstall prisma generate)
+# ---- Build Vue (Vite) Web App ----
+WORKDIR /web
+
+# Vite env vars (injected at build time)
+ARG VITE_CLERK_PUBLISHABLE_KEY
+ARG VITE_API_BASE_URL=
+ARG VITE_VAPID_PUBLIC_KEY
+ARG VITE_FIREBASE_API_KEY
+ARG VITE_FIREBASE_AUTH_DOMAIN
+ARG VITE_FIREBASE_PROJECT_ID
+ARG VITE_FIREBASE_STORAGE_BUCKET
+ARG VITE_FIREBASE_MESSAGING_SENDER_ID
+ARG VITE_FIREBASE_APP_ID
+
+ENV VITE_CLERK_PUBLISHABLE_KEY=$VITE_CLERK_PUBLISHABLE_KEY \
+    VITE_API_BASE_URL=$VITE_API_BASE_URL \
+    VITE_VAPID_PUBLIC_KEY=$VITE_VAPID_PUBLIC_KEY \
+    VITE_FIREBASE_API_KEY=$VITE_FIREBASE_API_KEY \
+    VITE_FIREBASE_AUTH_DOMAIN=$VITE_FIREBASE_AUTH_DOMAIN \
+    VITE_FIREBASE_PROJECT_ID=$VITE_FIREBASE_PROJECT_ID \
+    VITE_FIREBASE_STORAGE_BUCKET=$VITE_FIREBASE_STORAGE_BUCKET \
+    VITE_FIREBASE_MESSAGING_SENDER_ID=$VITE_FIREBASE_MESSAGING_SENDER_ID \
+    VITE_FIREBASE_APP_ID=$VITE_FIREBASE_APP_ID
+
+COPY apps/web/package.json apps/web/pnpm-lock.yaml ./
+RUN corepack enable && pnpm install --frozen-lockfile
+COPY apps/web/ ./
+
+# Generate firebase-config.js for the service worker
+RUN echo "const firebaseConfig = { \
+  apiKey: '${VITE_FIREBASE_API_KEY}', \
+  authDomain: '${VITE_FIREBASE_AUTH_DOMAIN}', \
+  projectId: '${VITE_FIREBASE_PROJECT_ID}', \
+  storageBucket: '${VITE_FIREBASE_STORAGE_BUCKET}', \
+  messagingSenderId: '${VITE_FIREBASE_MESSAGING_SENDER_ID}', \
+  appId: '${VITE_FIREBASE_APP_ID}' \
+};" > public/firebase-config.js
+
+RUN pnpm build
+
+# ---- Build Next.js API ----
+WORKDIR /api
+
 COPY apps/api/package*.json ./
 COPY apps/api/prisma ./prisma
-
-# Install dependencies (postinstall runs prisma generate)
 RUN npm ci
-
-# Copy source and build
 COPY apps/api/ ./
 RUN npm run build
 
 # -----------------------------------------------------------------------------
-# Stage 3: Production Runtime
+# Stage 2: Production Runtime
 # -----------------------------------------------------------------------------
 FROM node:20-alpine AS runtime
 
@@ -81,14 +76,14 @@ RUN mkdir -p /var/log/nginx && \
 WORKDIR /app
 
 # Copy Next.js build artifacts
-COPY --from=nextjs-build /app/.next ./.next
-COPY --from=nextjs-build /app/node_modules ./node_modules
-COPY --from=nextjs-build /app/package.json ./
-COPY --from=nextjs-build /app/public ./public
-COPY --from=nextjs-build /app/prisma ./prisma
+COPY --from=build /api/.next ./.next
+COPY --from=build /api/node_modules ./node_modules
+COPY --from=build /api/package.json ./
+COPY --from=build /api/public ./public
+COPY --from=build /api/prisma ./prisma
 
-# Copy Flutter build to Nginx html directory
-COPY --from=flutter-build /app/build/web /usr/share/nginx/html
+# Copy Vite build to Nginx html directory
+COPY --from=build /web/dist /usr/share/nginx/html
 
 # Copy Nginx config and start script
 COPY nginx.conf /etc/nginx/nginx.conf

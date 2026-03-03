@@ -1,6 +1,6 @@
 #!/bin/sh
 # =============================================================================
-# Startup script for Flutter + Next.js container
+# Startup script for Vue + Next.js container
 # Starts Next.js API server, then Nginx in foreground
 # =============================================================================
 
@@ -69,9 +69,9 @@ fi
 echo "[4/4] Starting Nginx on port 8080..."
 echo "========================================"
 echo "Eato is ready!"
-echo "  - Flutter Web: http://localhost:8080/"
-echo "  - API:         http://localhost:8080/api/"
-echo "  - Health:      http://localhost:8080/api/rest/health"
+echo "  - Web App: http://localhost:8080/"
+echo "  - API:     http://localhost:8080/api/"
+echo "  - Health:  http://localhost:8080/api/rest/health"
 echo "========================================"
 
 nginx -g 'daemon off;'
