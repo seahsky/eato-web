@@ -263,43 +263,45 @@ export const recipeRouter = router({
 
       const nutrition = calculateRecipeNutrition(ingredientsForCalc, input.data.yieldWeight);
 
-      // Delete old ingredients and update recipe
-      await ctx.prisma.recipeIngredient.deleteMany({
-        where: { recipeId: input.id },
-      });
+      // Delete old ingredients and update recipe in a transaction to prevent orphaned state
+      const recipe = await ctx.prisma.$transaction(async (tx) => {
+        await tx.recipeIngredient.deleteMany({
+          where: { recipeId: input.id },
+        });
 
-      const recipe = await ctx.prisma.recipe.update({
-        where: { id: input.id },
-        data: {
-          name: input.data.name,
-          description: input.data.description,
-          imageUrl: input.data.imageUrl,
-          yieldWeight: input.data.yieldWeight,
-          yieldUnit: input.data.yieldUnit,
-          ...nutrition,
-          ingredients: {
-            create: input.data.ingredients.map((ing, index) => ({
-              name: ing.name,
-              quantity: ing.quantity,
-              unit: ing.unit,
-              isPercentage: ing.isPercentage,
-              baseIngredientId: ing.baseIngredientId,
-              caloriesPer100g: ing.caloriesPer100g,
-              proteinPer100g: ing.proteinPer100g,
-              carbsPer100g: ing.carbsPer100g,
-              fatPer100g: ing.fatPer100g,
-              fiberPer100g: ing.fiberPer100g,
-              isManualEntry: ing.isManualEntry,
-              openFoodFactsId: ing.openFoodFactsId,
-              sortOrder: ing.sortOrder ?? index,
-            })),
+        return tx.recipe.update({
+          where: { id: input.id },
+          data: {
+            name: input.data.name,
+            description: input.data.description,
+            imageUrl: input.data.imageUrl,
+            yieldWeight: input.data.yieldWeight,
+            yieldUnit: input.data.yieldUnit,
+            ...nutrition,
+            ingredients: {
+              create: input.data.ingredients.map((ing, index) => ({
+                name: ing.name,
+                quantity: ing.quantity,
+                unit: ing.unit,
+                isPercentage: ing.isPercentage,
+                baseIngredientId: ing.baseIngredientId,
+                caloriesPer100g: ing.caloriesPer100g,
+                proteinPer100g: ing.proteinPer100g,
+                carbsPer100g: ing.carbsPer100g,
+                fatPer100g: ing.fatPer100g,
+                fiberPer100g: ing.fiberPer100g,
+                isManualEntry: ing.isManualEntry,
+                openFoodFactsId: ing.openFoodFactsId,
+                sortOrder: ing.sortOrder ?? index,
+              })),
+            },
           },
-        },
-        include: {
-          ingredients: {
-            orderBy: { sortOrder: "asc" },
+          include: {
+            ingredients: {
+              orderBy: { sortOrder: "asc" },
+            },
           },
-        },
+        });
       });
 
       return recipe;
@@ -419,8 +421,8 @@ export const recipeRouter = router({
         },
       });
 
-      // Update daily log totals
-      await ctx.prisma.dailyLog.update({
+      // Update daily log totals and recalculate goalMet
+      const updatedLog = await ctx.prisma.dailyLog.update({
         where: { id: dailyLog.id },
         data: {
           totalCalories: { increment: portionNutrition.calories },
@@ -430,6 +432,18 @@ export const recipeRouter = router({
           totalFiber: { increment: portionNutrition.fiber },
         },
       });
+
+      // Recalculate goalMet after totals change
+      const goalProgress = updatedLog.calorieGoal > 0
+        ? updatedLog.totalCalories / updatedLog.calorieGoal
+        : 0;
+      const newGoalMet = goalProgress >= 0.9 && goalProgress <= 1.0;
+      if (updatedLog.goalMet !== newGoalMet) {
+        await ctx.prisma.dailyLog.update({
+          where: { id: dailyLog.id },
+          data: { goalMet: newGoalMet },
+        });
+      }
 
       return entry;
     }),

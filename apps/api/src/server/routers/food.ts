@@ -426,7 +426,7 @@ export const foodRouter = router({
 
       // Check permissions:
       // - APPROVED entries: only owner can update
-      // - PENDING/REJECTED entries: only the logger can update
+      // - PENDING/REJECTED entries: owner OR the logger can update
       const isOwner = entry.userId === ctx.user.id;
       const isLogger = entry.loggedByUserId === ctx.user.id;
 
@@ -438,11 +438,11 @@ export const foodRouter = router({
           });
         }
       } else {
-        // PENDING or REJECTED
-        if (!isLogger) {
+        // PENDING or REJECTED — owner can update (it's their entry) or logger can update
+        if (!isOwner && !isLogger) {
           throw new TRPCError({
             code: "FORBIDDEN",
-            message: "Only the person who logged this entry can update it",
+            message: "Only the owner or the person who logged this entry can update it",
           });
         }
       }
@@ -511,7 +511,7 @@ export const foodRouter = router({
 
       // Check permissions:
       // - APPROVED entries: only owner can delete
-      // - PENDING/REJECTED entries: only the logger can delete
+      // - PENDING/REJECTED entries: owner OR the logger can delete
       const isOwner = entry.userId === ctx.user.id;
       const isLogger = entry.loggedByUserId === ctx.user.id;
 
@@ -523,11 +523,11 @@ export const foodRouter = router({
           });
         }
       } else {
-        // PENDING or REJECTED
-        if (!isLogger) {
+        // PENDING or REJECTED — owner can delete (it's their entry) or logger can delete
+        if (!isOwner && !isLogger) {
           throw new TRPCError({
             code: "FORBIDDEN",
-            message: "Only the person who logged this entry can delete it",
+            message: "Only the owner or the person who logged this entry can delete it",
           });
         }
       }
@@ -661,9 +661,9 @@ export const foodRouter = router({
         return { success: true };
       }
 
-      // Update daily log totals
+      // Update daily log totals and recalculate goalMet
       if (entry.dailyLogId) {
-        await ctx.prisma.dailyLog.update({
+        const updatedLog = await ctx.prisma.dailyLog.update({
           where: { id: entry.dailyLogId },
           data: {
             totalCalories: { increment: entry.calories },
@@ -673,6 +673,18 @@ export const foodRouter = router({
             totalFiber: { increment: entry.fiber ?? 0 },
           },
         });
+
+        // Recalculate goalMet after totals change
+        const goalProgress = updatedLog.calorieGoal > 0
+          ? updatedLog.totalCalories / updatedLog.calorieGoal
+          : 0;
+        const newGoalMet = goalProgress >= 0.9 && goalProgress <= 1.0;
+        if (updatedLog.goalMet !== newGoalMet) {
+          await ctx.prisma.dailyLog.update({
+            where: { id: entry.dailyLogId },
+            data: { goalMet: newGoalMet },
+          });
+        }
       }
 
       // Notify the logger that their entry was approved
@@ -751,28 +763,25 @@ export const foodRouter = router({
     .input(z.object({ entryId: z.string() }))
     .output(z.object({ success: z.boolean() }))
     .mutation(async ({ ctx, input }) => {
-      const entry = await ctx.prisma.foodEntry.findFirst({
+      // Use updateMany with status condition to atomically prevent race conditions
+      const result = await ctx.prisma.foodEntry.updateMany({
         where: {
           id: input.entryId,
           loggedByUserId: ctx.user.id,
           approvalStatus: "REJECTED",
         },
-      });
-
-      if (!entry) {
-        throw new TRPCError({
-          code: "NOT_FOUND",
-          message: "Entry not found or not rejected",
-        });
-      }
-
-      await ctx.prisma.foodEntry.update({
-        where: { id: input.entryId },
         data: {
           approvalStatus: "PENDING",
           rejectionNote: null,
         },
       });
+
+      if (result.count === 0) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Entry not found or not rejected",
+        });
+      }
 
       return { success: true };
     }),
@@ -1329,8 +1338,8 @@ export const foodRouter = router({
         },
       });
 
-      // Update daily log totals
-      await ctx.prisma.dailyLog.update({
+      // Update daily log totals and recalculate goalMet
+      const updatedLog = await ctx.prisma.dailyLog.update({
         where: { id: dailyLog.id },
         data: {
           totalCalories: { increment: partnerEntry.calories },
@@ -1340,6 +1349,18 @@ export const foodRouter = router({
           totalFiber: { increment: partnerEntry.fiber ?? 0 },
         },
       });
+
+      // Recalculate goalMet after totals change
+      const goalProgress = updatedLog.calorieGoal > 0
+        ? updatedLog.totalCalories / updatedLog.calorieGoal
+        : 0;
+      const newGoalMet = goalProgress >= 0.9 && goalProgress <= 1.0;
+      if (updatedLog.goalMet !== newGoalMet) {
+        await ctx.prisma.dailyLog.update({
+          where: { id: dailyLog.id },
+          data: { goalMet: newGoalMet },
+        });
+      }
 
       return {
         success: true,

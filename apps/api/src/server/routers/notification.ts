@@ -20,10 +20,12 @@ export const notificationRouter = router({
       })
     )
     .mutation(async ({ ctx, input }) => {
-      // Upsert subscription (update if endpoint exists, create if new)
+      // Upsert subscription (update if endpoint exists for this user, create if new)
+      // Include userId in update to prevent cross-user endpoint hijacking
       const subscription = await ctx.prisma.pushSubscription.upsert({
         where: { endpoint: input.endpoint },
         update: {
+          userId: ctx.user.id,
           p256dh: input.p256dh,
           auth: input.auth,
           userAgent: input.userAgent,

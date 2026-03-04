@@ -79,6 +79,19 @@ export const profileRouter = router({
         where: { userId: ctx.user.id },
         data: { calorieGoal: input.calorieGoal },
       });
+
+      // Also update today's DailyLog calorieGoal so stats stay consistent
+      // Use UTC midnight to match how DailyLog dates are stored
+      const todayStr = new Date().toISOString().split("T")[0];
+      const todayUTC = new Date(todayStr + "T00:00:00.000Z");
+      await ctx.prisma.dailyLog.updateMany({
+        where: {
+          userId: ctx.user.id,
+          date: todayUTC,
+        },
+        data: { calorieGoal: input.calorieGoal },
+      });
+
       return profile;
     }),
 
