@@ -1,64 +1,48 @@
 {
-  "name": "Eato - Diet Tracking",
+  "name": "Eato",
   "short_name": "Eato",
-  "description": "Track your diet and reach your health goals together with your partner",
+  "description": "Track calories together with your partner",
   "start_url": "/dashboard",
   "display": "standalone",
-  "background_color": "#FAF7F5",
-  "theme_color": "#B5624E",
-  "orientation": "portrait",
+  "background_color": "#ffffff",
+  "theme_color": "#10B981",
+  "orientation": "portrait-primary",
   "scope": "/",
   "icons": [
     {
-      "src": "/icons/icon-72x72.png",
-      "sizes": "72x72",
-      "type": "image/png",
-      "purpose": "maskable any"
+      "src": "/icons/Icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
     },
     {
-      "src": "/icons/icon-96x96.png",
-      "sizes": "96x96",
-      "type": "image/png",
-      "purpose": "maskable any"
+      "src": "/icons/Icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
     },
     {
-      "src": "/icons/icon-128x128.png",
-      "sizes": "128x128",
-      "type": "image/png",
-      "purpose": "maskable any"
-    },
-    {
-      "src": "/icons/icon-144x144.png",
-      "sizes": "144x144",
-      "type": "image/png",
-      "purpose": "maskable any"
-    },
-    {
-      "src": "/icons/icon-152x152.png",
-      "sizes": "152x152",
-      "type": "image/png",
-      "purpose": "maskable any"
-    },
-    {
-      "src": "/icons/icon-192x192.png",
+      "src": "/icons/Icon-maskable-192.png",
       "sizes": "192x192",
       "type": "image/png",
-      "purpose": "maskable any"
+      "purpose": "maskable"
     },
     {
-      "src": "/icons/icon-384x384.png",
-      "sizes": "384x384",
-      "type": "image/png",
-      "purpose": "maskable any"
-    },
-    {
-      "src": "/icons/icon-512x512.png",
+      "src": "/icons/Icon-maskable-512.png",
       "sizes": "512x512",
       "type": "image/png",
-      "purpose": "maskable any"
+      "purpose": "maskable"
     }
   ],
   "categories": ["health", "fitness", "lifestyle"],
-  "screenshots": [],
-  "prefer_related_applications": false
+  "shortcuts": [
+    {
+      "name": "Log Food",
+      "url": "/add",
+      "icons": [{ "src": "/icons/Icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "View Partner",
+      "url": "/partner",
+      "icons": [{ "src": "/icons/Icon-192.png", "sizes": "192x192" }]
+    }
+  ]
 }
