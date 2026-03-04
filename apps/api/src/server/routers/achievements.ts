@@ -1,4 +1,5 @@
 import { router, protectedProcedure } from "../trpc";
+import { TRPCError } from "@trpc/server";
 import {
   BADGES,
   getBadgesByCategory,
@@ -216,7 +217,7 @@ export const achievementsRouter = router({
 
       // Validate theme exists
       if (!(theme in THEME_UNLOCK_THRESHOLDS)) {
-        throw new Error(`Invalid theme: ${theme}`);
+        throw new TRPCError({ code: "BAD_REQUEST", message: `Invalid theme: ${theme}` });
       }
 
       // Get user's longest streak to check if theme is unlocked
@@ -227,7 +228,7 @@ export const achievementsRouter = router({
 
       const requiredStreak = THEME_UNLOCK_THRESHOLDS[theme as ThemeId];
       if ((user?.longestStreak ?? 0) < requiredStreak) {
-        throw new Error(`Theme "${theme}" requires a ${requiredStreak}-day streak to unlock`);
+        throw new TRPCError({ code: "BAD_REQUEST", message: `Theme "${theme}" requires a ${requiredStreak}-day streak to unlock` });
       }
 
       // Update theme
@@ -249,7 +250,7 @@ export const achievementsRouter = router({
 
       // Validate frame exists
       if (!(avatarFrame in AVATAR_FRAME_THRESHOLDS)) {
-        throw new Error(`Invalid avatar frame: ${avatarFrame}`);
+        throw new TRPCError({ code: "BAD_REQUEST", message: `Invalid avatar frame: ${avatarFrame}` });
       }
 
       // Get user's badge count to check if frame is unlocked
@@ -259,7 +260,7 @@ export const achievementsRouter = router({
 
       const requiredBadges = AVATAR_FRAME_THRESHOLDS[avatarFrame as AvatarFrame];
       if (badgeCount < requiredBadges) {
-        throw new Error(`Avatar frame "${avatarFrame}" requires ${requiredBadges} badges to unlock`);
+        throw new TRPCError({ code: "BAD_REQUEST", message: `Avatar frame "${avatarFrame}" requires ${requiredBadges} badges to unlock` });
       }
 
       // Update avatar frame

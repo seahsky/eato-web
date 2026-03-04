@@ -192,9 +192,18 @@ export const notificationRouter = router({
         partnerGoalReached: z.boolean().optional(),
         partnerLinked: z.boolean().optional(),
         receiveNudges: z.boolean().optional(),
-        breakfastReminderTime: z.string().regex(/^\d{2}:\d{2}$/).nullable().optional(),
-        lunchReminderTime: z.string().regex(/^\d{2}:\d{2}$/).nullable().optional(),
-        dinnerReminderTime: z.string().regex(/^\d{2}:\d{2}$/).nullable().optional(),
+        breakfastReminderTime: z.string().regex(/^\d{2}:\d{2}$/).refine((val) => {
+          const [h, m] = val.split(":").map(Number);
+          return h >= 0 && h <= 23 && m >= 0 && m <= 59;
+        }, "Invalid time. Hours must be 00-23, minutes 00-59").nullable().optional(),
+        lunchReminderTime: z.string().regex(/^\d{2}:\d{2}$/).refine((val) => {
+          const [h, m] = val.split(":").map(Number);
+          return h >= 0 && h <= 23 && m >= 0 && m <= 59;
+        }, "Invalid time. Hours must be 00-23, minutes 00-59").nullable().optional(),
+        dinnerReminderTime: z.string().regex(/^\d{2}:\d{2}$/).refine((val) => {
+          const [h, m] = val.split(":").map(Number);
+          return h >= 0 && h <= 23 && m >= 0 && m <= 59;
+        }, "Invalid time. Hours must be 00-23, minutes 00-59").nullable().optional(),
         timezone: z.string().optional(),
       })
     )

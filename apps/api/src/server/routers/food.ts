@@ -464,7 +464,7 @@ export const foodRouter = router({
 
       // Only update daily log for APPROVED entries
       if (entry.approvalStatus === "APPROVED" && entry.dailyLogId) {
-        await ctx.prisma.dailyLog.update({
+        const updatedLog = await ctx.prisma.dailyLog.update({
           where: { id: entry.dailyLogId },
           data: {
             totalCalories: { increment: calorieDiff },
@@ -474,6 +474,18 @@ export const foodRouter = router({
             totalFiber: { increment: fiberDiff },
           },
         });
+
+        // Recalculate goalMet after totals change
+        const goalProgress = updatedLog.calorieGoal > 0
+          ? updatedLog.totalCalories / updatedLog.calorieGoal
+          : 0;
+        const newGoalMet = goalProgress >= 0.9 && goalProgress <= 1.0;
+        if (updatedLog.goalMet !== newGoalMet) {
+          await ctx.prisma.dailyLog.update({
+            where: { id: entry.dailyLogId },
+            data: { goalMet: newGoalMet },
+          });
+        }
       }
 
       return updated;
@@ -522,7 +534,7 @@ export const foodRouter = router({
 
       // Only update daily log for APPROVED entries (others don't affect totals)
       if (entry.approvalStatus === "APPROVED" && entry.dailyLogId) {
-        await ctx.prisma.dailyLog.update({
+        const updatedLog = await ctx.prisma.dailyLog.update({
           where: { id: entry.dailyLogId },
           data: {
             totalCalories: { decrement: entry.calories },
@@ -532,6 +544,18 @@ export const foodRouter = router({
             totalFiber: { decrement: entry.fiber ?? 0 },
           },
         });
+
+        // Recalculate goalMet after totals change
+        const goalProgress = updatedLog.calorieGoal > 0
+          ? updatedLog.totalCalories / updatedLog.calorieGoal
+          : 0;
+        const newGoalMet = goalProgress >= 0.9 && goalProgress <= 1.0;
+        if (updatedLog.goalMet !== newGoalMet) {
+          await ctx.prisma.dailyLog.update({
+            where: { id: entry.dailyLogId },
+            data: { goalMet: newGoalMet },
+          });
+        }
       }
 
       await ctx.prisma.foodEntry.delete({
@@ -611,26 +635,31 @@ export const foodRouter = router({
     .input(z.object({ entryId: z.string() }))
     .output(z.object({ success: z.boolean() }))
     .mutation(async ({ ctx, input }) => {
-      const entry = await ctx.prisma.foodEntry.findFirst({
+      // Use updateMany with status condition to atomically prevent double-approve
+      const result = await ctx.prisma.foodEntry.updateMany({
         where: {
           id: input.entryId,
           userId: ctx.user.id,
           approvalStatus: "PENDING",
         },
+        data: { approvalStatus: "APPROVED" },
       });
 
-      if (!entry) {
+      if (result.count === 0) {
         throw new TRPCError({
           code: "NOT_FOUND",
           message: "Entry not found or already processed",
         });
       }
 
-      // Update entry status
-      await ctx.prisma.foodEntry.update({
+      // Fetch the now-approved entry for daily log update and notification
+      const entry = await ctx.prisma.foodEntry.findUnique({
         where: { id: input.entryId },
-        data: { approvalStatus: "APPROVED" },
       });
+
+      if (!entry) {
+        return { success: true };
+      }
 
       // Update daily log totals
       if (entry.dailyLogId) {
@@ -674,31 +703,33 @@ export const foodRouter = router({
     )
     .output(z.object({ success: z.boolean() }))
     .mutation(async ({ ctx, input }) => {
-      const entry = await ctx.prisma.foodEntry.findFirst({
+      // Use updateMany with status condition to atomically prevent double-reject
+      const result = await ctx.prisma.foodEntry.updateMany({
         where: {
           id: input.entryId,
           userId: ctx.user.id,
           approvalStatus: "PENDING",
         },
-      });
-
-      if (!entry) {
-        throw new TRPCError({
-          code: "NOT_FOUND",
-          message: "Entry not found or already processed",
-        });
-      }
-
-      await ctx.prisma.foodEntry.update({
-        where: { id: input.entryId },
         data: {
           approvalStatus: "REJECTED",
           rejectionNote: input.note,
         },
       });
 
+      if (result.count === 0) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Entry not found or already processed",
+        });
+      }
+
+      // Fetch the entry for notification
+      const entry = await ctx.prisma.foodEntry.findUnique({
+        where: { id: input.entryId },
+      });
+
       // Notify the logger that their entry was rejected
-      if (entry.loggedByUserId) {
+      if (entry?.loggedByUserId) {
         const rejecter = await ctx.prisma.user.findUnique({
           where: { id: ctx.user.id },
           select: { name: true },
