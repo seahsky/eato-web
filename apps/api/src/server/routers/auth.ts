@@ -112,20 +112,21 @@ export const authRouter = router({
         });
       }
 
-      // Link both users (bidirectional)
-      await ctx.prisma.user.update({
-        where: { id: ctx.user.id },
-        data: { partnerId: partner.id },
-      });
-
-      await ctx.prisma.user.update({
-        where: { id: partner.id },
-        data: {
-          partnerId: ctx.user.id,
-          partnerLinkCode: null,
-          partnerLinkCodeExpiry: null,
-        },
-      });
+      // Link both users (bidirectional) in a transaction to prevent race conditions
+      await ctx.prisma.$transaction([
+        ctx.prisma.user.update({
+          where: { id: ctx.user.id },
+          data: { partnerId: partner.id },
+        }),
+        ctx.prisma.user.update({
+          where: { id: partner.id },
+          data: {
+            partnerId: ctx.user.id,
+            partnerLinkCode: null,
+            partnerLinkCodeExpiry: null,
+          },
+        }),
+      ]);
 
       // Notify both users about successful linking (fire and forget)
       notifyPartnerLinked(partner.id, currentUser?.name || "Your partner").catch(() => {});
@@ -151,16 +152,17 @@ export const authRouter = router({
       });
     }
 
-    // Unlink both users
-    await ctx.prisma.user.update({
-      where: { id: ctx.user.id },
-      data: { partnerId: null },
-    });
-
-    await ctx.prisma.user.update({
-      where: { id: user.partnerId },
-      data: { partnerId: null },
-    });
+    // Unlink both users in a transaction to ensure atomicity
+    await ctx.prisma.$transaction([
+      ctx.prisma.user.update({
+        where: { id: ctx.user.id },
+        data: { partnerId: null },
+      }),
+      ctx.prisma.user.update({
+        where: { id: user.partnerId },
+        data: { partnerId: null },
+      }),
+    ]);
 
     return { success: true };
   }),

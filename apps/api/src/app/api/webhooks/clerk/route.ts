@@ -47,8 +47,14 @@ export async function POST(req: Request) {
       (e) => e.id === evt.data.primary_email_address_id
     );
 
-    await prisma.user.create({
-      data: {
+    // Use upsert for idempotency (handles duplicate webhook deliveries)
+    await prisma.user.upsert({
+      where: { clerkId: id },
+      update: {
+        email: primaryEmail?.email_address || "",
+        name: [first_name, last_name].filter(Boolean).join(" ") || null,
+      },
+      create: {
         clerkId: id,
         email: primaryEmail?.email_address || "",
         name: [first_name, last_name].filter(Boolean).join(" ") || null,
@@ -62,34 +68,43 @@ export async function POST(req: Request) {
       (e) => e.id === evt.data.primary_email_address_id
     );
 
-    await prisma.user.update({
-      where: { clerkId: id },
-      data: {
-        email: primaryEmail?.email_address,
-        name: [first_name, last_name].filter(Boolean).join(" ") || null,
-      },
-    });
+    try {
+      await prisma.user.update({
+        where: { clerkId: id },
+        data: {
+          email: primaryEmail?.email_address,
+          name: [first_name, last_name].filter(Boolean).join(" ") || null,
+        },
+      });
+    } catch (error) {
+      // User may not exist in DB yet if webhook arrived out of order
+      console.error("Failed to update user from webhook:", error);
+    }
   }
 
   if (eventType === "user.deleted") {
     const { id } = evt.data;
     if (id) {
-      // First unlink partner if exists
-      const user = await prisma.user.findUnique({
-        where: { clerkId: id },
-        select: { id: true, partnerId: true },
-      });
-
-      if (user?.partnerId) {
-        await prisma.user.update({
-          where: { id: user.partnerId },
-          data: { partnerId: null },
+      // Use transaction to ensure partner unlink + user delete are atomic
+      await prisma.$transaction(async (tx) => {
+        const user = await tx.user.findUnique({
+          where: { clerkId: id },
+          select: { id: true, partnerId: true },
         });
-      }
 
-      // Then delete the user (cascades to profile, food entries, daily logs)
-      await prisma.user.delete({
-        where: { clerkId: id },
+        if (!user) return; // Already deleted (idempotent)
+
+        if (user.partnerId) {
+          await tx.user.update({
+            where: { id: user.partnerId },
+            data: { partnerId: null },
+          });
+        }
+
+        // Delete the user (cascades to profile, food entries, daily logs)
+        await tx.user.delete({
+          where: { clerkId: id },
+        });
       });
     }
   }

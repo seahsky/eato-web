@@ -20,10 +20,12 @@ export const notificationRouter = router({
       })
     )
     .mutation(async ({ ctx, input }) => {
-      // Upsert subscription (update if endpoint exists, create if new)
+      // Upsert subscription (update if endpoint exists for this user, create if new)
+      // Include userId in update to prevent cross-user endpoint hijacking
       const subscription = await ctx.prisma.pushSubscription.upsert({
         where: { endpoint: input.endpoint },
         update: {
+          userId: ctx.user.id,
           p256dh: input.p256dh,
           auth: input.auth,
           userAgent: input.userAgent,
@@ -192,9 +194,18 @@ export const notificationRouter = router({
         partnerGoalReached: z.boolean().optional(),
         partnerLinked: z.boolean().optional(),
         receiveNudges: z.boolean().optional(),
-        breakfastReminderTime: z.string().regex(/^\d{2}:\d{2}$/).nullable().optional(),
-        lunchReminderTime: z.string().regex(/^\d{2}:\d{2}$/).nullable().optional(),
-        dinnerReminderTime: z.string().regex(/^\d{2}:\d{2}$/).nullable().optional(),
+        breakfastReminderTime: z.string().regex(/^\d{2}:\d{2}$/).refine((val) => {
+          const [h, m] = val.split(":").map(Number);
+          return h >= 0 && h <= 23 && m >= 0 && m <= 59;
+        }, "Invalid time. Hours must be 00-23, minutes 00-59").nullable().optional(),
+        lunchReminderTime: z.string().regex(/^\d{2}:\d{2}$/).refine((val) => {
+          const [h, m] = val.split(":").map(Number);
+          return h >= 0 && h <= 23 && m >= 0 && m <= 59;
+        }, "Invalid time. Hours must be 00-23, minutes 00-59").nullable().optional(),
+        dinnerReminderTime: z.string().regex(/^\d{2}:\d{2}$/).refine((val) => {
+          const [h, m] = val.split(":").map(Number);
+          return h >= 0 && h <= 23 && m >= 0 && m <= 59;
+        }, "Invalid time. Hours must be 00-23, minutes 00-59").nullable().optional(),
         timezone: z.string().optional(),
       })
     )

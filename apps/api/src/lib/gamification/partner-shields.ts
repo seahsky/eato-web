@@ -89,6 +89,27 @@ export async function applyPartnerShield(
   toUserId: string,
   shieldDate: Date
 ): Promise<{ success: boolean; newStreak: number }> {
+  // Check for existing shield on the same date to prevent double-shielding
+  const existingShield = await prisma.partnerShield.findFirst({
+    where: {
+      fromUserId,
+      toUserId,
+      shieldedDate: shieldDate,
+    },
+  });
+
+  if (existingShield) {
+    // Already shielded — return idempotent success
+    const partner = await prisma.user.findUnique({
+      where: { id: toUserId },
+      select: { currentStreak: true },
+    });
+    return {
+      success: true,
+      newStreak: partner?.currentStreak ?? 0,
+    };
+  }
+
   // Create shield record
   await prisma.partnerShield.create({
     data: {
