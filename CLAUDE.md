@@ -9,8 +9,7 @@
 ### Pre-Submission Checklist
 - Always run type checking before completing any task
 - For API: Run `npm run build` in `apps/api` to verify no build errors
-- For Flutter: Run `flutter analyze` in `apps/client` to verify no lint errors
-- Fix all TypeScript/Dart errors and warnings before handing in work
+- Fix all TypeScript errors and warnings before handing in work
 
 ### Bug Investigation Protocol
 - When asked to fix a bug or issue, **find the root cause first**
@@ -29,7 +28,7 @@
 
 ## Project Overview
 
-Eato is a mobile-first cross-platform app for couples to track their daily calorie intake and reach health goals together. The app features a Flutter frontend (iOS, Android, Web) with a Next.js API backend.
+Eato is a mobile-first calorie tracking app for couples to track their daily calorie intake and reach health goals together. The app features a Next.js frontend and API backend in a single application.
 
 ### Core Features
 - Calorie tracking with FatSecret food database search and manual entry
@@ -37,7 +36,7 @@ Eato is a mobile-first cross-platform app for couples to track their daily calor
 - Recipe builder with per-100g nutrition calculation
 - Partner mode for linking accounts and viewing shared progress
 - Partner food logging with approval workflow
-- Push notifications (Firebase Cloud Messaging + Web Push)
+- Push notifications (Web Push)
 - Gamification system (streaks, achievements, partner shields)
 - Daily and weekly statistics with visual progress indicators
 
@@ -48,33 +47,14 @@ Eato is a mobile-first cross-platform app for couples to track their daily calor
 ```
 eato/
 ├── apps/
-│   ├── api/                   # Next.js backend (tRPC + REST API)
-│   │   ├── src/
-│   │   │   ├── app/api/       # API routes (tRPC, REST, webhooks, cron)
-│   │   │   ├── server/        # tRPC routers and services
-│   │   │   ├── lib/           # Shared utilities
-│   │   │   └── trpc/          # tRPC client configuration
-│   │   └── prisma/            # Database schema
-│   └── client/                # Flutter app (iOS, Android, Web)
-│       ├── lib/
-│       │   ├── core/          # Shared infrastructure
-│       │   │   ├── api/       # API client, models, interceptors
-│       │   │   ├── auth/      # Clerk authentication wrappers
-│       │   │   ├── router/    # GoRouter configuration
-│       │   │   └── theme/     # App theming
-│       │   └── features/      # Feature modules
-│       │       ├── auth/      # Login screens and providers
-│       │       ├── dashboard/ # Home screen and stats
-│       │       ├── food/      # Food search, add, edit
-│       │       ├── profile/   # Profile setup and settings
-│       │       ├── partner/   # Partner linking and tracking
-│       │       ├── recipes/   # Recipe builder
-│       │       ├── gamification/   # Streaks and badges
-│       │       └── notifications/  # Push notification settings
-│       └── web/               # Flutter web assets
-├── Dockerfile                 # Multi-stage build (Flutter + Next.js)
-├── nginx.conf                 # Nginx reverse proxy config
-├── start.sh                   # Container startup script
+│   └── api/                   # Next.js app (frontend + tRPC API)
+│       ├── src/
+│       │   ├── app/           # Next.js App Router (pages + API routes)
+│       │   ├── server/        # tRPC routers and services
+│       │   ├── lib/           # Shared utilities
+│       │   └── trpc/          # tRPC client configuration
+│       └── prisma/            # Database schema
+├── Dockerfile                 # Production build
 └── docs/                      # Additional documentation
 ```
 
@@ -82,7 +62,7 @@ eato/
 
 ## Tech Stack
 
-### Backend (apps/api/)
+### Next.js App (apps/api/)
 
 | Layer | Technology |
 |-------|------------|
@@ -96,27 +76,13 @@ eato/
 | Validation | Zod |
 | Job Scheduling | Agenda (MongoDB-backed) |
 
-### Frontend (apps/client/)
-
-| Layer | Technology |
-|-------|------------|
-| Framework | Flutter 3 (iOS, Android, Web) |
-| State Management | Riverpod + riverpod_generator |
-| Navigation | GoRouter |
-| HTTP Client | Dio with interceptors |
-| Authentication | clerk_flutter (native) + JS interop (web) |
-| Push Notifications | Firebase Cloud Messaging |
-| Local Storage | Hive + SharedPreferences + SecureStorage |
-| Charts | fl_chart |
-
 ### Deployment
 
 | Component | Technology |
 |-----------|------------|
-| Container | Docker multi-stage build |
-| Web Server | Nginx (serves Flutter, proxies API) |
+| Container | Docker build |
 | Runtime | Node.js 20 Alpine |
-| Port | 8080 (Nginx) → 3000 (Next.js internal) |
+| Port | 8080 (Next.js) |
 
 ---
 
@@ -124,7 +90,6 @@ eato/
 
 ### Authentication Flow
 - Clerk manages all user authentication (OAuth providers and email/password)
-- Flutter uses `clerk_flutter` package for native apps, JS interop for web
 - A webhook endpoint receives Clerk lifecycle events (user created, updated, deleted)
 - On user creation in Clerk, a corresponding user record is created in MongoDB
 - On user deletion, the system first unlinks any partner relationship, then cascades deletion to all related data
@@ -171,24 +136,16 @@ eato/
 - **mealEstimation**: Meal calculator for estimating nutrition from ingredient list
 - **achievements**: Badge queries and unlock checking
 
-### Flutter Architecture
-- **Feature-based structure**: Each feature module contains screens, providers, and widgets
-- **Riverpod providers**: State management with code generation for type safety
-- **GoRouter**: Declarative navigation with route guards for authentication
-- **Dio interceptors**: Automatic auth token injection and refresh
-- **Platform-specific code**: Conditional imports for web vs native (Clerk, notifications)
-
 ### Data Flow Patterns
-- Riverpod providers fetch data via Dio HTTP client
-- API returns JSON parsed into Dart model classes
-- Provider state drives UI rebuilds
-- Mutations trigger provider refresh to sync state
-- Optimistic updates for better UX where appropriate
+- tRPC client fetches data from API routes
+- API returns JSON via tRPC or REST endpoints
+- React Server Components and client components handle rendering
+- Mutations trigger cache invalidation to sync state
 
 ### External Integrations
 - **Clerk**: Authentication with webhook sync for user lifecycle
 - **FatSecret**: Primary food database API (OAuth 2.0)
-- **Firebase**: Push notifications for iOS/Android/Web
+- **Firebase**: Push notifications for web
 - **Google Translate**: Non-English food search translation
 - **MongoDB**: Document database via Prisma ORM
 
@@ -197,33 +154,16 @@ eato/
 ## Deployment
 
 ### Dockerfile Architecture
-The app uses a multi-stage Docker build:
-1. **Stage 1 (flutter-build)**: Builds Flutter web app with environment variables
-2. **Stage 2 (nextjs-build)**: Builds Next.js API with Prisma generation
-3. **Stage 3 (runtime)**: Combines both into a production container
-
-### Container Services
-- **Nginx** (port 8080): Serves Flutter static files, proxies `/api/*` to Next.js
-- **Next.js** (port 3000 internal): Runs API server with Prisma client
+The app uses a Docker build:
+1. **Stage 1 (build)**: Installs deps, generates Prisma client, builds Next.js
+2. **Stage 2 (runtime)**: Copies build artifacts, runs Next.js on port 8080
 
 ### Required Environment Variables
-
-#### Build-time (Dockerfile ARGs)
-```env
-FIREBASE_API_KEY
-FIREBASE_AUTH_DOMAIN
-FIREBASE_PROJECT_ID
-FIREBASE_STORAGE_BUCKET
-FIREBASE_MESSAGING_SENDER_ID
-FIREBASE_APP_ID
-FIREBASE_VAPID_KEY
-CLERK_PUBLISHABLE_KEY
-DEBUG=false
-```
 
 #### Runtime (Container ENV)
 ```env
 DATABASE_URL=mongodb+srv://...
+NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=pk_...
 CLERK_SECRET_KEY=sk_...
 CLERK_WEBHOOK_SECRET=whsec_...
 FATSECRET_CLIENT_ID=...

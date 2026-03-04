@@ -7,11 +7,8 @@ A mobile-first calorie tracking app for couples to reach their health goals toge
 ```
 eato/
 ├── apps/
-│   ├── api/                   # Next.js backend (tRPC + REST API)
-│   └── client/                # Flutter app (iOS, Android, Web)
-├── Dockerfile                 # Multi-stage production build
-├── nginx.conf                 # Nginx reverse proxy configuration
-├── start.sh                   # Container startup script
+│   └── api/                   # Next.js app (tRPC API + frontend)
+├── Dockerfile                 # Production build
 └── docs/                      # Documentation
 ```
 
@@ -25,36 +22,27 @@ eato/
 - **Gamification**: Streaks, achievements, partner shields, and rest days
 - **Push Notifications**: Meal reminders and partner activity alerts
 - **Daily & Weekly Stats**: Visualize progress with charts and summaries
-- **Cross-Platform**: Native iOS/Android apps + Progressive Web App
 
 ## Tech Stack
 
-### Backend (apps/api/)
-- Next.js 16 (App Router)
+### Next.js App (apps/api/)
+- Next.js 16 (App Router) — serves both frontend and API
 - tRPC + trpc-openapi (REST API)
 - Prisma + MongoDB
 - Clerk Authentication
 - Web Push + Expo Push Notifications
-
-### Mobile (apps/client/)
-- Flutter 3
-- Riverpod (State Management)
-- GoRouter (Navigation)
-- Dio (HTTP Client)
-- Firebase Cloud Messaging
 
 ## Getting Started
 
 ### Prerequisites
 
 - Node.js 20+
-- Flutter 3.24+
 - MongoDB database (MongoDB Atlas recommended)
 - Clerk account (authentication)
 - FatSecret API credentials (food database)
 - Firebase project (push notifications)
 
-### Backend Setup
+### Setup
 
 1. **Navigate to API directory:**
    ```bash
@@ -82,32 +70,6 @@ eato/
 
 5. Open [http://localhost:3000](http://localhost:3000)
 
-### Flutter Setup
-
-1. **Navigate to client directory:**
-   ```bash
-   cd apps/client
-   flutter pub get
-   ```
-
-2. **Configure environment:**
-   ```bash
-   cp .env.example .env.local
-   ```
-
-3. **Generate code (Riverpod, JSON serialization):**
-   ```bash
-   flutter pub run build_runner build --delete-conflicting-outputs
-   ```
-
-4. **Run on device/simulator:**
-   ```bash
-   flutter run                  # Default device
-   flutter run -d chrome        # Web
-   flutter run -d ios           # iOS simulator
-   flutter run -d android       # Android emulator
-   ```
-
 ## API Documentation
 
 The backend exposes both tRPC and REST endpoints:
@@ -119,7 +81,7 @@ The backend exposes both tRPC and REST endpoints:
 
 ## Environment Variables
 
-### Backend (apps/api/.env.local)
+### apps/api/.env.local
 
 ```env
 # Database
@@ -145,28 +107,7 @@ VAPID_PRIVATE_KEY="your_private_key"
 EXPO_ACCESS_TOKEN="your_access_token"
 ```
 
-### Flutter (apps/client/.env.local)
-
-```env
-# Firebase Configuration
-FIREBASE_API_KEY=AIza...
-FIREBASE_AUTH_DOMAIN=your-project.firebaseapp.com
-FIREBASE_PROJECT_ID=your-project-id
-FIREBASE_STORAGE_BUCKET=your-project.appspot.com
-FIREBASE_MESSAGING_SENDER_ID=123456789
-FIREBASE_APP_ID=1:123456789:web:abc123
-FIREBASE_VAPID_KEY=BLxx...
-
-# Clerk Authentication
-CLERK_PUBLISHABLE_KEY=pk_...
-
-# API URL
-API_BASE_URL=http://localhost:3000
-```
-
 ## Development Commands
-
-### Backend (apps/api/)
 
 ```bash
 npm run dev          # Start dev server
@@ -177,46 +118,18 @@ npx prisma studio    # Open Prisma Studio (database GUI)
 npx prisma db push   # Push schema changes to database
 ```
 
-### Flutter (apps/client/)
-
-```bash
-flutter run              # Run on default device
-flutter run -d chrome    # Run on web
-flutter run -d ios       # Run on iOS
-flutter run -d android   # Run on Android
-flutter analyze          # Run static analysis
-flutter test             # Run tests
-flutter build apk        # Build Android APK
-flutter build ios        # Build iOS app
-flutter build web        # Build web app
-```
-
 ---
 
 ## Production Deployment
 
 ### Docker Deployment
 
-The application uses a multi-stage Dockerfile that:
-1. Builds Flutter web app with Firebase/Clerk configuration
-2. Builds Next.js API with Prisma client
-3. Creates a production container with Nginx + Node.js
+The Dockerfile builds and serves the Next.js application directly on port 8080.
 
 #### Build the Docker Image
 
 ```bash
-# Build with required build-time arguments
-docker build \
-  --build-arg FIREBASE_API_KEY="your_firebase_api_key" \
-  --build-arg FIREBASE_AUTH_DOMAIN="your-project.firebaseapp.com" \
-  --build-arg FIREBASE_PROJECT_ID="your-project-id" \
-  --build-arg FIREBASE_STORAGE_BUCKET="your-project.appspot.com" \
-  --build-arg FIREBASE_MESSAGING_SENDER_ID="123456789" \
-  --build-arg FIREBASE_APP_ID="1:123456789:web:abc123" \
-  --build-arg FIREBASE_VAPID_KEY="your_vapid_key" \
-  --build-arg CLERK_PUBLISHABLE_KEY="pk_live_..." \
-  --build-arg DEBUG=false \
-  -t eato:latest .
+docker build -t eato:latest .
 ```
 
 #### Run the Container
@@ -227,6 +140,7 @@ docker run -d \
   -e DATABASE_URL="mongodb+srv://..." \
   -e CLERK_SECRET_KEY="sk_live_..." \
   -e CLERK_WEBHOOK_SECRET="whsec_..." \
+  -e NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY="pk_live_..." \
   -e FATSECRET_CLIENT_ID="..." \
   -e FATSECRET_CLIENT_SECRET="..." \
   -e GOOGLE_TRANSLATE_API_KEY="..." \
@@ -247,20 +161,11 @@ services:
   eato:
     build:
       context: .
-      args:
-        FIREBASE_API_KEY: ${FIREBASE_API_KEY}
-        FIREBASE_AUTH_DOMAIN: ${FIREBASE_AUTH_DOMAIN}
-        FIREBASE_PROJECT_ID: ${FIREBASE_PROJECT_ID}
-        FIREBASE_STORAGE_BUCKET: ${FIREBASE_STORAGE_BUCKET}
-        FIREBASE_MESSAGING_SENDER_ID: ${FIREBASE_MESSAGING_SENDER_ID}
-        FIREBASE_APP_ID: ${FIREBASE_APP_ID}
-        FIREBASE_VAPID_KEY: ${FIREBASE_VAPID_KEY}
-        CLERK_PUBLISHABLE_KEY: ${CLERK_PUBLISHABLE_KEY}
-        DEBUG: "false"
     ports:
       - "8080:8080"
     environment:
       - DATABASE_URL=${DATABASE_URL}
+      - NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=${NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY}
       - CLERK_SECRET_KEY=${CLERK_SECRET_KEY}
       - CLERK_WEBHOOK_SECRET=${CLERK_WEBHOOK_SECRET}
       - FATSECRET_CLIENT_ID=${FATSECRET_CLIENT_ID}
@@ -288,13 +193,8 @@ docker-compose up -d
 
 These platforms automatically detect the Dockerfile and build the image. Configure:
 
-1. **Build Arguments**: Set as build-time environment variables
-2. **Runtime Variables**: Set as environment variables
-3. **Port**: 8080 (configured in Dockerfile)
-
-#### Zeabur-Specific
-
-Zeabur automatically passes build arguments as environment variables during build. Ensure all `FIREBASE_*` and `CLERK_PUBLISHABLE_KEY` variables are set in the Zeabur dashboard.
+1. **Runtime Variables**: Set as environment variables
+2. **Port**: 8080 (configured in Dockerfile)
 
 ### Health Monitoring
 
@@ -313,29 +213,18 @@ Response:
 }
 ```
 
-Use this endpoint for:
-- Container health checks
-- Load balancer health probes
-- Uptime monitoring services
-
 ### Architecture Overview
 
 ```
 ┌─────────────────────────────────────────────────────────┐
-│                    Container (Port 8080)                 │
+│                  Container (Port 8080)                    │
 ├─────────────────────────────────────────────────────────┤
-│                         Nginx                            │
-│  ┌─────────────────────┐    ┌─────────────────────────┐ │
-│  │   Static Files (/)   │    │  Proxy /api/* to :3000  │ │
-│  │   Flutter Web App    │    │                         │ │
-│  └─────────────────────┘    └─────────────────────────┘ │
-├─────────────────────────────────────────────────────────┤
-│                    Next.js (Port 3000)                   │
+│                    Next.js (Port 8080)                    │
 │  ┌─────────────────────────────────────────────────────┐ │
-│  │  tRPC API  │  REST API  │  Webhooks  │  Cron Jobs   │ │
+│  │  Frontend  │  tRPC API  │  REST API  │  Webhooks    │ │
 │  └─────────────────────────────────────────────────────┘ │
 ├─────────────────────────────────────────────────────────┤
-│                    Prisma ORM                            │
+│                    Prisma ORM                             │
 │  ┌─────────────────────────────────────────────────────┐ │
 │  │              MongoDB Atlas (External)                │ │
 │  └─────────────────────────────────────────────────────┘ │
@@ -346,29 +235,21 @@ Use this endpoint for:
 
 1. **Never commit secrets**: Use environment variables for all sensitive data
 2. **Clerk Webhook Verification**: The webhook endpoint verifies signatures using `CLERK_WEBHOOK_SECRET`
-3. **CORS**: Nginx handles CORS headers; configure allowed origins in production
-4. **HTTPS**: Use a reverse proxy (Cloudflare, AWS ALB) for SSL termination
-5. **Rate Limiting**: Consider adding rate limiting at the Nginx or API level
+3. **HTTPS**: Use a reverse proxy (Cloudflare, AWS ALB) for SSL termination
+4. **Rate Limiting**: Consider adding rate limiting at the API level
 
 ### Troubleshooting
 
 #### Container Startup Issues
 
 1. Check logs: `docker logs eato`
-2. Verify Next.js started: Look for "Next.js API is ready!" in logs
+2. Verify Next.js started: Look for "Ready" in logs
 3. Check Prisma generation: Ensure `DATABASE_URL` is accessible
 
 #### API Not Responding
 
 1. Check health endpoint: `curl http://localhost:8080/api/rest/health`
-2. Verify Nginx proxy: Check `/var/log/nginx/error.log` inside container
-3. Check Next.js: `docker exec eato curl http://127.0.0.1:3000/api/rest/health`
-
-#### Flutter Web Issues
-
-1. Check browser console for errors
-2. Verify Firebase config in network requests
-3. Ensure Clerk publishable key is correct for the environment
+2. Check Next.js logs: `docker exec eato cat /proc/1/fd/1`
 
 ---
 
