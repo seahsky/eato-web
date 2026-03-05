@@ -32,7 +32,6 @@ export const notificationRouter = router({
         },
         create: {
           userId: ctx.user.id,
-          tokenType: "WEB_PUSH",
           endpoint: input.endpoint,
           p256dh: input.p256dh,
           auth: input.auth,
@@ -52,72 +51,21 @@ export const notificationRouter = router({
       return { success: true, id: subscription.id };
     }),
 
-  // Subscribe to Expo push notifications (for mobile app)
-  subscribeExpo: protectedProcedure
-    .meta({ openapi: { method: "POST", path: "/notifications/subscribe-expo" } })
-    .input(
-      z.object({
-        expoToken: z.string().startsWith("ExponentPushToken["),
-        deviceId: z.string().optional(),
-        userAgent: z.string().optional(),
-      })
-    )
-    .mutation(async ({ ctx, input }) => {
-      // Upsert subscription (update if token exists, create if new)
-      const subscription = await ctx.prisma.pushSubscription.upsert({
-        where: { expoToken: input.expoToken },
-        update: {
-          deviceId: input.deviceId,
-          userAgent: input.userAgent,
-        },
-        create: {
-          userId: ctx.user.id,
-          tokenType: "EXPO_PUSH",
-          expoToken: input.expoToken,
-          deviceId: input.deviceId,
-          userAgent: input.userAgent,
-        },
-      });
-
-      // Create default notification settings if they don't exist
-      await ctx.prisma.notificationSettings.upsert({
-        where: { userId: ctx.user.id },
-        update: {},
-        create: {
-          userId: ctx.user.id,
-        },
-      });
-
-      return { success: true, id: subscription.id };
-    }),
-
-  // Unsubscribe from push notifications (supports both web and expo)
+  // Unsubscribe from web push notifications
   unsubscribe: protectedProcedure
     .meta({ openapi: { method: "POST", path: "/notifications/unsubscribe" } })
     .input(
       z.object({
-        endpoint: z.string().url().optional(),
-        expoToken: z.string().optional(),
+        endpoint: z.string().url(),
       })
     )
     .mutation(async ({ ctx, input }) => {
-      if (input.endpoint) {
-        await ctx.prisma.pushSubscription.deleteMany({
-          where: {
-            userId: ctx.user.id,
-            endpoint: input.endpoint,
-          },
-        });
-      }
-
-      if (input.expoToken) {
-        await ctx.prisma.pushSubscription.deleteMany({
-          where: {
-            userId: ctx.user.id,
-            expoToken: input.expoToken,
-          },
-        });
-      }
+      await ctx.prisma.pushSubscription.deleteMany({
+        where: {
+          userId: ctx.user.id,
+          endpoint: input.endpoint,
+        },
+      });
 
       return { success: true };
     }),
@@ -246,7 +194,6 @@ export const notificationRouter = router({
       where: { userId: ctx.user.id },
       select: {
         id: true,
-        tokenType: true,
         deviceId: true,
         userAgent: true,
         createdAt: true,

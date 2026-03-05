@@ -1,37 +1,20 @@
 import { prisma } from "@/lib/prisma";
 import { sendWebPushNotification } from "./web-push";
-import { sendExpoPushNotification } from "./expo-push";
 import type { NotificationPayload, SendResult } from "./types";
 
 /**
- * Send notification to all of a user's devices (web + mobile)
+ * Send notification to all of a user's devices (web push)
  * This is the main entry point for all notification sending
  */
 export async function sendNotificationToUser(
   userId: string,
   payload: NotificationPayload
 ): Promise<SendResult> {
-  // Send to both platforms in parallel
-  const [webResult, expoResult] = await Promise.all([
-    sendWebPushNotification(userId, payload),
-    sendExpoPushNotification(userId, payload),
-  ]);
-
-  const allErrors = [
-    ...(webResult.errors || []),
-    ...(expoResult.errors || []),
-  ];
-
-  return {
-    success: webResult.success && expoResult.success,
-    sent: webResult.sent + expoResult.sent,
-    failed: webResult.failed + expoResult.failed,
-    errors: allErrors.length > 0 ? allErrors : undefined,
-  };
+  return sendWebPushNotification(userId, payload);
 }
 
 /**
- * Check if user has any push subscription (web or mobile)
+ * Check if user has any push subscription
  */
 export async function userHasAnySubscription(userId: string): Promise<boolean> {
   const count = await prisma.pushSubscription.count({

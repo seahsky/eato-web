@@ -367,22 +367,16 @@ model TranslationCache {
   @@index([expiresAt])
 }
 
-// Push notification subscription per device (supports both Web Push and Expo)
+// Push notification subscription per device (Web Push)
 model PushSubscription {
   id        String    @id @default(auto()) @map("_id") @db.ObjectId
   userId    String    @db.ObjectId
   user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  // Token type discriminator
-  tokenType TokenType @default(WEB_PUSH)
-
-  // Web Push fields (required when tokenType = WEB_PUSH)
+  // Web Push fields
   endpoint  String?   @unique
   p256dh    String?
   auth      String?
-
-  // Expo Push fields (required when tokenType = EXPO_PUSH)
-  expoToken String?   @unique
 
   // Common fields
   deviceId  String?
@@ -390,7 +384,6 @@ model PushSubscription {
   createdAt DateTime  @default(now())
 
   @@index([userId])
-  @@index([tokenType])
 }
 
 // User notification preferences
@@ -607,12 +600,6 @@ enum ScrapeJobStatus {
   RUNNING
   COMPLETED
   FAILED
-}
-
-// Push notification token type
-enum TokenType {
-  WEB_PUSH
-  EXPO_PUSH
 }
 
 // ============================================

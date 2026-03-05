@@ -21,9 +21,8 @@ export async function sendWebPushNotification(
   userId: string,
   payload: NotificationPayload
 ): Promise<SendResult> {
-  // Get only WEB_PUSH subscriptions for this user
   const subscriptions = await prisma.pushSubscription.findMany({
-    where: { userId, tokenType: "WEB_PUSH" },
+    where: { userId },
   });
 
   if (subscriptions.length === 0) {
