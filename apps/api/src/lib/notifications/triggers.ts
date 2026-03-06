@@ -18,7 +18,7 @@ export async function notifyPendingApproval(
     id: string;
     name: string;
     calories: number;
-    mealType: MealType;
+    mealType: MealType | null;
   }
 ): Promise<void> {
   const hasSubscription = await userHasAnySubscription(partnerId);
@@ -50,7 +50,7 @@ export async function notifyPartnerFoodLogged(
   partnerId: string,
   loggerName: string,
   foodName: string,
-  mealType: MealType
+  mealType: MealType | null
 ): Promise<void> {
   // Check if partner has subscriptions and notifications enabled
   const hasSubscription = await userHasAnySubscription(partnerId);
@@ -59,8 +59,10 @@ export async function notifyPartnerFoodLogged(
   const isEnabled = await isNotificationEnabled(partnerId, "partnerFoodLogged");
   if (!isEnabled) return;
 
+  const mealLabel = mealType ? MEAL_TYPE_LABELS[mealType] : "food";
+
   await sendNotificationToUser(partnerId, {
-    title: `${loggerName} logged ${MEAL_TYPE_LABELS[mealType]}`,
+    title: `${loggerName} logged ${mealLabel}`,
     body: foodName,
     tag: "partner-food-logged",
     url: "/partner",

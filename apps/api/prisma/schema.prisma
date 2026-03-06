@@ -160,7 +160,7 @@ model FoodEntry {
   servingUnit     String
 
   // Meal categorization
-  mealType        MealType
+  mealType        MealType?
 
   // Timestamps
   loggedAt        DateTime  @default(now())

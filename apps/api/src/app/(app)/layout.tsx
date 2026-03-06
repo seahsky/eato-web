@@ -26,7 +26,7 @@ export default async function AppLayout({
   }
 
   return (
-    <div className="pb-16">
+    <div className="pb-20">
       {children}
       <BottomNav />
     </div>

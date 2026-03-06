@@ -40,7 +40,7 @@ const createRecipeSchema = z.object({
 const logRecipeSchema = z.object({
   recipeId: z.string(),
   consumedWeight: z.number().min(0),
-  mealType: z.enum(["BREAKFAST", "LUNCH", "DINNER", "SNACK"]),
+  mealType: z.enum(["BREAKFAST", "LUNCH", "DINNER", "SNACK"]).optional(),
   consumedAt: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Date must be in YYYY-MM-DD format"),
 });
 

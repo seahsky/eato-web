@@ -10,14 +10,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { trpc } from "@/trpc/react";
-import type { MealType } from "@/server/client-types";
-
-const MEAL_OPTIONS: { value: MealType; label: string }[] = [
-  { value: "BREAKFAST", label: "Breakfast" },
-  { value: "LUNCH", label: "Lunch" },
-  { value: "DINNER", label: "Dinner" },
-  { value: "SNACK", label: "Snack" },
-];
 
 export default function AddFoodPage() {
   const router = useRouter();
@@ -49,12 +41,10 @@ export default function AddFoodPage() {
   }, [searchParams]);
 
   const [servingSize, setServingSize] = useState(product?.servingSize ?? 100);
-  const [mealType, setMealType] = useState<MealType>("BREAKFAST");
   const [saving, setSaving] = useState(false);
 
   // Manual entry form
   const [manualName, setManualName] = useState("");
-  const [manualBrand, setManualBrand] = useState("");
   const [manualCalories, setManualCalories] = useState<number | "">("");
   const [manualProtein, setManualProtein] = useState<number | "">("");
   const [manualCarbs, setManualCarbs] = useState<number | "">("");
@@ -91,7 +81,6 @@ export default function AddFoodPage() {
         fiber: nutrition.fiber,
         servingSize,
         servingUnit: product.servingUnit,
-        mealType,
         consumedAt: format(new Date(), "yyyy-MM-dd"),
         dataSource: (product.dataSource as "FATSECRET" | "MANUAL") ?? "FATSECRET",
         fatSecretId: product.fatSecretId,
@@ -109,14 +98,12 @@ export default function AddFoodPage() {
     try {
       await logFood.mutateAsync({
         name: manualName,
-        brand: manualBrand || undefined,
         calories: Number(manualCalories),
         protein: manualProtein ? Number(manualProtein) : undefined,
         carbs: manualCarbs ? Number(manualCarbs) : undefined,
         fat: manualFat ? Number(manualFat) : undefined,
         servingSize: manualServingSize,
         servingUnit: manualServingUnit,
-        mealType,
         consumedAt: format(new Date(), "yyyy-MM-dd"),
         isManualEntry: true,
         dataSource: "MANUAL",
@@ -185,23 +172,6 @@ export default function AddFoodPage() {
             </Card>
           )}
 
-          {/* Meal type */}
-          <div>
-            <Label>Meal</Label>
-            <div className="mt-1 flex gap-2">
-              {MEAL_OPTIONS.map((opt) => (
-                <Button
-                  key={opt.value}
-                  variant={mealType === opt.value ? "default" : "outline"}
-                  size="sm"
-                  onClick={() => setMealType(opt.value)}
-                >
-                  {opt.label}
-                </Button>
-              ))}
-            </div>
-          </div>
-
           <Button className="w-full" disabled={saving} onClick={handleSaveProduct}>
             {saving ? "Saving..." : "Log Food"}
           </Button>
@@ -217,13 +187,6 @@ export default function AddFoodPage() {
                 placeholder="e.g., Chicken breast"
                 value={manualName}
                 onChange={(e) => setManualName(e.target.value)}
-              />
-            </div>
-            <div>
-              <Label>Brand (optional)</Label>
-              <Input
-                value={manualBrand}
-                onChange={(e) => setManualBrand(e.target.value)}
               />
             </div>
             <div>
@@ -293,23 +256,6 @@ export default function AddFoodPage() {
                   ))}
                 </div>
               </div>
-            </div>
-          </div>
-
-          {/* Meal type */}
-          <div>
-            <Label>Meal</Label>
-            <div className="mt-1 flex gap-2">
-              {MEAL_OPTIONS.map((opt) => (
-                <Button
-                  key={opt.value}
-                  variant={mealType === opt.value ? "default" : "outline"}
-                  size="sm"
-                  onClick={() => setMealType(opt.value)}
-                >
-                  {opt.label}
-                </Button>
-              ))}
             </div>
           </div>
 

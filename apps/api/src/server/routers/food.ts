@@ -31,7 +31,7 @@ const foodEntrySchema = z.object({
   sodium: z.number().min(0).optional(),
   servingSize: z.number().min(0),
   servingUnit: z.string(),
-  mealType: z.enum(["BREAKFAST", "LUNCH", "DINNER", "SNACK"]),
+  mealType: z.enum(["BREAKFAST", "LUNCH", "DINNER", "SNACK"]).optional(),
   consumedAt: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Date must be in YYYY-MM-DD format"),
   isManualEntry: z.boolean().default(false),
   dataSource: z.enum(["FATSECRET", "MANUAL", "OPEN_FOOD_FACTS", "USDA"]).default("MANUAL"),
@@ -338,7 +338,7 @@ export const foodRouter = router({
           userWithPartner.partnerId,
           userWithPartner.name || "Your partner",
           input.name,
-          input.mealType
+          input.mealType ?? null
         ).catch(() => {});
 
         // Check if goal was just reached (within 90-100% of goal)
@@ -371,7 +371,7 @@ export const foodRouter = router({
           id: entry.id,
           name: input.name,
           calories: input.calories,
-          mealType: input.mealType,
+          mealType: input.mealType ?? null,
         }
       ).catch(() => {});
     }
