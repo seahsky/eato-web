@@ -1,0 +1,657 @@
+generator client {
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "linux-musl-openssl-3.0.x"]
+}
+
+datasource db {
+  provider = "mongodb"
+  url      = env("DATABASE_URL")
+}
+
+// User model for authentication and profile
+model User {
+  id                String    @id @default(auto()) @map("_id") @db.ObjectId
+  clerkId           String    @unique // Clerk user ID
+  email             String    @unique
+  name              String?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+  profileCompleted  Boolean   @default(false) // Onboarding wizard completed
+
+  // Profile data for BMR calculation
+  profile       Profile?
+
+  // Partner linking (bidirectional)
+  partnerId     String?   @db.ObjectId @unique
+  partner       User?     @relation("PartnerLink", fields: [partnerId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  partnerOf     User?     @relation("PartnerLink")
+
+  // Partner link request system
+  partnerLinkCode       String?   @unique
+  partnerLinkCodeExpiry DateTime?
+
+  // Food tracking
+  foodEntries   FoodEntry[]
+  dailyLogs     DailyLog[]
+  recipes       Recipe[]
+  favoriteFoods FavoriteFood[]
+
+  // Push notifications
+  pushSubscriptions    PushSubscription[]
+  notificationSettings NotificationSettings?
+  sentNudges           Nudge[]              @relation("SentNudges")
+  receivedNudges       Nudge[]              @relation("ReceivedNudges")
+
+  // Meal estimations
+  mealEstimations      MealEstimation[]
+
+  // Gamification - Streak tracking
+  currentStreak        Int       @default(0)
+  longestStreak        Int       @default(0)
+  goalStreak           Int       @default(0)   // Consecutive days on goal
+  longestGoalStreak    Int       @default(0)
+  lastLogDate          DateTime?
+  streakFreezes        Int       @default(0)   // Max 2
+
+  // Gamification - Rest Day Declaration
+  restDayDates         DateTime[]    @default([])
+  restDaysRemaining    Int           @default(6)
+  lastRestDayReset     DateTime      @default(now())
+
+  // Gamification - Weekly Streaks
+  weeklyStreak         Int       @default(0)
+  longestWeeklyStreak  Int       @default(0)
+  currentWeekDays      Int       @default(0)
+  weekStartDate        DateTime?
+
+  // Gamification - Partner Shields
+  partnerShields           Int                 @default(2)
+  shieldsUsedThisMonth     DateTime[]          @default([])
+  lastShieldReset          DateTime            @default(now())
+  shieldsGiven             PartnerShield[]     @relation("ShieldGiver")
+  shieldsReceived          PartnerShield[]     @relation("ShieldReceiver")
+
+  // Gamification - Unlockables
+  unlockedTheme        String    @default("default")
+  avatarFrame          String    @default("none")
+
+  // Achievements
+  achievements         Achievement[]
+
+  // Pixel Pet
+  petInteractionsSent     PetInteraction[] @relation("PetInteractionSent")
+  petInteractionsReceived PetInteraction[] @relation("PetInteractionReceived")
+}
+
+// Profile for BMR calculation
+model Profile {
+  id            String        @id @default(auto()) @map("_id") @db.ObjectId
+  userId        String        @unique @db.ObjectId
+  user          User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Physical data
+  age           Int
+  weight        Float         // in kg
+  height        Float         // in cm
+  gender        Gender
+  activityLevel ActivityLevel
+
+  // Calculated values
+  bmr           Float         // Basal Metabolic Rate
+  tdee          Float         // Total Daily Energy Expenditure
+  calorieGoal   Float         // User's daily target
+
+  // Weekly budget feature
+  weeklyCalorieBudget  Float?        // Null = auto-calculate as calorieGoal * 7
+  weekStartDay         Int     @default(0)  // 0=Sunday, 1=Monday, ..., 6=Saturday
+
+  // Display preference
+  displayMode   DisplayMode   @default(QUALITATIVE)
+
+  // User preferences
+  energyUnit    EnergyUnit    @default(KCAL)
+
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+}
+
+enum Gender {
+  MALE
+  FEMALE
+}
+
+enum EnergyUnit {
+  KCAL
+  KJ
+}
+
+enum DisplayMode {
+  QUALITATIVE  // Shows Light/Balanced/Full
+  EXACT        // Shows exact calorie numbers
+}
+
+enum ActivityLevel {
+  SEDENTARY
+  LIGHTLY_ACTIVE
+  MODERATELY_ACTIVE
+  ACTIVE
+  VERY_ACTIVE
+}
+
+// Individual food entry
+model FoodEntry {
+  id              String    @id @default(auto()) @map("_id") @db.ObjectId
+  userId          String    @db.ObjectId
+  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Food identification
+  name            String
+  barcode         String?
+  brand           String?
+  imageUrl        String?
+
+  // Nutritional data (per serving consumed)
+  calories        Float
+  protein         Float?
+  carbs           Float?
+  fat             Float?
+  fiber           Float?
+  sugar           Float?
+  sodium          Float?
+
+  // Serving info
+  servingSize     Float
+  servingUnit     String
+
+  // Meal categorization
+  mealType        MealType
+
+  // Timestamps
+  loggedAt        DateTime  @default(now())
+  consumedAt      DateTime
+
+  // Reference to daily log
+  dailyLogId      String?   @db.ObjectId
+  dailyLog        DailyLog? @relation(fields: [dailyLogId], references: [id])
+
+  // Source tracking
+  isManualEntry   Boolean        @default(false)
+  dataSource      FoodDataSource @default(MANUAL)
+  fatSecretId     String?        // FatSecret food_id
+  // Legacy fields kept for backward compatibility
+  openFoodFactsId String?
+  usdaFdcId       Int?
+
+  // Recipe reference (if logged from a recipe)
+  recipeId        String?   @db.ObjectId
+
+  // Partner logging fields
+  loggedByUserId  String?        @db.ObjectId
+  approvalStatus  ApprovalStatus @default(APPROVED)
+  rejectionNote   String?
+}
+
+enum MealType {
+  BREAKFAST
+  LUNCH
+  DINNER
+  SNACK
+}
+
+enum ApprovalStatus {
+  APPROVED
+  PENDING
+  REJECTED
+}
+
+enum FoodDataSource {
+  FATSECRET       // Primary API source
+  MANUAL          // User manual entries
+  // Legacy sources kept for backward compatibility with existing data
+  OPEN_FOOD_FACTS
+  USDA
+}
+
+// Aggregated daily totals
+model DailyLog {
+  id            String      @id @default(auto()) @map("_id") @db.ObjectId
+  userId        String      @db.ObjectId
+  user          User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  date          DateTime    // Start of day
+
+  // Aggregated totals
+  totalCalories Float       @default(0)
+  totalProtein  Float       @default(0)
+  totalCarbs    Float       @default(0)
+  totalFat      Float       @default(0)
+  totalFiber    Float       @default(0)
+
+  // Goal tracking
+  calorieGoal   Float
+  goalMet       Boolean     @default(false)
+
+  // Related entries
+  entries       FoodEntry[]
+
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+
+  @@unique([userId, date])
+}
+
+// Custom recipe created by user
+model Recipe {
+  id              String             @id @default(auto()) @map("_id") @db.ObjectId
+  userId          String             @db.ObjectId
+  user            User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Recipe identification
+  name            String
+  description     String?
+  imageUrl        String?
+
+  // Yield (finished product weight in grams)
+  yieldWeight     Float
+  yieldUnit       String             @default("g")
+
+  // Pre-calculated per-100g nutrition
+  caloriesPer100g Float
+  proteinPer100g  Float
+  carbsPer100g    Float
+  fatPer100g      Float
+  fiberPer100g    Float              @default(0)
+
+  // Ingredients
+  ingredients     RecipeIngredient[]
+
+  createdAt       DateTime           @default(now())
+  updatedAt       DateTime           @updatedAt
+}
+
+// Individual ingredient in a recipe
+model RecipeIngredient {
+  id               String   @id @default(auto()) @map("_id") @db.ObjectId
+  recipeId         String   @db.ObjectId
+  recipe           Recipe   @relation(fields: [recipeId], references: [id], onDelete: Cascade)
+
+  // Ingredient identification
+  name             String
+
+  // Quantity specification
+  quantity         Float              // Amount or percentage value
+  unit             String             // "g", "kg", "ml", "L", "%"
+
+  // Baker's percentage support
+  isPercentage     Boolean            @default(false)
+  baseIngredientId String?            @db.ObjectId
+
+  // Per-100g nutrition of this ingredient
+  caloriesPer100g  Float
+  proteinPer100g   Float
+  carbsPer100g     Float
+  fatPer100g       Float
+  fiberPer100g     Float              @default(0)
+
+  // Source tracking
+  isManualEntry    Boolean            @default(false)
+  dataSource       FoodDataSource     @default(MANUAL)
+  fatSecretId      String?            // FatSecret food_id
+  // Legacy fields kept for backward compatibility
+  openFoodFactsId  String?
+  usdaFdcId        Int?
+
+  // Order in recipe
+  sortOrder        Int                @default(0)
+}
+
+// User's favorited foods for quick access
+model FavoriteFood {
+  id              String         @id @default(auto()) @map("_id") @db.ObjectId
+  userId          String         @db.ObjectId
+  user            User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Food identification (snapshot of product data)
+  name            String
+  brand           String?
+  imageUrl        String?
+  barcode         String?
+
+  // Per-100g nutrition
+  caloriesPer100g Float
+  proteinPer100g  Float
+  carbsPer100g    Float
+  fatPer100g      Float
+  fiberPer100g    Float          @default(0)
+  sugarPer100g    Float          @default(0)
+  sodiumPer100g   Float          @default(0)
+
+  // Source tracking
+  dataSource      FoodDataSource
+  fatSecretId     String?        // FatSecret food_id
+  // Legacy fields kept for backward compatibility
+  openFoodFactsId String?
+  usdaFdcId       Int?
+
+  // Default serving (from last log)
+  defaultServingSize Float       @default(100)
+  defaultServingUnit String      @default("g")
+
+  createdAt       DateTime       @default(now())
+
+  @@unique([userId, name, brand])
+}
+
+// Cache for food search results (persists across server restarts)
+model SearchCache {
+  id         String   @id @default(auto()) @map("_id") @db.ObjectId
+  queryHash  String   @unique // SHA-256 of normalized query
+  query      String // Original query (lowercase, trimmed)
+  results    Json // Normalized FoodProduct[]
+  totalCount Int
+  sources    Json // { usda: { count, error? }, openFoodFacts: { count, error? } }
+  createdAt  DateTime @default(now())
+  expiresAt  DateTime // TTL for cache invalidation
+  hitCount   Int      @default(0) // Track popularity for analytics
+
+  @@index([expiresAt])
+}
+
+// Cache for query translations (non-English to English)
+model TranslationCache {
+  id             String   @id @default(auto()) @map("_id") @db.ObjectId
+  originalText   String // Original query text (normalized)
+  originalHash   String   @unique // SHA-256 of normalized original text
+  detectedLang   String // ISO 639-1 code (e.g., "zh", "ja", "ko")
+  translatedText String // English translation
+  createdAt      DateTime @default(now())
+  expiresAt      DateTime // TTL for cache invalidation (30 days)
+  hitCount       Int      @default(0) // Track usage for analytics
+
+  @@index([expiresAt])
+}
+
+// Push notification subscription per device (Web Push)
+model PushSubscription {
+  id        String    @id @default(auto()) @map("_id") @db.ObjectId
+  userId    String    @db.ObjectId
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Web Push fields
+  endpoint  String?   @unique
+  p256dh    String?
+  auth      String?
+
+  // Common fields
+  deviceId  String?
+  userAgent String?
+  createdAt DateTime  @default(now())
+
+  @@index([userId])
+}
+
+// User notification preferences
+model NotificationSettings {
+  id     String @id @default(auto()) @map("_id") @db.ObjectId
+  userId String @unique @db.ObjectId
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Partner activity notifications
+  partnerFoodLogged  Boolean @default(true)
+  partnerGoalReached Boolean @default(true)
+  partnerLinked      Boolean @default(true)
+
+  // Nudge notifications
+  receiveNudges Boolean @default(true)
+
+  // Daily reminder preferences (HH:MM format, null = disabled)
+  breakfastReminderTime String?
+  lunchReminderTime     String?
+  dinnerReminderTime    String?
+
+  // Timezone for meal reminders (IANA format, e.g., "America/New_York")
+  timezone String @default("UTC")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// Nudge history for rate limiting
+model Nudge {
+  id         String   @id @default(auto()) @map("_id") @db.ObjectId
+  fromUserId String   @db.ObjectId
+  fromUser   User     @relation("SentNudges", fields: [fromUserId], references: [id], onDelete: Cascade)
+  toUserId   String   @db.ObjectId
+  toUser     User     @relation("ReceivedNudges", fields: [toUserId], references: [id], onDelete: Cascade)
+  message    String?
+  createdAt  DateTime @default(now())
+
+  @@index([fromUserId])
+  @@index([toUserId])
+}
+
+// Meal estimation from meal calculator
+model MealEstimation {
+  id              String    @id @default(auto()) @map("_id") @db.ObjectId
+  userId          String    @db.ObjectId
+  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  rawInputText    String    // Original textarea input
+  name            String    // Generated from ingredients (e.g., "flour, egg, olive oil...")
+
+  // Denormalized totals for quick display
+  totalCalories   Float
+  totalProtein    Float
+  totalCarbs      Float
+  totalFat        Float
+  totalGrams      Float
+
+  // Optional link to logged FoodEntry
+  foodEntryId     String?   @db.ObjectId
+
+  ingredients     MealEstimationIngredient[]
+
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@index([userId])
+}
+
+// Individual ingredient in a meal estimation
+model MealEstimationIngredient {
+  id                  String    @id @default(auto()) @map("_id") @db.ObjectId
+  estimationId        String    @db.ObjectId
+  estimation          MealEstimation @relation(fields: [estimationId], references: [id], onDelete: Cascade)
+
+  // Parsed data
+  rawLine             String
+  ingredientName      String
+  quantity            Float
+  unit                String
+  normalizedGrams     Float
+
+  // Matched product snapshot
+  matchedProductId    String?
+  matchedProductName  String?
+  matchedProductBrand String?
+  dataSource          FoodDataSource?
+
+  // Per-100g nutrition (from matched product)
+  caloriesPer100g     Float?
+  proteinPer100g      Float?
+  carbsPer100g        Float?
+  fatPer100g          Float?
+
+  // Calculated for this ingredient
+  calories            Float     @default(0)
+  protein             Float     @default(0)
+  carbs               Float     @default(0)
+  fat                 Float     @default(0)
+
+  hasMatch            Boolean   @default(false)
+  parseError          String?
+  sortOrder           Int       @default(0)
+
+  @@index([estimationId])
+}
+
+// ============================================
+// Food Product Cache & Scraping Infrastructure
+// ============================================
+
+// Locally cached food products from external APIs
+model FoodProductCache {
+  id               String         @id @default(auto()) @map("_id") @db.ObjectId
+  sourceId         String         @unique // "fs_{food_id}" for FatSecret
+  dataSource       FoodDataSource
+  fatSecretId      String?        // FatSecret food_id
+  barcode          String?
+  // Legacy field kept for backward compatibility
+  fdcId            Int?
+
+  // Product identification
+  name             String
+  nameLower        String // For case-insensitive search
+  brand            String?
+  brandLower       String?
+  imageUrl         String?
+  categories       String[]
+  isWholeFood      Boolean        @default(false)
+
+  // Per 100g nutritional data
+  caloriesPer100g  Float
+  proteinPer100g   Float
+  carbsPer100g     Float
+  fatPer100g       Float
+  fiberPer100g     Float          @default(0)
+  sugarPer100g     Float          @default(0)
+  sodiumPer100g    Float          @default(0)
+
+  // Serving info
+  servingSize      Float          @default(100)
+  servingUnit      String         @default("g")
+  servingSizeText  String         @default("100g")
+
+  // Metadata
+  popularity       Int            @default(0)
+  lastSearchedAt   DateTime?
+  scrapedAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+  hasCompleteNutrition Boolean    @default(false)
+  qualityScore     Int            @default(0)
+
+  @@index([nameLower])
+  @@index([brandLower])
+  @@index([dataSource])
+  @@index([popularity])
+  @@index([isWholeFood])
+  @@index([scrapedAt])
+}
+
+// Scraping job tracking
+model ScrapeJob {
+  id              String          @id @default(auto()) @map("_id") @db.ObjectId
+  dataSource      FoodDataSource
+  jobType         ScrapeJobType
+  status          ScrapeJobStatus
+  startedAt       DateTime        @default(now())
+  completedAt     DateTime?
+  lastCursor      String? // OFF: page number; USDA: last fdcId
+  productsScraped Int             @default(0)
+  productsUpdated Int             @default(0)
+  errorCount      Int             @default(0)
+  lastError       String?
+
+  @@index([dataSource, status])
+  @@index([startedAt])
+}
+
+// Scraping configuration per data source
+model ScrapeConfig {
+  id                   String         @id @default(auto()) @map("_id") @db.ObjectId
+  dataSource           FoodDataSource @unique
+  lastIncrementalSync  DateTime?
+  lastFullSync         DateTime?
+  enabled              Boolean        @default(true)
+  maxProductsPerRun    Int            @default(5000)
+  totalProducts        Int            @default(0)
+  updatedAt            DateTime       @updatedAt
+}
+
+// Track search queries that didn't find local results
+model SearchDemand {
+  id                  String   @id @default(auto()) @map("_id") @db.ObjectId
+  query               String
+  queryHash           String   @unique
+  hitCount            Int      @default(1)
+  lastSearched        DateTime @default(now())
+  scrapeAttempted     Boolean  @default(false)
+  scrapeFoundResults  Boolean?
+
+  @@index([hitCount])
+  @@index([scrapeAttempted])
+}
+
+enum ScrapeJobType {
+  INCREMENTAL
+  FULL
+  POPULAR
+  DEMAND
+}
+
+enum ScrapeJobStatus {
+  PENDING
+  RUNNING
+  COMPLETED
+  FAILED
+}
+
+// ============================================
+// Gamification - Achievements
+// ============================================
+
+// User's unlocked achievements/badges
+model Achievement {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId      String   @db.ObjectId
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  badgeId     String   // e.g., "week_warrior", "first_bite", "meal_prepper"
+  unlockedAt  DateTime @default(now())
+
+  @@unique([userId, badgeId])
+  @@index([userId])
+}
+
+// Partner shield usage history
+model PartnerShield {
+  id           String   @id @default(auto()) @map("_id") @db.ObjectId
+  fromUserId   String   @db.ObjectId
+  fromUser     User     @relation("ShieldGiver", fields: [fromUserId], references: [id], onDelete: Cascade)
+  toUserId     String   @db.ObjectId
+  toUser       User     @relation("ShieldReceiver", fields: [toUserId], references: [id], onDelete: Cascade)
+  shieldedDate DateTime
+  createdAt    DateTime @default(now())
+
+  @@index([fromUserId])
+  @@index([toUserId])
+  @@index([shieldedDate])
+}
+
+// ============================================
+// Pixel Pet - Interactions
+// ============================================
+
+// Pet interaction between partners (wave, pet, highfive)
+model PetInteraction {
+  id           String   @id @default(auto()) @map("_id") @db.ObjectId
+  fromUserId   String   @db.ObjectId
+  fromUser     User     @relation("PetInteractionSent", fields: [fromUserId], references: [id], onDelete: Cascade)
+  toUserId     String   @db.ObjectId
+  toUser       User     @relation("PetInteractionReceived", fields: [toUserId], references: [id], onDelete: Cascade)
+  type         String   // "wave" | "pet" | "highfive"
+  createdAt    DateTime @default(now())
+
+  @@index([fromUserId])
+  @@index([toUserId])
+}
+

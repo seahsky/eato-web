@@ -8,7 +8,7 @@
 
 ### Pre-Submission Checklist
 - Always run type checking before completing any task
-- For API: Run `npm run build` in `apps/api` to verify no build errors
+- Run `npm run build` to verify no build errors
 - Fix all TypeScript errors and warnings before handing in work
 
 ### Bug Investigation Protocol
@@ -42,27 +42,25 @@ Eato is a mobile-first calorie tracking app for couples to track their daily cal
 
 ---
 
-## Monorepo Structure
+## Project Structure
 
 ```
 eato/
-├── apps/
-│   └── api/                   # Next.js app (frontend + tRPC API)
-│       ├── src/
-│       │   ├── app/           # Next.js App Router (pages + API routes)
-│       │   ├── server/        # tRPC routers and services
-│       │   ├── lib/           # Shared utilities
-│       │   └── trpc/          # tRPC client configuration
-│       └── prisma/            # Database schema
-├── Dockerfile                 # Production build
-└── docs/                      # Additional documentation
+├── src/
+│   ├── app/               # Next.js App Router (pages + API routes)
+│   ├── server/            # tRPC routers and services
+│   ├── lib/               # Shared utilities
+│   └── trpc/              # tRPC client configuration
+├── prisma/                # Database schema
+├── Dockerfile             # Production build
+└── docs/                  # Additional documentation
 ```
 
 ---
 
 ## Tech Stack
 
-### Next.js App (apps/api/)
+### Next.js App
 
 | Layer | Technology |
 |-------|------------|

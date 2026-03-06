@@ -1,0 +1,106 @@
+@import "tailwindcss";
+
+@theme {
+  --color-background: oklch(1 0 0);
+  --color-foreground: oklch(0.145 0 0);
+  --color-card: oklch(1 0 0);
+  --color-card-foreground: oklch(0.145 0 0);
+  --color-popover: oklch(1 0 0);
+  --color-popover-foreground: oklch(0.145 0 0);
+  --color-primary: oklch(0.596 0.145 163.225);
+  --color-primary-foreground: oklch(0.982 0.018 163.225);
+  --color-secondary: oklch(0.97 0 0);
+  --color-secondary-foreground: oklch(0.205 0 0);
+  --color-muted: oklch(0.97 0 0);
+  --color-muted-foreground: oklch(0.556 0 0);
+  --color-accent: oklch(0.97 0 0);
+  --color-accent-foreground: oklch(0.205 0 0);
+  --color-destructive: oklch(0.577 0.245 27.325);
+  --color-destructive-foreground: oklch(0.982 0 0);
+  --color-border: oklch(0.922 0 0);
+  --color-input: oklch(0.922 0 0);
+  --color-ring: oklch(0.596 0.145 163.225);
+  --color-chart-1: oklch(0.596 0.145 163.225);
+  --color-chart-2: oklch(0.6 0.118 184.704);
+  --color-chart-3: oklch(0.398 0.07 227.392);
+  --color-chart-4: oklch(0.828 0.189 84.429);
+  --color-chart-5: oklch(0.769 0.188 70.08);
+  --radius-sm: 0.25rem;
+  --radius-md: 0.375rem;
+  --radius-lg: 0.5rem;
+  --radius-xl: 0.75rem;
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+    -webkit-tap-highlight-color: transparent;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+}
+
+/* Pixel Pet Animations */
+@keyframes pet-bob {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-3px); }
+}
+
+@keyframes pet-bounce {
+  0%, 100% { transform: translateY(0) scale(1); }
+  25% { transform: translateY(-6px) scale(1.02, 0.98); }
+  50% { transform: translateY(0) scale(0.98, 1.02); }
+  75% { transform: translateY(-3px) scale(1.01, 0.99); }
+}
+
+@keyframes pet-droop {
+  0%, 100% { transform: translateY(0) rotate(0deg); }
+  50% { transform: translateY(2px) rotate(-2deg); }
+}
+
+@keyframes pet-sparkle {
+  0% { opacity: 1; transform: scale(0) translateY(0); }
+  50% { opacity: 1; transform: scale(1) translateY(-8px); }
+  100% { opacity: 0; transform: scale(0.5) translateY(-16px); }
+}
+
+@keyframes pet-tap-bounce {
+  0% { transform: scale(1); }
+  20% { transform: scale(0.85, 1.15); }
+  40% { transform: scale(1.15, 0.85); }
+  60% { transform: scale(0.95, 1.05); }
+  80% { transform: scale(1.05, 0.95); }
+  100% { transform: scale(1); }
+}
+
+@keyframes pet-hearts {
+  0% { opacity: 1; transform: translateY(0) scale(0.5); }
+  50% { opacity: 1; transform: translateY(-20px) scale(1); }
+  100% { opacity: 0; transform: translateY(-40px) scale(0.8); }
+}
+
+@keyframes pet-happy-react {
+  0%, 100% { transform: translateY(0) rotate(0deg); }
+  15% { transform: translateY(-10px) rotate(-5deg); }
+  30% { transform: translateY(0) rotate(5deg); }
+  45% { transform: translateY(-8px) rotate(-3deg); }
+  60% { transform: translateY(0) rotate(3deg); }
+  75% { transform: translateY(-4px) rotate(0deg); }
+}
+
+@keyframes pet-picked-up {
+  0% { transform: scale(1, 1); }
+  100% { transform: scale(1.1, 0.9); }
+}
+
+@keyframes pet-landed {
+  0% { transform: scale(1.1, 0.85); }
+  30% { transform: scale(0.9, 1.1); }
+  50% { transform: scale(1.05, 0.95); }
+  70% { transform: scale(0.98, 1.02); }
+  100% { transform: scale(1, 1); }
+}
