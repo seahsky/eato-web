@@ -43,3 +43,64 @@
     -moz-osx-font-smoothing: grayscale;
   }
 }
+
+/* Pixel Pet Animations */
+@keyframes pet-bob {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-3px); }
+}
+
+@keyframes pet-bounce {
+  0%, 100% { transform: translateY(0) scale(1); }
+  25% { transform: translateY(-6px) scale(1.02, 0.98); }
+  50% { transform: translateY(0) scale(0.98, 1.02); }
+  75% { transform: translateY(-3px) scale(1.01, 0.99); }
+}
+
+@keyframes pet-droop {
+  0%, 100% { transform: translateY(0) rotate(0deg); }
+  50% { transform: translateY(2px) rotate(-2deg); }
+}
+
+@keyframes pet-sparkle {
+  0% { opacity: 1; transform: scale(0) translateY(0); }
+  50% { opacity: 1; transform: scale(1) translateY(-8px); }
+  100% { opacity: 0; transform: scale(0.5) translateY(-16px); }
+}
+
+@keyframes pet-tap-bounce {
+  0% { transform: scale(1); }
+  20% { transform: scale(0.85, 1.15); }
+  40% { transform: scale(1.15, 0.85); }
+  60% { transform: scale(0.95, 1.05); }
+  80% { transform: scale(1.05, 0.95); }
+  100% { transform: scale(1); }
+}
+
+@keyframes pet-hearts {
+  0% { opacity: 1; transform: translateY(0) scale(0.5); }
+  50% { opacity: 1; transform: translateY(-20px) scale(1); }
+  100% { opacity: 0; transform: translateY(-40px) scale(0.8); }
+}
+
+@keyframes pet-happy-react {
+  0%, 100% { transform: translateY(0) rotate(0deg); }
+  15% { transform: translateY(-10px) rotate(-5deg); }
+  30% { transform: translateY(0) rotate(5deg); }
+  45% { transform: translateY(-8px) rotate(-3deg); }
+  60% { transform: translateY(0) rotate(3deg); }
+  75% { transform: translateY(-4px) rotate(0deg); }
+}
+
+@keyframes pet-picked-up {
+  0% { transform: scale(1, 1); }
+  100% { transform: scale(1.1, 0.9); }
+}
+
+@keyframes pet-landed {
+  0% { transform: scale(1.1, 0.85); }
+  30% { transform: scale(0.9, 1.1); }
+  50% { transform: scale(1.05, 0.95); }
+  70% { transform: scale(0.98, 1.02); }
+  100% { transform: scale(1, 1); }
+}

@@ -10,6 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { trpc } from "@/trpc/react";
+import { usePetReaction } from "@/components/app/pixel-pet/pet-reaction-provider";
 import type { MealType } from "@/server/client-types";
 
 const MEAL_OPTIONS: { value: MealType; label: string }[] = [
@@ -23,6 +24,7 @@ export default function AddFoodPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const utils = trpc.useUtils();
+  const { triggerReaction } = usePetReaction();
 
   // Parse product from search params
   const product = useMemo(() => {
@@ -96,6 +98,7 @@ export default function AddFoodPage() {
         dataSource: (product.dataSource as "FATSECRET" | "MANUAL") ?? "FATSECRET",
         fatSecretId: product.fatSecretId,
       });
+      triggerReaction("food_logged");
       utils.stats.getDailySummary.invalidate();
       router.replace("/dashboard");
     } catch {
@@ -121,6 +124,7 @@ export default function AddFoodPage() {
         isManualEntry: true,
         dataSource: "MANUAL",
       });
+      triggerReaction("food_logged");
       utils.stats.getDailySummary.invalidate();
       router.replace("/dashboard");
     } catch {
