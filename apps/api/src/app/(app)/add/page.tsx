@@ -10,6 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { trpc } from "@/trpc/react";
+import { usePetReaction } from "@/components/app/pixel-pet/pet-reaction-provider";
 import type { MealType } from "@/server/client-types";
 
 const MEAL_OPTIONS: { value: MealType; label: string }[] = [
@@ -62,6 +63,7 @@ export default function AddFoodPage() {
   const [manualServingSize, setManualServingSize] = useState(100);
   const [manualServingUnit, setManualServingUnit] = useState("g");
 
+  const { triggerReaction } = usePetReaction();
   const logFood = trpc.food.log.useMutation();
 
   // Calculate nutrition for product mode
@@ -97,6 +99,7 @@ export default function AddFoodPage() {
         fatSecretId: product.fatSecretId,
       });
       utils.stats.getDailySummary.invalidate();
+      triggerReaction("food_logged");
       router.replace("/dashboard");
     } catch {
       setSaving(false);
@@ -122,6 +125,7 @@ export default function AddFoodPage() {
         dataSource: "MANUAL",
       });
       utils.stats.getDailySummary.invalidate();
+      triggerReaction("food_logged");
       router.replace("/dashboard");
     } catch {
       setSaving(false);

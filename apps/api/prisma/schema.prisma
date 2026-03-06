@@ -77,6 +77,10 @@ model User {
 
   // Achievements
   achievements         Achievement[]
+
+  // Pet interactions
+  petInteractionsSent     PetInteraction[] @relation("PetInteractionFrom")
+  petInteractionsReceived PetInteraction[] @relation("PetInteractionTo")
 }
 
 // Profile for BMR calculation
@@ -616,6 +620,20 @@ model Achievement {
 
   @@unique([userId, badgeId])
   @@index([userId])
+}
+
+// Pet interaction between partners
+model PetInteraction {
+  id         String   @id @default(auto()) @map("_id") @db.ObjectId
+  fromUserId String   @db.ObjectId
+  fromUser   User     @relation("PetInteractionFrom", fields: [fromUserId], references: [id], onDelete: Cascade)
+  toUserId   String   @db.ObjectId
+  toUser     User     @relation("PetInteractionTo", fields: [toUserId], references: [id], onDelete: Cascade)
+  type       String   // "wave", "pet", "highfive"
+  createdAt  DateTime @default(now())
+
+  @@index([fromUserId])
+  @@index([toUserId])
 }
 
 // Partner shield usage history

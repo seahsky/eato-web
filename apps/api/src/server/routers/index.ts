@@ -8,9 +8,11 @@ import { notificationRouter } from "./notification";
 import { mealEstimationRouter } from "./meal-estimation";
 import { achievementsRouter } from "./achievements";
 import { healthRouter } from "./health";
+import { petRouter } from "./pet";
 
 export const appRouter = router({
   health: healthRouter,
+  pet: petRouter,
   auth: authRouter,
   profile: profileRouter,
   food: foodRouter,
