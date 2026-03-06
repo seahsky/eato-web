@@ -2,12 +2,12 @@
 
 A mobile-first calorie tracking app for couples to reach their health goals together.
 
-## Monorepo Structure
+## Project Structure
 
 ```
 eato/
-├── apps/
-│   └── api/                   # Next.js app (tRPC API + frontend)
+├── src/                       # Next.js app (tRPC API + frontend)
+├── prisma/                    # Database schema
 ├── Dockerfile                 # Production build
 └── docs/                      # Documentation
 ```
@@ -25,7 +25,7 @@ eato/
 
 ## Tech Stack
 
-### Next.js App (apps/api/)
+### Next.js App
 - Next.js 16 (App Router) — serves both frontend and API
 - tRPC + trpc-openapi (REST API)
 - Prisma + MongoDB
@@ -44,9 +44,8 @@ eato/
 
 ### Setup
 
-1. **Navigate to API directory:**
+1. **Install dependencies:**
    ```bash
-   cd apps/api
    npm install
    ```
 
@@ -81,7 +80,7 @@ The backend exposes both tRPC and REST endpoints:
 
 ## Environment Variables
 
-### apps/api/.env.local
+### .env.local
 
 ```env
 # Database

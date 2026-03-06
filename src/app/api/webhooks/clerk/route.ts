@@ -58,6 +58,21 @@ export async function POST(req: Request) {
         clerkId: id,
         email: primaryEmail?.email_address || "",
         name: [first_name, last_name].filter(Boolean).join(" ") || null,
+        // Gamification defaults (explicit for MongoDB safety)
+        lastRestDayReset: new Date(),
+        lastShieldReset: new Date(),
+        restDaysRemaining: 6,
+        restDayDates: [],
+        partnerShields: 2,
+        shieldsUsedThisMonth: [],
+        currentStreak: 0,
+        longestStreak: 0,
+        goalStreak: 0,
+        longestGoalStreak: 0,
+        weeklyStreak: 0,
+        longestWeeklyStreak: 0,
+        currentWeekDays: 0,
+        streakFreezes: 0,
       },
     });
   }
