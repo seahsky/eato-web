@@ -16,14 +16,19 @@ export default async function AppLayout({
   }
 
   // Check if profile is complete
+  let profileCompleted = true;
   try {
     const caller = await serverTrpc();
     const user = await caller.auth.getMe();
-    if (user && !user.profileCompleted) {
-      redirect("/profile-setup");
+    if (user) {
+      profileCompleted = user.profileCompleted;
     }
   } catch (error) {
     console.error("[AppLayout] Failed to fetch user:", error);
+  }
+
+  if (!profileCompleted) {
+    redirect("/profile-setup");
   }
 
   return (

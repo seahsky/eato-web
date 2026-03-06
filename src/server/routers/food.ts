@@ -20,7 +20,7 @@ import {
 const foodEntrySchema = z.object({
   name: z.string().min(1),
   barcode: z.string().optional(),
-  brand: z.string().optional(),
+  brand: z.string().nullable().optional(),
   imageUrl: z.string().optional(),
   calories: z.number().min(0),
   protein: z.number().min(0).optional(),
