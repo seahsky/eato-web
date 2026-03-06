@@ -389,7 +389,7 @@ export async function searchProducts(
     };
   } catch (error) {
     console.error("FatSecret search error:", error);
-    return { products: [], totalCount: 0, page };
+    throw error;
   }
 }
 

@@ -25,8 +25,19 @@ export default async function AppLayout({
       redirect("/profile-setup");
     }
     dbUserId = user?.id ?? null;
-  } catch {
-    // If we can't fetch user, let the page handle it
+  } catch (error) {
+    console.error("[AppLayout] Failed to fetch user:", error);
+    // Fallback: query DB directly so the pet still renders
+    try {
+      const { prisma } = await import("@/lib/prisma");
+      const user = await prisma.user.findUnique({
+        where: { clerkId: userId },
+        select: { id: true },
+      });
+      dbUserId = user?.id ?? null;
+    } catch (fallbackError) {
+      console.error("[AppLayout] Fallback DB query also failed:", fallbackError);
+    }
   }
 
   return (

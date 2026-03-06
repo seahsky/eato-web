@@ -111,6 +111,11 @@ export default function SearchPage() {
           <p className="text-sm text-muted-foreground">
             No results for &ldquo;{debouncedQuery}&rdquo;
           </p>
+          {data?.sources?.fatsecret?.error && (
+            <p className="text-xs text-destructive">
+              Search unavailable: {data.sources.fatsecret.error}
+            </p>
+          )}
           <Button size="sm" onClick={() => router.push("/add")}>
             Add Manually
           </Button>
