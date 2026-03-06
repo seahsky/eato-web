@@ -85,7 +85,7 @@ export default function EditFoodPage() {
       <div className="mx-auto max-w-lg px-4 py-8 text-center">
         <p className="text-muted-foreground">Entry not found</p>
         <Button asChild className="mt-4" size="sm">
-          <Link href="/dashboard">Back to Dashboard</Link>
+          <Link href="/dashboard">Back to diary</Link>
         </Button>
       </div>
     );
@@ -99,7 +99,7 @@ export default function EditFoodPage() {
           <button onClick={() => router.back()}>
             <ArrowLeft className="h-5 w-5" />
           </button>
-          <h1 className="text-lg font-bold">Edit Food</h1>
+          <h1 className="text-lg font-bold">Edit entry</h1>
         </div>
         <Dialog open={deleteOpen} onOpenChange={setDeleteOpen}>
           <DialogTrigger asChild>

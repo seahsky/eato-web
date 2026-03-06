@@ -2,12 +2,12 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Home, PlusCircle, Heart, UserRound } from "lucide-react";
+import { BookOpen, CalendarDays, Heart, UserRound } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const tabs = [
-  { href: "/dashboard", icon: Home, label: "Home" },
-  { href: "/search", icon: PlusCircle, label: "Log" },
+  { href: "/dashboard", icon: BookOpen, label: "Diary" },
+  { href: "/week", icon: CalendarDays, label: "Week" },
   { href: "/partner", icon: Heart, label: "Partner" },
   { href: "/profile", icon: UserRound, label: "Profile" },
 ] as const;

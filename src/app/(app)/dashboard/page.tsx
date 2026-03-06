@@ -3,13 +3,11 @@
 import { useState } from "react";
 import Link from "next/link";
 import { format } from "date-fns";
-import { UtensilsCrossed, Loader2 } from "lucide-react";
+import { Plus, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { trpc } from "@/trpc/react";
 import { DateNavigator } from "@/components/app/date-navigator";
-import { CalorieRing } from "@/components/app/calorie-ring";
-import { MacroBar } from "@/components/app/macro-bar";
 
 export default function DashboardPage() {
   const [selectedDate, setSelectedDate] = useState(new Date());
@@ -22,27 +20,21 @@ export default function DashboardPage() {
 
   return (
     <div className="mx-auto max-w-lg px-4">
-      {/* Header */}
-      <div className="flex items-center justify-between py-3">
-        <h1 className="text-lg font-bold">Eato</h1>
+      {/* Date header */}
+      <div className="pt-4 pb-1">
+        <h1 className="font-caveat text-2xl text-foreground">
+          {format(selectedDate, "EEEE, d MMMM")}
+        </h1>
       </div>
 
       <DateNavigator date={selectedDate} onDateChange={setSelectedDate} />
 
-      {/* Calorie Ring */}
+      {/* Calorie summary */}
       {data && (
-        <CalorieRing consumed={data.totalCalories} goal={data.calorieGoal} />
-      )}
-
-      {/* Macros */}
-      {data && (
-        <Card className="mb-4">
-          <CardContent className="space-y-1.5 py-3">
-            <MacroBar label="Protein" value={data.totalProtein} color="bg-blue-500" />
-            <MacroBar label="Carbs" value={data.totalCarbs} color="bg-amber-500" />
-            <MacroBar label="Fat" value={data.totalFat} color="bg-red-500" />
-          </CardContent>
-        </Card>
+        <p className="mt-2 mb-4 text-sm text-muted-foreground">
+          Today so far: {Math.round(data.totalCalories)} kcal
+          {data.calorieGoal ? ` / ${Math.round(data.calorieGoal)} kcal` : ""}
+        </p>
       )}
 
       {/* Loading */}
@@ -62,11 +54,11 @@ export default function DashboardPage() {
         </Card>
       )}
 
-      {/* Food Entries */}
+      {/* Diary Entries */}
       {data && (
         <>
           {data.entries.length > 0 && (
-            <div className="space-y-1">
+            <div className="space-y-1.5">
               {(data.entries as Array<{
                 id: string;
                 name: string;
@@ -77,17 +69,16 @@ export default function DashboardPage() {
               }>).map((entry) => (
                 <Link key={entry.id} href={`/food/edit/${entry.id}`}>
                   <Card className="transition-colors hover:bg-accent">
-                    <CardContent className="flex items-center justify-between py-2.5">
-                      <div>
-                        <div className="text-sm font-medium">{entry.name}</div>
-                        <div className="text-xs text-muted-foreground">
+                    <CardContent className="py-2.5">
+                      <div className="text-sm font-medium">{entry.name}</div>
+                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                        <span>~{Math.round(entry.calories)} kcal</span>
+                        <span>&middot;</span>
+                        <span>
                           {entry.servingSize}{entry.servingUnit}
                           {entry.brand ? ` · ${entry.brand}` : ""}
-                        </div>
+                        </span>
                       </div>
-                      <span className="text-sm font-medium">
-                        {Math.round(entry.calories)} kcal
-                      </span>
                     </CardContent>
                   </Card>
                 </Link>
@@ -99,18 +90,28 @@ export default function DashboardPage() {
           {data.entries.length === 0 && !isLoading && (
             <Card>
               <CardContent className="flex flex-col items-center gap-3 py-8 text-center">
-                <UtensilsCrossed className="h-10 w-10 text-muted-foreground" />
+                <h2 className="font-caveat text-xl text-foreground">
+                  Your diary is empty today
+                </h2>
                 <p className="text-sm text-muted-foreground">
-                  No food logged yet today
+                  What&apos;s the first thing you ate?
                 </p>
                 <Button asChild size="sm">
-                  <Link href="/search">Log Food</Link>
+                  <Link href="/search">Write it down</Link>
                 </Button>
               </CardContent>
             </Card>
           )}
         </>
       )}
+
+      {/* Floating action button */}
+      <Link
+        href="/search"
+        className="fixed bottom-24 right-4 z-40 flex h-14 w-14 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg transition-transform hover:scale-105 active:scale-95"
+      >
+        <Plus className="h-6 w-6" />
+      </Link>
     </div>
   );
 }

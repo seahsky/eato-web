@@ -59,7 +59,7 @@ export default function SearchPage() {
   return (
     <div className="mx-auto max-w-lg px-4">
       <div className="py-3">
-        <h1 className="mb-2 text-lg font-bold">Log Food</h1>
+        <h1 className="mb-2 text-lg font-bold">What did you eat?</h1>
         <div className="relative">
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <Input
@@ -117,7 +117,7 @@ export default function SearchPage() {
             </p>
           )}
           <Button size="sm" onClick={() => router.push("/add")}>
-            Add Manually
+            Add it yourself
           </Button>
         </div>
       )}

@@ -131,7 +131,7 @@ export default function AddFoodPage() {
         <Link href="/search">
           <ArrowLeft className="h-5 w-5" />
         </Link>
-        <h1 className="text-lg font-bold">Add Food</h1>
+        <h1 className="text-lg font-bold">Add to diary</h1>
       </div>
 
       {/* Product mode */}
@@ -182,13 +182,13 @@ export default function AddFoodPage() {
           )}
 
           <Button className="w-full" disabled={saving} onClick={handleSaveProduct}>
-            {saving ? "Saving..." : "Log Food"}
+            {saving ? "Saving..." : "Add to diary"}
           </Button>
         </div>
       ) : (
         /* Manual entry mode */
         <div className="space-y-4">
-          <h2 className="text-base font-semibold">Manual Entry</h2>
+          <h2 className="text-base font-semibold">Add your own</h2>
           <div className="space-y-3">
             <div>
               <Label>Food name</Label>
@@ -273,7 +273,7 @@ export default function AddFoodPage() {
             disabled={!manualName || !manualCalories || saving}
             onClick={handleSaveManual}
           >
-            {saving ? "Saving..." : "Log Food"}
+            {saving ? "Saving..." : "Add to diary"}
           </Button>
         </div>
       )}
