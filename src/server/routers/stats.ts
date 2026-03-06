@@ -38,12 +38,6 @@ const dailySummaryOutputSchema = z.object({
   bmr: z.number().nullable(),
   tdee: z.number().nullable(),
   entries: z.array(z.any()),
-  entriesByMeal: z.object({
-    BREAKFAST: z.array(z.any()),
-    LUNCH: z.array(z.any()),
-    DINNER: z.array(z.any()),
-    SNACK: z.array(z.any()),
-  }),
 });
 
 export const statsRouter = router({
@@ -85,12 +79,6 @@ export const statsRouter = router({
         bmr: profile?.bmr ?? null,
         tdee: profile?.tdee ?? null,
         entries: dailyLog?.entries ?? [],
-        entriesByMeal: {
-          BREAKFAST: dailyLog?.entries.filter((e) => e.mealType === "BREAKFAST") ?? [],
-          LUNCH: dailyLog?.entries.filter((e) => e.mealType === "LUNCH") ?? [],
-          DINNER: dailyLog?.entries.filter((e) => e.mealType === "DINNER") ?? [],
-          SNACK: dailyLog?.entries.filter((e) => e.mealType === "SNACK") ?? [],
-        },
       };
     }),
 
@@ -365,12 +353,7 @@ export const statsRouter = router({
               (dailyLog.totalCalories / (profile?.calorieGoal ?? 2000)) * 100
             )
           : 0,
-        entriesByMeal: {
-          BREAKFAST: entries.filter((e) => e.mealType === "BREAKFAST"),
-          LUNCH: entries.filter((e) => e.mealType === "LUNCH"),
-          DINNER: entries.filter((e) => e.mealType === "DINNER"),
-          SNACK: entries.filter((e) => e.mealType === "SNACK"),
-        },
+        entries,
       };
     }),
 
@@ -515,12 +498,7 @@ export const statsRouter = router({
           totalCarbs: log?.totalCarbs ?? 0,
           totalFat: log?.totalFat ?? 0,
           calorieGoal,
-          entriesByMeal: {
-            BREAKFAST: entries.filter((e) => e.mealType === "BREAKFAST"),
-            LUNCH: entries.filter((e) => e.mealType === "LUNCH"),
-            DINNER: entries.filter((e) => e.mealType === "DINNER"),
-            SNACK: entries.filter((e) => e.mealType === "SNACK"),
-          },
+          entries,
         });
       }
 
@@ -662,7 +640,6 @@ export const statsRouter = router({
             id: true,
             name: true,
             calories: true,
-            mealType: true,
             loggedAt: true,
           },
         }),
@@ -746,7 +723,6 @@ export const statsRouter = router({
             entryId: entry.id,
             foodName: entry.name,
             calories: entry.calories,
-            mealType: entry.mealType,
           },
         });
       }

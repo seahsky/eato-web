@@ -31,7 +31,7 @@ export default async function AppLayout({
 
   return (
     <PetReactionProvider>
-      <div className="pb-16">
+      <div className="pb-20">
         {children}
         <BottomNav />
         {dbUserId && <PixelPetWander userId={dbUserId} />}

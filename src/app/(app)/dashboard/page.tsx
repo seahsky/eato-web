@@ -9,11 +9,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { trpc } from "@/trpc/react";
 import { DateNavigator } from "@/components/app/date-navigator";
 import { CalorieRing } from "@/components/app/calorie-ring";
-import { MealSection } from "@/components/app/meal-section";
 import { MacroBar } from "@/components/app/macro-bar";
-import type { MealType } from "@/server/client-types";
-
-const MEAL_TYPES: MealType[] = ["BREAKFAST", "LUNCH", "DINNER", "SNACK"];
 
 export default function DashboardPage() {
   const [selectedDate, setSelectedDate] = useState(new Date());
@@ -66,16 +62,38 @@ export default function DashboardPage() {
         </Card>
       )}
 
-      {/* Meal Sections */}
+      {/* Food Entries */}
       {data && (
         <>
-          {MEAL_TYPES.map((type) => (
-            <MealSection
-              key={type}
-              mealType={type}
-              entries={data.entriesByMeal[type] ?? []}
-            />
-          ))}
+          {data.entries.length > 0 && (
+            <div className="space-y-1">
+              {(data.entries as Array<{
+                id: string;
+                name: string;
+                brand?: string | null;
+                calories: number;
+                servingSize: number;
+                servingUnit: string;
+              }>).map((entry) => (
+                <Link key={entry.id} href={`/food/edit/${entry.id}`}>
+                  <Card className="transition-colors hover:bg-accent">
+                    <CardContent className="flex items-center justify-between py-2.5">
+                      <div>
+                        <div className="text-sm font-medium">{entry.name}</div>
+                        <div className="text-xs text-muted-foreground">
+                          {entry.servingSize}{entry.servingUnit}
+                          {entry.brand ? ` · ${entry.brand}` : ""}
+                        </div>
+                      </div>
+                      <span className="text-sm font-medium">
+                        {Math.round(entry.calories)} kcal
+                      </span>
+                    </CardContent>
+                  </Card>
+                </Link>
+              ))}
+            </div>
+          )}
 
           {/* Empty state */}
           {data.entries.length === 0 && !isLoading && (
@@ -86,7 +104,7 @@ export default function DashboardPage() {
                   No food logged yet today
                 </p>
                 <Button asChild size="sm">
-                  <Link href="/add">Log Food</Link>
+                  <Link href="/search">Log Food</Link>
                 </Button>
               </CardContent>
             </Card>

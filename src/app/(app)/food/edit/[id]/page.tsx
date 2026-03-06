@@ -18,14 +18,6 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { trpc } from "@/trpc/react";
-import type { MealType } from "@/server/client-types";
-
-const MEAL_OPTIONS: { value: MealType; label: string }[] = [
-  { value: "BREAKFAST", label: "Breakfast" },
-  { value: "LUNCH", label: "Lunch" },
-  { value: "DINNER", label: "Dinner" },
-  { value: "SNACK", label: "Snack" },
-];
 
 export default function EditFoodPage() {
   const router = useRouter();
@@ -43,13 +35,11 @@ export default function EditFoodPage() {
   const entry = entries?.find((e: { id: string }) => e.id === id);
 
   const [servingSize, setServingSize] = useState<number | null>(null);
-  const [mealType, setMealType] = useState<MealType | null>(null);
   const [saving, setSaving] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
 
   // Initialize form values when entry loads
   const currentServingSize = servingSize ?? entry?.servingSize ?? 100;
-  const currentMealType = mealType ?? (entry?.mealType as MealType) ?? "BREAKFAST";
 
   const updateEntry = trpc.food.update.useMutation();
   const deleteEntry = trpc.food.delete.useMutation();
@@ -62,7 +52,6 @@ export default function EditFoodPage() {
         id: entry.id,
         data: {
           servingSize: currentServingSize,
-          mealType: currentMealType,
         },
       });
       utils.stats.getDailySummary.invalidate();
@@ -162,22 +151,6 @@ export default function EditFoodPage() {
         <div>
           <Label>Unit</Label>
           <Input value={entry.servingUnit} readOnly className="bg-muted" />
-        </div>
-
-        <div>
-          <Label>Meal</Label>
-          <div className="mt-1 flex gap-2">
-            {MEAL_OPTIONS.map((opt) => (
-              <Button
-                key={opt.value}
-                variant={currentMealType === opt.value ? "default" : "outline"}
-                size="sm"
-                onClick={() => setMealType(opt.value)}
-              >
-                {opt.label}
-              </Button>
-            ))}
-          </div>
         </div>
 
         {/* Nutrition info */}

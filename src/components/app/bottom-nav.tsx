@@ -2,13 +2,12 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Home, Search, PlusCircle, Heart, UserRound } from "lucide-react";
+import { Home, PlusCircle, Heart, UserRound } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const tabs = [
   { href: "/dashboard", icon: Home, label: "Home" },
-  { href: "/search", icon: Search, label: "Search" },
-  { href: "/add", icon: PlusCircle, label: "Log" },
+  { href: "/search", icon: PlusCircle, label: "Log" },
   { href: "/partner", icon: Heart, label: "Partner" },
   { href: "/profile", icon: UserRound, label: "Profile" },
 ] as const;
@@ -17,7 +16,7 @@ export function BottomNav() {
   const pathname = usePathname();
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-50 border-t bg-background pb-[env(safe-area-inset-bottom)]">
+    <nav className="fixed bottom-0 left-0 right-0 z-50 border-t bg-background pb-[calc(env(safe-area-inset-bottom)+0.5rem)]">
       <div className="mx-auto flex max-w-lg">
         {tabs.map((tab) => {
           const isActive =
