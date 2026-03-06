@@ -10,6 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { trpc } from "@/trpc/react";
+import { toast } from "sonner";
 import { usePetReaction } from "@/components/app/pixel-pet/pet-reaction-provider";
 
 export default function AddFoodPage() {
@@ -90,7 +91,9 @@ export default function AddFoodPage() {
       triggerReaction("food_logged");
       utils.stats.getDailySummary.invalidate();
       router.replace("/dashboard");
-    } catch {
+    } catch (error) {
+      console.error("Failed to log food:", error);
+      toast.error(error instanceof Error ? error.message : "Failed to log food. Please try again.");
       setSaving(false);
     }
   }
@@ -114,7 +117,9 @@ export default function AddFoodPage() {
       triggerReaction("food_logged");
       utils.stats.getDailySummary.invalidate();
       router.replace("/dashboard");
-    } catch {
+    } catch (error) {
+      console.error("Failed to log food:", error);
+      toast.error(error instanceof Error ? error.message : "Failed to log food. Please try again.");
       setSaving(false);
     }
   }
