@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Nunito, Caveat } from "next/font/google";
 import { ClerkProvider } from "@clerk/nextjs";
+import { ThemeProvider } from "next-themes";
 import { TRPCProvider } from "@/trpc/react";
 import { Toaster } from "@/components/ui/sonner";
 import "@/styles/globals.css";
@@ -33,7 +34,10 @@ export const viewport: Viewport = {
   initialScale: 1,
   maximumScale: 1,
   userScalable: false,
-  themeColor: "#C4704B",
+  themeColor: [
+    { media: '(prefers-color-scheme: light)', color: '#C4704B' },
+    { media: '(prefers-color-scheme: dark)', color: '#2A1F16' },
+  ],
 };
 
 export default function RootLayout({
@@ -43,12 +47,14 @@ export default function RootLayout({
 }) {
   return (
     <ClerkProvider>
-      <html lang="en">
+      <html lang="en" suppressHydrationWarning>
         <body className={`${nunito.variable} ${caveat.variable} font-nunito min-h-dvh antialiased`}>
-          <TRPCProvider>
-            {children}
-            <Toaster />
-          </TRPCProvider>
+          <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
+            <TRPCProvider>
+              {children}
+              <Toaster />
+            </TRPCProvider>
+          </ThemeProvider>
         </body>
       </html>
     </ClerkProvider>

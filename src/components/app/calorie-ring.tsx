@@ -39,7 +39,7 @@ export function CalorieRing({ consumed, goal }: CalorieRingProps) {
             strokeLinecap="round"
             strokeDasharray={circumference}
             strokeDashoffset={offset}
-            className={isOver ? "text-destructive" : "text-primary"}
+            className="text-primary"
           />
         </svg>
         <div className="absolute inset-0 flex flex-col items-center justify-center">
@@ -49,7 +49,7 @@ export function CalorieRing({ consumed, goal }: CalorieRingProps) {
           </span>
         </div>
       </div>
-      <p className={`mt-2 text-sm font-medium ${isOver ? "text-destructive" : "text-muted-foreground"}`}>
+      <p className="mt-2 text-sm font-medium text-muted-foreground">
         {isOver
           ? `${Math.round(consumed - goal)} kcal over`
           : `${Math.round(remaining)} kcal remaining`}
