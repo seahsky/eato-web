@@ -12,6 +12,7 @@ import { petRouter } from "./pet";
 
 export const appRouter = router({
   health: healthRouter,
+  pet: petRouter,
   auth: authRouter,
   profile: profileRouter,
   food: foodRouter,
@@ -20,7 +21,6 @@ export const appRouter = router({
   notification: notificationRouter,
   mealEstimation: mealEstimationRouter,
   achievements: achievementsRouter,
-  pet: petRouter,
 });
 
 export type AppRouter = typeof appRouter;

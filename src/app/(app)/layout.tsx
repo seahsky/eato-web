@@ -1,9 +1,9 @@
 import { auth } from "@clerk/nextjs/server";
 import { redirect } from "next/navigation";
 import { BottomNav } from "@/components/app/bottom-nav";
-import { serverTrpc } from "@/trpc/server";
 import { PetReactionProvider } from "@/components/app/pixel-pet/pet-reaction-provider";
 import { PixelPetWander } from "@/components/app/pixel-pet/pixel-pet-wander";
+import { serverTrpc } from "@/trpc/server";
 
 export default async function AppLayout({
   children,

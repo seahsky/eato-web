@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { trpc } from "@/trpc/react";
+import type { FoodProduct } from "@/types/food";
 
 export default function SearchPage() {
   const router = useRouter();
@@ -35,14 +36,7 @@ export default function SearchPage() {
     { enabled: debouncedQuery.length >= 2 }
   );
 
-  const results = (data?.foods ?? []) as Array<{
-    id: string;
-    name: string;
-    brand?: string;
-    caloriesPer100g: number;
-    servingSize: number;
-    servingUnit: string;
-  }>;
+  const results: FoodProduct[] = data?.products ?? [];
 
   const addToRecent = useCallback(
     (q: string) => {
