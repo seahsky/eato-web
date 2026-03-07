@@ -106,11 +106,11 @@ export default function ProfileSetupPage() {
               <button
                 key={g}
                 type="button"
-                className={`flex flex-col items-center gap-2 rounded-2xl border bg-card py-6 text-card-foreground shadow-warm-sm cursor-pointer transition-all ${gender === g ? "ring-2 ring-primary" : ""}`}
+                className={`flex flex-col items-center gap-2 rounded-2xl border bg-card py-6 text-card-foreground shadow-warm-sm cursor-pointer transition-all ${gender === g ? "bg-primary/10 border-primary" : ""}`}
                 onClick={() => setGender(g)}
               >
-                {g === "MALE" ? <User className="h-8 w-8" /> : <UserRound className="h-8 w-8" />}
-                <span className="font-semibold">{g === "MALE" ? "Male" : "Female"}</span>
+                {g === "MALE" ? <User className={`h-8 w-8 ${gender === g ? "text-primary" : ""}`} /> : <UserRound className={`h-8 w-8 ${gender === g ? "text-primary" : ""}`} />}
+                <span className={`font-semibold ${gender === g ? "text-primary" : ""}`}>{g === "MALE" ? "Male" : "Female"}</span>
               </button>
             ))}
           </div>
@@ -183,10 +183,10 @@ export default function ProfileSetupPage() {
               <button
                 key={opt.value}
                 type="button"
-                className={`w-full rounded-2xl border bg-card px-6 py-3 text-left text-card-foreground shadow-warm-sm cursor-pointer transition-all ${activityLevel === opt.value ? "ring-2 ring-primary" : ""}`}
+                className={`w-full rounded-2xl border bg-card px-6 py-3 text-left text-card-foreground shadow-warm-sm cursor-pointer transition-all ${activityLevel === opt.value ? "bg-primary/10 border-primary" : ""}`}
                 onClick={() => setActivityLevel(opt.value)}
               >
-                <div className="font-medium">{opt.label}</div>
+                <div className={`font-medium ${activityLevel === opt.value ? "text-primary" : ""}`}>{opt.label}</div>
                 <div className="text-sm text-muted-foreground">{opt.description}</div>
               </button>
             ))}
