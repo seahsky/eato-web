@@ -1,5 +1,7 @@
 "use client";
 
+import { useState, useEffect } from "react";
+
 interface CalorieRingProps {
   consumed: number;
   budget: number;
@@ -11,12 +13,27 @@ export function CalorieRing({ consumed, budget, weekLabel }: CalorieRingProps) {
 
   const radius = 60;
   const circumference = 2 * Math.PI * radius;
-  const offset = circumference - percentage * circumference;
+  const targetOffset = circumference - percentage * circumference;
+
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => {
+    const id = requestAnimationFrame(() => setMounted(true));
+    return () => cancelAnimationFrame(id);
+  }, []);
 
   return (
     <div className="flex flex-col items-center py-4">
       <div className="relative">
-        <svg width="160" height="160" className="-rotate-90">
+        <svg
+          width="160"
+          height="160"
+          className="-rotate-90"
+          role="img"
+          aria-label={`${Math.round(consumed).toLocaleString()} of ${Math.round(budget).toLocaleString()} calories consumed`}
+          aria-valuenow={Math.round(consumed)}
+          aria-valuemin={0}
+          aria-valuemax={Math.round(budget)}
+        >
           <defs>
             <linearGradient id="ring-gradient" x1="0%" y1="0%" x2="100%" y2="0%">
               <stop offset="0%" stopColor="oklch(0.93 0.02 70)" />
@@ -43,7 +60,8 @@ export function CalorieRing({ consumed, budget, weekLabel }: CalorieRingProps) {
             strokeWidth="10"
             strokeLinecap="round"
             strokeDasharray={circumference}
-            strokeDashoffset={offset}
+            strokeDashoffset={mounted ? targetOffset : circumference}
+            style={{ transition: "stroke-dashoffset 1.2s ease-out" }}
           />
         </svg>
         <div className="absolute inset-0 flex flex-col items-center justify-center">

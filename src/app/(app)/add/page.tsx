@@ -179,12 +179,12 @@ export default function AddFoodPage() {
         <Link href="/search">
           <ArrowLeft className="h-5 w-5" />
         </Link>
-        <h1 className="text-lg font-bold">{product ? COPY.addHeading : COPY.addManualHeading}</h1>
+        <h1 className="font-caveat text-xl">{product ? COPY.addHeading : COPY.addManualHeading}</h1>
       </div>
 
       {/* Confirmation card */}
       {showConfirmation && confirmCalories !== undefined && confirmCalories > 0 && (
-        <Card className="mb-4 border-primary/20 bg-primary/5">
+        <Card className="mb-4 animate-fade-in border-primary/20 bg-primary/5">
           <CardContent className="py-3 text-center">
             <p className="font-caveat text-lg text-foreground">
               {COPY.addConfirmation(confirmCalories)}
@@ -254,13 +254,14 @@ export default function AddFoodPage() {
                 <button
                   key={m.label}
                   type="button"
-                  className={`rounded-lg p-2 text-xl transition-all ${
+                  className={`rounded-lg p-2.5 text-xl transition-transform duration-200 ${
                     selectedMood === m.emoji
                       ? "scale-110 bg-accent ring-2 ring-primary/30"
                       : "hover:bg-accent"
                   }`}
                   onClick={() => setSelectedMood(selectedMood === m.emoji ? null : m.emoji)}
-                  title={m.label}
+                  aria-label={m.label}
+                  aria-pressed={selectedMood === m.emoji}
                 >
                   {m.emoji}
                 </button>
@@ -381,13 +382,14 @@ export default function AddFoodPage() {
                 <button
                   key={m.label}
                   type="button"
-                  className={`rounded-lg p-2 text-xl transition-all ${
+                  className={`rounded-lg p-2.5 text-xl transition-transform duration-200 ${
                     selectedMood === m.emoji
                       ? "scale-110 bg-accent ring-2 ring-primary/30"
                       : "hover:bg-accent"
                   }`}
                   onClick={() => setSelectedMood(selectedMood === m.emoji ? null : m.emoji)}
-                  title={m.label}
+                  aria-label={m.label}
+                  aria-pressed={selectedMood === m.emoji}
                 >
                   {m.emoji}
                 </button>

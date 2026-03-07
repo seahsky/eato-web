@@ -94,7 +94,7 @@ export default function WeekPage() {
       )}
 
       {budgetData && (
-        <>
+        <div className="animate-fade-in">
           <CalorieRing
             consumed={budgetData.weeklyConsumed}
             budget={budgetData.weeklyBudget}
@@ -113,7 +113,7 @@ export default function WeekPage() {
               {COPY.weekOverBudget}
             </p>
           )}
-        </>
+        </div>
       )}
 
       {/* 7-day strip */}
@@ -129,7 +129,7 @@ export default function WeekPage() {
               <button
                 key={i}
                 className={cn(
-                  "flex flex-col items-center gap-1 rounded-lg py-2 text-xs transition-colors",
+                  "flex flex-col items-center gap-1 rounded-lg py-2 text-xs shadow-warm-sm transition-colors",
                   isExpanded && "bg-accent",
                   isTodayDay && !isExpanded && "ring-1 ring-primary/40",
                   !hasData && "opacity-50"
@@ -150,7 +150,7 @@ export default function WeekPage() {
 
       {/* Expanded day entries */}
       {expandedDay !== null && dayData && (
-        <div className="mt-4 space-y-1.5">
+        <div className="mt-4 animate-fade-in space-y-1.5">
           <h3 className="text-sm font-medium text-muted-foreground">
             {format(addDays(weekStart, expandedDay), "EEEE, MMM d")}
           </h3>
@@ -162,7 +162,7 @@ export default function WeekPage() {
             ))
           ) : (
             <p className="py-4 text-center text-sm text-muted-foreground">
-              No entries this day
+              {COPY.noEntriesDay}
             </p>
           )}
         </div>

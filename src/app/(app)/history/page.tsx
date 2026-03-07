@@ -105,7 +105,7 @@ export default function HistoryPage() {
       </div>
 
       {/* Monthly calendar */}
-      <Card className="mb-4">
+      <Card className="mb-4 animate-fade-in">
         <CardContent className="py-3">
           {/* Month navigation */}
           <div className="mb-3 flex items-center justify-between">
@@ -151,9 +151,9 @@ export default function HistoryPage() {
                 <button
                   key={dateKey}
                   className={cn(
-                    "flex flex-col items-center gap-0.5 rounded-md py-1.5 text-xs transition-colors",
+                    "flex flex-col items-center gap-0.5 rounded-md py-1.5 text-xs transition-colors hover:bg-accent/50",
                     !inMonth && "opacity-30",
-                    isSelected && "bg-primary text-primary-foreground",
+                    isSelected && "bg-primary text-primary-foreground shadow-warm-sm",
                     isTodayDay && !isSelected && "font-bold text-primary"
                   )}
                   onClick={() => setSelectedDate(isSameDay(day, selectedDate ?? new Date(0)) ? null : day)}
@@ -174,7 +174,7 @@ export default function HistoryPage() {
 
       {/* Selected day entries */}
       {selectedDate && dayData && (
-        <div className="mb-4 space-y-1.5">
+        <div className="mb-4 animate-fade-in space-y-1.5">
           <h3 className="text-sm font-medium text-muted-foreground">
             {format(selectedDate, "EEEE, MMMM d")}
             {dayData.totalCalories > 0 && (
@@ -189,7 +189,7 @@ export default function HistoryPage() {
             ))
           ) : (
             <p className="py-4 text-center text-sm text-muted-foreground">
-              No entries this day
+              {COPY.noEntriesDay}
             </p>
           )}
         </div>
@@ -205,8 +205,10 @@ export default function HistoryPage() {
       {/* Recent weekly sections */}
       <div className="space-y-3">
         <h3 className="text-sm font-medium text-muted-foreground">Recent weeks</h3>
-        {recentWeeks.map((week) => (
-          <WeekSection key={week.endStr} start={week.start} end={week.end} endStr={week.endStr} />
+        {recentWeeks.map((week, i) => (
+          <div key={week.endStr} className={i === 0 ? "animate-fade-in-delay-1" : `animate-fade-in-delay-${Math.min(i + 1, 4)}`}>
+            <WeekSection start={week.start} end={week.end} endStr={week.endStr} />
+          </div>
         ))}
       </div>
     </div>
@@ -252,7 +254,7 @@ function WeekSection({ start, end, endStr }: { start: Date; end: Date; endStr: s
         </button>
 
         {expanded && (
-          <div className="mt-3 space-y-2">
+          <div className="mt-3 animate-fade-in space-y-2">
             {data.days.map((day) => {
               if (day.totalCalories === 0) return null;
               return (

@@ -10,6 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { trpc } from "@/trpc/react";
+import { toast } from "sonner";
 import { COPY } from "@/lib/copy";
 import type { Gender, ActivityLevel } from "@/server/client-types";
 
@@ -156,7 +157,7 @@ export default function ProfilePage() {
 
       {/* Edit Form */}
       {editing && (
-        <Card className="mb-4">
+        <Card className="mb-4 animate-fade-in">
           <CardContent className="space-y-3 py-4">
             <h2 className="font-semibold">Edit Stats</h2>
             <div className="grid grid-cols-2 gap-3">
@@ -275,7 +276,7 @@ export default function ProfilePage() {
                   <Badge
                     key={opt.label}
                     variant={Math.round(profile.calorieGoal) === opt.daily ? "default" : "secondary"}
-                    className="cursor-pointer px-3 py-1.5 text-sm"
+                    className="cursor-pointer px-3 py-1.5 text-sm active:scale-95 transition-transform"
                     onClick={async () => {
                       await upsertProfile.mutateAsync({
                         gender: profile.gender as Gender,
@@ -286,6 +287,7 @@ export default function ProfilePage() {
                         calorieGoal: opt.daily,
                       });
                       utils.auth.getMe.invalidate();
+                      toast.success(`Goal updated to ${opt.weekly.toLocaleString()} kcal/week`);
                     }}
                   >
                     {opt.label} ({opt.weekly.toLocaleString()}/week)

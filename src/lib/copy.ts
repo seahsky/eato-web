@@ -57,4 +57,29 @@ export const COPY = {
   // Calorie ring
   calorieRingLabel: (consumed: number, budget: number) =>
     `${Math.round(consumed).toLocaleString()} of ${Math.round(budget).toLocaleString()} kcal`,
+
+  // Generic
+  noEntriesDay: "Nothing here yet",
+  noEntriesPartnerDay: "Nothing logged yet today",
+
+  // Edit screen
+  editHeading: "Update entry",
+  editNotFound: "Hmm, I can't find that one",
+  deleteTitle: "Remove this entry?",
+  deleteDescription: "This will remove the entry from your diary. You can always log it again later.",
+
+  // Partner screen
+  partnerShareTitle: "Share your link",
+  partnerShareDescription: "Generate a code to share with your partner.",
+  partnerEnterTitle: "Got a code?",
+  partnerEnterDescription: "Enter the 6-character code your partner shared.",
+  partnerUnlinkTitle: (name: string) => `Unlink from ${name}?`,
+  partnerUnlinkDescription: "You won't be able to see each other's diary anymore. You can always re-link later.",
+
+  // Onboarding
+  onboardingGenderHelp: "This helps us figure out your calorie needs",
+  onboardingBmrLabel: "Base calories",
+  onboardingBmrSubtitle: "(at rest)",
+  onboardingTdeeLabel: "Daily calories",
+  onboardingTdeeSubtitle: "(with activity)",
 } as const;

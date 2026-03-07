@@ -43,12 +43,13 @@ export function DiaryEntryCard({
   return (
     <Card
       className={cn(
-        "transition-colors",
-        onClick && "cursor-pointer hover:bg-accent"
+        "transition-all duration-200",
+        onClick && "cursor-pointer hover:bg-accent hover:shadow-warm-lg hover:-translate-y-0.5"
       )}
       onClick={onClick}
+      {...(onClick ? { role: "button", "aria-label": `${entry.name}, ${Math.round(entry.calories)} calories` } : {})}
     >
-      <CardContent className="py-2.5">
+      <CardContent className="py-3">
         {/* Time and meal type */}
         <div className="flex items-center gap-2 text-xs text-muted-foreground">
           {time && <span>{time}</span>}

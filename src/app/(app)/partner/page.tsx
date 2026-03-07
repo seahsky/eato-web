@@ -123,18 +123,19 @@ export default function PartnerPage() {
           {partnerDay && (
             <div className="mt-2 space-y-1.5">
               {(partnerDay.entries as PartnerEntry[]).length > 0 ? (
-                (partnerDay.entries as PartnerEntry[]).map((entry) => (
+                (partnerDay.entries as PartnerEntry[]).map((entry, i) => (
+                  <div key={entry.id} className={i < 5 ? `animate-fade-in-delay-${i}` : "animate-fade-in-delay-4"}>
                   <DiaryEntryCard
-                    key={entry.id}
                     entry={entry}
                     showCalories={false}
                   />
+                  </div>
                 ))
               ) : (
                 <Card>
                   <CardContent className="py-6 text-center">
                     <p className="text-sm text-muted-foreground">
-                      No entries yet for this day
+                      {COPY.noEntriesPartnerDay}
                     </p>
                   </CardContent>
                 </Card>
@@ -153,10 +154,9 @@ export default function PartnerPage() {
               </DialogTrigger>
               <DialogContent>
                 <DialogHeader>
-                  <DialogTitle>Unlink Partner</DialogTitle>
+                  <DialogTitle>{COPY.partnerUnlinkTitle(me?.partner?.name ?? "your partner")}</DialogTitle>
                   <DialogDescription>
-                    Are you sure you want to unlink from {me?.partner?.name ?? "your partner"}?
-                    You will no longer be able to see each other&apos;s diary.
+                    {COPY.partnerUnlinkDescription}
                   </DialogDescription>
                 </DialogHeader>
                 <DialogFooter>
@@ -176,9 +176,9 @@ export default function PartnerPage() {
           {/* Generate code section */}
           <Card>
             <CardContent className="space-y-3 py-4">
-              <h2 className="font-semibold">Share Your Code</h2>
+              <h2 className="font-semibold">{COPY.partnerShareTitle}</h2>
               <p className="text-sm text-muted-foreground">
-                Generate a code and share it with your partner so they can link with you.
+                {COPY.partnerShareDescription}
               </p>
               {generatedCode ? (
                 <div className="flex items-center gap-2">
@@ -200,9 +200,9 @@ export default function PartnerPage() {
           {/* Enter code section */}
           <Card>
             <CardContent className="space-y-3 py-4">
-              <h2 className="font-semibold">Enter Partner&apos;s Code</h2>
+              <h2 className="font-semibold">{COPY.partnerEnterTitle}</h2>
               <p className="text-sm text-muted-foreground">
-                Enter the 6-character code your partner shared with you.
+                {COPY.partnerEnterDescription}
               </p>
               <div>
                 <Label>Partner Code</Label>

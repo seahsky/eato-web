@@ -59,7 +59,7 @@ export default function SearchPage() {
   return (
     <div className="mx-auto max-w-lg px-4">
       <div className="py-3">
-        <h1 className="mb-2 text-lg font-bold">What did you eat?</h1>
+        <h1 className="mb-2 font-caveat text-xl">What did you eat?</h1>
         <div className="relative">
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <Input
@@ -82,9 +82,9 @@ export default function SearchPage() {
       {/* Results */}
       {results.length > 0 && (
         <div className="space-y-1">
-          {results.map((product) => (
+          {results.map((product, i) => (
+            <div key={product.id} className={i < 5 ? `animate-fade-in-delay-${i}` : "animate-fade-in-delay-4"}>
             <Card
-              key={product.id}
               className="cursor-pointer transition-colors hover:bg-accent"
               onClick={() => selectProduct(product)}
             >
@@ -101,6 +101,7 @@ export default function SearchPage() {
                 </span>
               </CardContent>
             </Card>
+            </div>
           ))}
         </div>
       )}
@@ -134,14 +135,14 @@ export default function SearchPage() {
       {/* Recent searches */}
       {!query && recentSearches.length > 0 && (
         <div>
-          <h3 className="mb-2 px-1 text-xs font-semibold uppercase text-muted-foreground">
-            Recent Searches
+          <h3 className="mb-2 px-1 text-xs font-semibold text-muted-foreground">
+            Recent searches
           </h3>
           <div className="space-y-1">
             {recentSearches.map((recent) => (
               <button
                 key={recent}
-                className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-sm hover:bg-accent"
+                className="flex w-full items-center gap-2 rounded-md px-3 py-3 text-left text-sm hover:bg-accent"
                 onClick={() => searchFromRecent(recent)}
               >
                 <Clock className="h-4 w-4 text-muted-foreground" />

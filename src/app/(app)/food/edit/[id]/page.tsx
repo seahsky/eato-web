@@ -18,6 +18,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { trpc } from "@/trpc/react";
+import { COPY } from "@/lib/copy";
 
 export default function EditFoodPage() {
   const router = useRouter();
@@ -83,7 +84,7 @@ export default function EditFoodPage() {
   if (!entry) {
     return (
       <div className="mx-auto max-w-lg px-4 py-8 text-center">
-        <p className="text-muted-foreground">Entry not found</p>
+        <p className="text-muted-foreground">{COPY.editNotFound}</p>
         <Button asChild className="mt-4" size="sm">
           <Link href="/dashboard">Back to diary</Link>
         </Button>
@@ -99,27 +100,27 @@ export default function EditFoodPage() {
           <button onClick={() => router.back()}>
             <ArrowLeft className="h-5 w-5" />
           </button>
-          <h1 className="text-lg font-bold">Edit entry</h1>
+          <h1 className="font-caveat text-xl">{COPY.editHeading}</h1>
         </div>
         <Dialog open={deleteOpen} onOpenChange={setDeleteOpen}>
           <DialogTrigger asChild>
-            <Button variant="ghost" size="icon" className="text-destructive">
+            <Button variant="ghost" size="icon" className="min-h-[44px] min-w-[44px] text-destructive">
               <Trash2 className="h-5 w-5" />
             </Button>
           </DialogTrigger>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>Delete Entry</DialogTitle>
+              <DialogTitle>{COPY.deleteTitle}</DialogTitle>
               <DialogDescription>
-                Are you sure you want to delete this food entry? This cannot be undone.
+                {COPY.deleteDescription}
               </DialogDescription>
             </DialogHeader>
             <DialogFooter>
               <Button variant="outline" onClick={() => setDeleteOpen(false)}>
                 Cancel
               </Button>
-              <Button variant="destructive" onClick={handleDelete}>
-                Delete
+              <Button variant="outline" className="text-destructive" onClick={handleDelete}>
+                Remove
               </Button>
             </DialogFooter>
           </DialogContent>

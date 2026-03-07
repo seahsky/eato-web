@@ -18,11 +18,12 @@ function formatDisplayDate(date: Date) {
 export function DateNavigator({ date, onDateChange }: DateNavigatorProps) {
   return (
     <div className="flex items-center justify-between py-2">
-      <Button variant="ghost" size="icon" onClick={() => onDateChange(addDays(date, -1))}>
+      <Button variant="ghost" size="icon" aria-label="Previous day" onClick={() => onDateChange(addDays(date, -1))}>
         <ChevronLeft className="h-5 w-5" />
       </Button>
       <button
-        className="text-sm font-medium"
+        className="rounded-md px-3 py-1 text-sm font-medium transition-colors hover:bg-accent"
+        aria-label="Go to today"
         onClick={() => onDateChange(new Date())}
       >
         {formatDisplayDate(date)}
@@ -30,6 +31,7 @@ export function DateNavigator({ date, onDateChange }: DateNavigatorProps) {
       <Button
         variant="ghost"
         size="icon"
+        aria-label="Next day"
         disabled={isToday(date)}
         onClick={() => onDateChange(addDays(date, 1))}
       >

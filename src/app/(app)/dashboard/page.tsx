@@ -109,16 +109,20 @@ export default function DashboardPage() {
             <div className="space-y-1.5">
               {hasMealTypes
                 ? grouped.map(([, groupEntries]) =>
-                    groupEntries.map((entry) => (
-                      <Link key={entry.id} href={`/food/edit/${entry.id}`}>
-                        <DiaryEntryCard entry={entry} />
-                      </Link>
+                    groupEntries.map((entry, i) => (
+                      <div key={entry.id} className={i < 5 ? `animate-fade-in-delay-${i}` : "animate-fade-in-delay-4"}>
+                        <Link href={`/food/edit/${entry.id}`}>
+                          <DiaryEntryCard entry={entry} />
+                        </Link>
+                      </div>
                     ))
                   )
-                : entries.map((entry) => (
-                    <Link key={entry.id} href={`/food/edit/${entry.id}`}>
-                      <DiaryEntryCard entry={entry} />
-                    </Link>
+                : entries.map((entry, i) => (
+                    <div key={entry.id} className={i < 5 ? `animate-fade-in-delay-${i}` : "animate-fade-in-delay-4"}>
+                      <Link href={`/food/edit/${entry.id}`}>
+                        <DiaryEntryCard entry={entry} />
+                      </Link>
+                    </div>
                   ))}
             </div>
           )}

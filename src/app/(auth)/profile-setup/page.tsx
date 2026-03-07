@@ -94,11 +94,11 @@ export default function ProfileSetupPage() {
 
       {/* Step 0: Gender */}
       {step === 0 && (
-        <div className="space-y-4">
+        <div className="animate-fade-in space-y-4" key={0}>
           <div>
             <h2 className="text-lg font-semibold">What&apos;s your gender?</h2>
             <p className="text-sm text-muted-foreground">
-              This helps us calculate your metabolic rate
+              {COPY.onboardingGenderHelp}
             </p>
           </div>
           <div className="grid grid-cols-2 gap-3">
@@ -122,7 +122,7 @@ export default function ProfileSetupPage() {
 
       {/* Step 1: Body metrics */}
       {step === 1 && (
-        <div className="space-y-4">
+        <div className="animate-fade-in space-y-4" key={1}>
           <div>
             <h2 className="text-lg font-semibold">Tell us about yourself</h2>
             <p className="text-sm text-muted-foreground">We&apos;ll use this for your weekly budget</p>
@@ -176,7 +176,7 @@ export default function ProfileSetupPage() {
 
       {/* Step 2: Activity level */}
       {step === 2 && (
-        <div className="space-y-4">
+        <div className="animate-fade-in space-y-4" key={2}>
           <h2 className="text-lg font-semibold">How active are you?</h2>
           <div className="space-y-2">
             {ACTIVITY_OPTIONS.map((opt) => (
@@ -211,7 +211,7 @@ export default function ProfileSetupPage() {
 
       {/* Step 3: Weekly budget */}
       {step === 3 && (
-        <div className="space-y-4">
+        <div className="animate-fade-in space-y-4" key={3}>
           <h2 className="text-lg font-semibold">{COPY.onboardingGoalHeading}</h2>
 
           {weeklyTdee > 0 && (
@@ -228,14 +228,16 @@ export default function ProfileSetupPage() {
             <div className="flex gap-3">
               <Card className="flex-1">
                 <CardContent className="py-3 text-center">
-                  <div className="text-sm text-muted-foreground">BMR</div>
+                  <div className="text-sm text-muted-foreground">{COPY.onboardingBmrLabel}</div>
                   <div className="text-lg font-bold text-primary">{Math.round(bmr)} kcal</div>
+                  <div className="text-xs text-muted-foreground">{COPY.onboardingBmrSubtitle}</div>
                 </CardContent>
               </Card>
               <Card className="flex-1">
                 <CardContent className="py-3 text-center">
-                  <div className="text-sm text-muted-foreground">TDEE</div>
+                  <div className="text-sm text-muted-foreground">{COPY.onboardingTdeeLabel}</div>
                   <div className="text-lg font-bold text-primary">{Math.round(tdee)} kcal/day</div>
+                  <div className="text-xs text-muted-foreground">{COPY.onboardingTdeeSubtitle}</div>
                 </CardContent>
               </Card>
             </div>
@@ -247,7 +249,7 @@ export default function ProfileSetupPage() {
               <Badge
                 key={opt.label}
                 variant={calorieGoal === opt.daily ? "default" : "secondary"}
-                className="cursor-pointer px-3 py-1.5 text-sm"
+                className="cursor-pointer px-3 py-1.5 text-sm active:scale-95 transition-transform"
                 onClick={() => setCalorieGoal(opt.daily)}
               >
                 {COPY.onboardingGoalOption(opt.label, opt.weekly)}
