@@ -3,6 +3,7 @@ import { router, protectedProcedure } from "../trpc";
 import { TRPCError } from "@trpc/server";
 import { getProductByBarcode, getProductById } from "../services/fatsecret";
 import { searchFoods, searchFoodsFast } from "../services/food-search";
+import { analyzeFoodImage } from "../services/openai";
 import { hashQuery, cleanupExpiredCache } from "../services/search-cache";
 import { startOfDay } from "date-fns";
 import { notifyPartnerFoodLogged, notifyPartnerGoalReached, notifyPendingApproval, notifyBadgeUnlocked, notifyApprovalResult } from "@/lib/notifications/triggers";
@@ -108,6 +109,75 @@ export const foodRouter = router({
           query: input.queries[index].query,
           products: [],
           error: "Search failed",
+        };
+      });
+    }),
+
+  // Analyze a food photo using AI vision and return matched products
+  analyzePhoto: protectedProcedure
+    .meta({ openapi: { method: "POST", path: "/food/analyze-photo" } })
+    .input(
+      z.object({
+        image: z.string().max(2 * 1024 * 1024, "Image too large (max ~1.5MB)"),
+      })
+    )
+    .output(z.any())
+    .mutation(async ({ input }) => {
+      const items = await analyzeFoodImage(input.image);
+
+      if (items.length === 0) {
+        return [];
+      }
+
+      // Search FatSecret for each identified item in parallel
+      const results = await Promise.allSettled(
+        items.map(({ name }) =>
+          searchFoodsFast(name, 5).then((result) => ({
+            query: name,
+            products: result.products.slice(0, 3),
+          }))
+        )
+      );
+
+      return items.map((item, index) => {
+        const result = results[index];
+        const products =
+          result.status === "fulfilled" ? result.value.products : [];
+        const product = products[0] ?? null;
+
+        const id = crypto.randomUUID();
+        const grams = Math.round(item.estimatedGrams);
+
+        if (product) {
+          const factor = grams / 100;
+          return {
+            id,
+            ingredientName: item.name,
+            quantity: grams,
+            normalizedGrams: grams,
+            matchedProduct: product,
+            calories: Math.round(product.caloriesPer100g * factor),
+            protein:
+              Math.round((product.proteinPer100g ?? 0) * factor * 10) / 10,
+            carbs: Math.round((product.carbsPer100g ?? 0) * factor * 10) / 10,
+            fat: Math.round((product.fatPer100g ?? 0) * factor * 10) / 10,
+            servingSize: grams,
+            servingUnit: "g",
+          };
+        }
+
+        return {
+          id,
+          ingredientName: item.name,
+          quantity: grams,
+          normalizedGrams: grams,
+          matchedProduct: null,
+          calories: 0,
+          protein: 0,
+          carbs: 0,
+          fat: 0,
+          servingSize: grams,
+          servingUnit: "g",
         };
       });
     }),

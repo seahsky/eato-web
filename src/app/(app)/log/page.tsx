@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Loader2, X } from "lucide-react";
+import { ArrowLeft, Camera, Loader2, X } from "lucide-react";
 import Link from "next/link";
 import { format } from "date-fns";
 import { Button } from "@/components/ui/button";
@@ -12,6 +12,7 @@ import { trpc } from "@/trpc/react";
 import { toast } from "sonner";
 import { usePetReaction } from "@/components/app/pixel-pet/pet-reaction-provider";
 import { parseIngredientLines } from "@/lib/meal-parser";
+import { compressImage } from "@/lib/image-utils";
 import type { FoodProduct } from "@/types/food";
 
 interface ReviewItem {
@@ -44,8 +45,11 @@ export default function LogPage() {
   const [text, setText] = useState("");
   const [reviewItems, setReviewItems] = useState<ReviewItem[]>([]);
   const [isSearching, setIsSearching] = useState(false);
+  const [isAnalyzingPhoto, setIsAnalyzingPhoto] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const batchLog = trpc.food.batchLog.useMutation();
+  const analyzePhoto = trpc.food.analyzePhoto.useMutation();
 
   async function handleCalculate() {
     const trimmed = text.trim();
@@ -154,6 +158,50 @@ export default function LogPage() {
     }
   }
 
+  async function handlePhotoSelected(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Reset input so the same file can be re-selected
+    e.target.value = "";
+
+    setIsAnalyzingPhoto(true);
+
+    try {
+      const base64 = await compressImage(file);
+      const results = await analyzePhoto.mutateAsync({ image: base64 });
+
+      if (!results || results.length === 0) {
+        toast.error("No food items detected in this photo. Try again or type manually.");
+        return;
+      }
+
+      const items: ReviewItem[] = results.map((r: ReviewItem) => ({
+        id: r.id,
+        rawLine: r.ingredientName,
+        ingredientName: r.ingredientName,
+        quantity: r.normalizedGrams,
+        unit: "g",
+        normalizedGrams: r.normalizedGrams,
+        matchedProduct: r.matchedProduct,
+        calories: r.calories,
+        protein: r.protein,
+        carbs: r.carbs,
+        fat: r.fat,
+        servingSize: r.servingSize,
+        servingUnit: r.servingUnit,
+      }));
+
+      setReviewItems(items);
+      setStage("review");
+    } catch (error) {
+      console.error("Photo analysis failed:", error);
+      toast.error("Failed to analyze photo. Please try again.");
+    } finally {
+      setIsAnalyzingPhoto(false);
+    }
+  }
+
   function removeItem(id: string) {
     setReviewItems((items) => items.filter((i) => i.id !== id));
   }
@@ -237,31 +285,59 @@ export default function LogPage() {
       {/* Stage 1: Textarea Input */}
       {stage === "input" && (
         <div className="space-y-4">
-          <textarea
-            className="w-full rounded-md border border-input bg-background px-3 py-3 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-            rows={6}
-            placeholder={"200g chicken breast\n100g rice\n2 eggs\n352kj canned salmon"}
-            value={text}
-            onChange={(e) => setText(e.target.value)}
-            autoFocus
-          />
-          <p className="text-xs text-muted-foreground">
-            One item per line. Format: quantity + unit + food name (e.g. 200g chicken breast)
-          </p>
-          <Button
-            className="w-full"
-            disabled={!text.trim() || isSearching}
-            onClick={handleCalculate}
-          >
-            {isSearching ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Looking up nutrition...
-              </>
-            ) : (
-              "Calculate"
-            )}
-          </Button>
+          {isAnalyzingPhoto ? (
+            <div className="flex flex-col items-center gap-3 py-8">
+              <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+              <p className="text-sm text-muted-foreground">Analyzing your meal...</p>
+            </div>
+          ) : (
+            <>
+              <textarea
+                className="w-full rounded-md border border-input bg-background px-3 py-3 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                rows={6}
+                placeholder={"200g chicken breast\n100g rice\n2 eggs\n352kj canned salmon"}
+                value={text}
+                onChange={(e) => setText(e.target.value)}
+                autoFocus
+              />
+              <p className="text-xs text-muted-foreground">
+                One item per line. Format: quantity + unit + food name (e.g. 200g chicken breast)
+              </p>
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  className="shrink-0"
+                  disabled={isSearching}
+                  onClick={() => fileInputRef.current?.click()}
+                >
+                  <Camera className="mr-2 h-4 w-4" />
+                  Photo
+                </Button>
+                <Button
+                  className="flex-1"
+                  disabled={!text.trim() || isSearching}
+                  onClick={handleCalculate}
+                >
+                  {isSearching ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Looking up nutrition...
+                    </>
+                  ) : (
+                    "Calculate"
+                  )}
+                </Button>
+              </div>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                capture="environment"
+                className="hidden"
+                onChange={handlePhotoSelected}
+              />
+            </>
+          )}
         </div>
       )}
 
