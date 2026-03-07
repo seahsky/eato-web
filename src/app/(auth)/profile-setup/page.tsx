@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { trpc } from "@/trpc/react";
+import { COPY } from "@/lib/copy";
 import type { Gender, ActivityLevel } from "@/server/client-types";
 
 const ACTIVITY_OPTIONS: {
@@ -54,10 +55,11 @@ export default function ProfileSetupPage() {
       ? bmr * (ACTIVITY_OPTIONS.find((a) => a.value === activityLevel)?.multiplier ?? 1)
       : 0;
 
+  const weeklyTdee = Math.round(tdee * 7);
   const goalOptions = [
-    { label: "Lose weight", value: Math.round(tdee - 500) },
-    { label: "Maintain", value: Math.round(tdee) },
-    { label: "Gain weight", value: Math.round(tdee + 500) },
+    { label: "Lose weight", daily: Math.round(tdee - 500), weekly: Math.round((tdee - 500) * 7) },
+    { label: "Maintain", daily: Math.round(tdee), weekly: weeklyTdee },
+    { label: "Gain weight", daily: Math.round(tdee + 500), weekly: Math.round((tdee + 500) * 7) },
   ];
 
   async function handleComplete() {
@@ -88,7 +90,7 @@ export default function ProfileSetupPage() {
         />
       </div>
 
-      <h1 className="text-xl font-bold">Setup Your Profile</h1>
+      <h1 className="font-caveat text-2xl">{COPY.onboardingTitle}</h1>
 
       {/* Step 0: Gender */}
       {step === 0 && (
@@ -123,8 +125,8 @@ export default function ProfileSetupPage() {
       {step === 1 && (
         <div className="space-y-4">
           <div>
-            <h2 className="text-lg font-semibold">Your body metrics</h2>
-            <p className="text-sm text-muted-foreground">We&apos;ll use this for BMR calculation</p>
+            <h2 className="text-lg font-semibold">Tell us about yourself</h2>
+            <p className="text-sm text-muted-foreground">We&apos;ll use this for your weekly budget</p>
           </div>
           <div className="space-y-3">
             <div>
@@ -209,10 +211,20 @@ export default function ProfileSetupPage() {
         </div>
       )}
 
-      {/* Step 3: Calorie goal */}
+      {/* Step 3: Weekly budget */}
       {step === 3 && (
         <div className="space-y-4">
-          <h2 className="text-lg font-semibold">Set your daily goal</h2>
+          <h2 className="text-lg font-semibold">{COPY.onboardingGoalHeading}</h2>
+
+          {weeklyTdee > 0 && (
+            <Card className="border-primary/20 bg-primary/5">
+              <CardContent className="py-4 text-center">
+                <p className="font-caveat text-lg text-foreground">
+                  {COPY.onboardingWeeklyBudget(weeklyTdee)}
+                </p>
+              </CardContent>
+            </Card>
+          )}
 
           {bmr > 0 && (
             <div className="flex gap-3">
@@ -225,7 +237,7 @@ export default function ProfileSetupPage() {
               <Card className="flex-1">
                 <CardContent className="py-3 text-center">
                   <div className="text-sm text-muted-foreground">TDEE</div>
-                  <div className="text-lg font-bold text-primary">{Math.round(tdee)} kcal</div>
+                  <div className="text-lg font-bold text-primary">{Math.round(tdee)} kcal/day</div>
                 </CardContent>
               </Card>
             </div>
@@ -236,16 +248,16 @@ export default function ProfileSetupPage() {
             {goalOptions.map((opt) => (
               <Badge
                 key={opt.label}
-                variant={calorieGoal === opt.value ? "default" : "secondary"}
+                variant={calorieGoal === opt.daily ? "default" : "secondary"}
                 className="cursor-pointer px-3 py-1.5 text-sm"
-                onClick={() => setCalorieGoal(opt.value)}
+                onClick={() => setCalorieGoal(opt.daily)}
               >
-                {opt.label} ({opt.value} kcal)
+                {COPY.onboardingGoalOption(opt.label, opt.weekly)}
               </Badge>
             ))}
           </div>
           <div>
-            <Label>Custom goal (kcal)</Label>
+            <Label>Custom daily goal (kcal)</Label>
             <Input
               type="number"
               min={800}
@@ -253,13 +265,18 @@ export default function ProfileSetupPage() {
               value={calorieGoal}
               onChange={(e) => setCalorieGoal(e.target.value ? Number(e.target.value) : "")}
             />
+            {calorieGoal && (
+              <p className="mt-1 text-xs text-muted-foreground">
+                = {(Number(calorieGoal) * 7).toLocaleString()} kcal/week
+              </p>
+            )}
           </div>
           <div className="flex gap-3">
             <Button variant="outline" className="flex-1" onClick={() => setStep(2)}>
               Back
             </Button>
             <Button className="flex-1" disabled={!calorieGoal || saving} onClick={handleComplete}>
-              {saving ? "Saving..." : "Complete Setup"}
+              {saving ? "Saving..." : "Let's go!"}
             </Button>
           </div>
         </div>

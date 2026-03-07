@@ -3,11 +3,47 @@
 import { useState } from "react";
 import Link from "next/link";
 import { format } from "date-fns";
-import { Plus, Loader2 } from "lucide-react";
+import { Plus, Loader2, BookOpen } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { trpc } from "@/trpc/react";
 import { DateNavigator } from "@/components/app/date-navigator";
+import { DiaryEntryCard } from "@/components/app/diary-entry-card";
+import { EmptyState } from "@/components/app/empty-state";
+import { COPY } from "@/lib/copy";
+
+type EntryData = {
+  id: string;
+  name: string;
+  brand?: string | null;
+  calories: number;
+  servingSize: number;
+  servingUnit: string;
+  mealType?: string | null;
+  loggedAt?: string | Date;
+  consumedAt?: string | Date;
+};
+
+const MEAL_ORDER = ["BREAKFAST", "LUNCH", "DINNER", "SNACK"];
+
+function groupByMealType(entries: EntryData[]) {
+  const groups = new Map<string, EntryData[]>();
+  for (const entry of entries) {
+    const key = entry.mealType ?? "OTHER";
+    const group = groups.get(key) ?? [];
+    group.push(entry);
+    groups.set(key, group);
+  }
+  // Sort groups by meal order
+  const sorted: [string, EntryData[]][] = [];
+  for (const meal of MEAL_ORDER) {
+    const group = groups.get(meal);
+    if (group) sorted.push([meal, group]);
+  }
+  const other = groups.get("OTHER");
+  if (other) sorted.push(["OTHER", other]);
+  return sorted;
+}
 
 export default function DashboardPage() {
   const [selectedDate, setSelectedDate] = useState(new Date());
@@ -17,6 +53,15 @@ export default function DashboardPage() {
     { date: dateStr },
     { refetchOnWindowFocus: true }
   );
+
+  const { data: weeklyBudget } = trpc.stats.getWeeklyBudgetStatus.useQuery(
+    { date: dateStr },
+    { refetchOnWindowFocus: true }
+  );
+
+  const entries = (data?.entries ?? []) as EntryData[];
+  const grouped = groupByMealType(entries);
+  const hasMealTypes = entries.some((e) => e.mealType);
 
   return (
     <div className="mx-auto max-w-lg px-4">
@@ -29,11 +74,14 @@ export default function DashboardPage() {
 
       <DateNavigator date={selectedDate} onDateChange={setSelectedDate} />
 
-      {/* Calorie summary */}
-      {data && (
-        <p className="mt-2 mb-4 text-sm text-muted-foreground">
-          Today so far: {Math.round(data.totalCalories)} kcal
-          {data.calorieGoal ? ` / ${Math.round(data.calorieGoal)} kcal` : ""}
+      {/* Weekly context line */}
+      {weeklyBudget && (
+        <p className="mt-1 mb-3 text-sm text-muted-foreground">
+          {COPY.weeklyContext(
+            weeklyBudget.daysInWeek - weeklyBudget.daysRemaining,
+            weeklyBudget.weeklyConsumed,
+            weeklyBudget.weeklyBudget
+          )}
         </p>
       )}
 
@@ -57,60 +105,54 @@ export default function DashboardPage() {
       {/* Diary Entries */}
       {data && (
         <>
-          {data.entries.length > 0 && (
+          {entries.length > 0 && (
             <div className="space-y-1.5">
-              {(data.entries as Array<{
-                id: string;
-                name: string;
-                brand?: string | null;
-                calories: number;
-                servingSize: number;
-                servingUnit: string;
-              }>).map((entry) => (
-                <Link key={entry.id} href={`/food/edit/${entry.id}`}>
-                  <Card className="transition-colors hover:bg-accent">
-                    <CardContent className="py-2.5">
-                      <div className="text-sm font-medium">{entry.name}</div>
-                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                        <span>~{Math.round(entry.calories)} kcal</span>
-                        <span>&middot;</span>
-                        <span>
-                          {entry.servingSize}{entry.servingUnit}
-                          {entry.brand ? ` · ${entry.brand}` : ""}
-                        </span>
-                      </div>
-                    </CardContent>
-                  </Card>
-                </Link>
-              ))}
+              {hasMealTypes
+                ? grouped.map(([, groupEntries]) =>
+                    groupEntries.map((entry) => (
+                      <Link key={entry.id} href={`/food/edit/${entry.id}`}>
+                        <DiaryEntryCard entry={entry} />
+                      </Link>
+                    ))
+                  )
+                : entries.map((entry) => (
+                    <Link key={entry.id} href={`/food/edit/${entry.id}`}>
+                      <DiaryEntryCard entry={entry} />
+                    </Link>
+                  ))}
             </div>
           )}
 
+          {/* Daily total */}
+          {entries.length > 0 && data.totalCalories > 0 && (
+            <p className="mt-3 text-center text-sm text-muted-foreground">
+              {COPY.dailyTotal(data.totalCalories)}
+            </p>
+          )}
+
           {/* Empty state */}
-          {data.entries.length === 0 && !isLoading && (
-            <Card>
-              <CardContent className="flex flex-col items-center gap-3 py-8 text-center">
-                <h2 className="font-caveat text-xl text-foreground">
-                  Your diary is empty today
-                </h2>
-                <p className="text-sm text-muted-foreground">
-                  What&apos;s the first thing you ate?
-                </p>
+          {entries.length === 0 && !isLoading && (
+            <EmptyState
+              icon={<BookOpen className="h-10 w-10" />}
+              title={COPY.emptyDiaryTitle}
+              description={COPY.emptyDiaryDescription}
+              action={
                 <Button asChild size="sm">
-                  <Link href="/search">Write it down</Link>
+                  <Link href="/search">{COPY.emptyDiaryCta}</Link>
                 </Button>
-              </CardContent>
-            </Card>
+              }
+            />
           )}
         </>
       )}
 
-      {/* Floating action button */}
+      {/* Floating action button - warm pill */}
       <Link
         href="/search"
-        className="fixed bottom-24 right-4 z-40 flex h-14 w-14 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg transition-transform hover:scale-105 active:scale-95"
+        className="fixed bottom-24 right-4 z-40 flex items-center gap-2 rounded-full bg-primary px-4 py-3 text-sm font-medium text-primary-foreground shadow-lg transition-transform hover:scale-105 active:scale-95"
       >
-        <Plus className="h-6 w-6" />
+        <Plus className="h-4 w-4" />
+        {COPY.fab}
       </Link>
     </div>
   );

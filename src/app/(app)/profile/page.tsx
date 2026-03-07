@@ -1,14 +1,16 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { useClerk } from "@clerk/nextjs";
-import { Loader2, LogOut } from "lucide-react";
+import { Loader2, LogOut, Heart } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { trpc } from "@/trpc/react";
+import { COPY } from "@/lib/copy";
 import type { Gender, ActivityLevel } from "@/server/client-types";
 
 const ACTIVITY_OPTIONS: {
@@ -86,18 +88,33 @@ export default function ProfilePage() {
 
   const bmr = profile?.bmr ?? 0;
   const tdee = profile?.tdee ?? 0;
+  const weeklyBudget = profile?.calorieGoal ? Math.round(profile.calorieGoal * 7) : 0;
 
   const goalOptions = tdee > 0 ? [
-    { label: "Lose weight", value: Math.round(tdee - 500) },
-    { label: "Maintain", value: Math.round(tdee) },
-    { label: "Gain weight", value: Math.round(tdee + 500) },
+    { label: "Lose weight", daily: Math.round(tdee - 500), weekly: Math.round((tdee - 500) * 7) },
+    { label: "Maintain", daily: Math.round(tdee), weekly: Math.round(tdee * 7) },
+    { label: "Gain weight", daily: Math.round(tdee + 500), weekly: Math.round((tdee + 500) * 7) },
   ] : [];
 
   return (
     <div className="mx-auto max-w-lg px-4">
       <div className="py-3">
-        <h1 className="text-lg font-bold">Profile</h1>
+        <h1 className="font-caveat text-xl text-foreground">{COPY.profileHeading}</h1>
       </div>
+
+      {/* Weekly Budget Display */}
+      {profile && !editing && (
+        <Card className="mb-4 border-primary/20 bg-primary/5">
+          <CardContent className="py-4 text-center">
+            <div className="text-2xl font-bold text-primary">
+              {weeklyBudget.toLocaleString()} kcal/week
+            </div>
+            <p className="mt-1 text-xs text-muted-foreground">
+              {COPY.weeklyBudgetDisplay(tdee, weeklyBudget)}
+            </p>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Physical Stats */}
       {profile && !editing && (
@@ -227,7 +244,7 @@ export default function ProfilePage() {
       )}
 
       {/* BMR / TDEE */}
-      {profile && (
+      {profile && !editing && (
         <div className="mb-4 flex gap-3">
           <Card className="flex-1">
             <CardContent className="py-3 text-center">
@@ -244,18 +261,21 @@ export default function ProfilePage() {
         </div>
       )}
 
-      {/* Calorie Goal */}
+      {/* Weekly Budget Goal */}
       {profile && !editing && (
         <Card className="mb-4">
           <CardContent className="space-y-3 py-4">
-            <h2 className="font-semibold">Daily Calorie Goal</h2>
-            <div className="text-2xl font-bold text-primary">{Math.round(profile.calorieGoal)} kcal</div>
+            <h2 className="font-semibold">Weekly Budget</h2>
+            <div className="text-2xl font-bold text-primary">{weeklyBudget.toLocaleString()} kcal/week</div>
+            <p className="text-xs text-muted-foreground">
+              {Math.round(profile.calorieGoal)} kcal/day
+            </p>
             {goalOptions.length > 0 && (
               <div className="flex flex-wrap gap-2">
                 {goalOptions.map((opt) => (
                   <Badge
                     key={opt.label}
-                    variant={Math.round(profile.calorieGoal) === opt.value ? "default" : "secondary"}
+                    variant={Math.round(profile.calorieGoal) === opt.daily ? "default" : "secondary"}
                     className="cursor-pointer px-3 py-1.5 text-sm"
                     onClick={async () => {
                       await upsertProfile.mutateAsync({
@@ -264,12 +284,12 @@ export default function ProfilePage() {
                         weight: profile.weight,
                         height: profile.height,
                         activityLevel: profile.activityLevel as ActivityLevel,
-                        calorieGoal: opt.value,
+                        calorieGoal: opt.daily,
                       });
                       utils.auth.getMe.invalidate();
                     }}
                   >
-                    {opt.label} ({opt.value})
+                    {opt.label} ({opt.weekly.toLocaleString()}/week)
                   </Badge>
                 ))}
               </div>
@@ -278,14 +298,37 @@ export default function ProfilePage() {
         </Card>
       )}
 
-      {/* Partner Status */}
+      {/* Partner Section */}
       {me?.partner && (
         <Card className="mb-4">
           <CardContent className="py-4">
-            <h2 className="mb-1 font-semibold">Partner</h2>
-            <p className="text-sm text-muted-foreground">
+            <div className="flex items-center gap-2">
+              <Heart className="h-4 w-4 text-primary" />
+              <h2 className="font-semibold">{COPY.partnerHeading}</h2>
+            </div>
+            <p className="mt-1 text-sm text-muted-foreground">
               Linked with <span className="font-medium text-foreground">{me.partner.name ?? "Partner"}</span>
             </p>
+            <Button asChild variant="outline" size="sm" className="mt-3">
+              <Link href="/partner">View diary</Link>
+            </Button>
+          </CardContent>
+        </Card>
+      )}
+
+      {!me?.partner && (
+        <Card className="mb-4">
+          <CardContent className="py-4">
+            <div className="flex items-center gap-2">
+              <Heart className="h-4 w-4 text-muted-foreground" />
+              <h2 className="font-semibold">{COPY.partnerHeading}</h2>
+            </div>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Track together with your partner
+            </p>
+            <Button asChild variant="outline" size="sm" className="mt-3">
+              <Link href="/partner">Link partner</Link>
+            </Button>
           </CardContent>
         </Card>
       )}

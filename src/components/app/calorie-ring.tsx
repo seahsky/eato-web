@@ -2,22 +2,27 @@
 
 interface CalorieRingProps {
   consumed: number;
-  goal: number;
+  budget: number;
+  weekLabel?: string;
 }
 
-export function CalorieRing({ consumed, goal }: CalorieRingProps) {
-  const percentage = goal > 0 ? Math.min(consumed / goal, 1.5) : 0;
-  const remaining = Math.max(goal - consumed, 0);
-  const isOver = consumed > goal;
+export function CalorieRing({ consumed, budget, weekLabel }: CalorieRingProps) {
+  const percentage = budget > 0 ? Math.min(consumed / budget, 1) : 0;
 
   const radius = 60;
   const circumference = 2 * Math.PI * radius;
-  const offset = circumference - Math.min(percentage, 1) * circumference;
+  const offset = circumference - percentage * circumference;
 
   return (
     <div className="flex flex-col items-center py-4">
       <div className="relative">
         <svg width="160" height="160" className="-rotate-90">
+          <defs>
+            <linearGradient id="ring-gradient" x1="0%" y1="0%" x2="100%" y2="0%">
+              <stop offset="0%" stopColor="oklch(0.93 0.02 70)" />
+              <stop offset="100%" stopColor="oklch(0.588 0.114 46)" />
+            </linearGradient>
+          </defs>
           {/* Background circle */}
           <circle
             cx="80"
@@ -34,26 +39,27 @@ export function CalorieRing({ consumed, goal }: CalorieRingProps) {
             cy="80"
             r={radius}
             fill="none"
-            stroke="currentColor"
+            stroke="url(#ring-gradient)"
             strokeWidth="10"
             strokeLinecap="round"
             strokeDasharray={circumference}
             strokeDashoffset={offset}
-            className="text-primary"
           />
         </svg>
         <div className="absolute inset-0 flex flex-col items-center justify-center">
-          <span className="text-2xl font-bold">{Math.round(consumed)}</span>
+          {weekLabel && (
+            <span className="font-caveat text-sm text-muted-foreground">
+              {weekLabel}
+            </span>
+          )}
+          <span className="text-lg font-bold">
+            {Math.round(consumed).toLocaleString()}
+          </span>
           <span className="text-xs text-muted-foreground">
-            / {goal} kcal
+            of {Math.round(budget).toLocaleString()} kcal
           </span>
         </div>
       </div>
-      <p className="mt-2 text-sm font-medium text-muted-foreground">
-        {isOver
-          ? `${Math.round(consumed - goal)} kcal over`
-          : `${Math.round(remaining)} kcal remaining`}
-      </p>
     </div>
   );
 }

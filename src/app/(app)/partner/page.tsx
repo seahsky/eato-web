@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { format } from "date-fns";
 import { Loader2, Copy, Check, Unlink } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -16,6 +17,21 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { trpc } from "@/trpc/react";
+import { DateNavigator } from "@/components/app/date-navigator";
+import { DiaryEntryCard } from "@/components/app/diary-entry-card";
+import { COPY } from "@/lib/copy";
+
+type PartnerEntry = {
+  id: string;
+  name: string;
+  brand?: string | null;
+  calories: number;
+  servingSize: number;
+  servingUnit: string;
+  mealType?: string | null;
+  loggedAt?: string | Date;
+  consumedAt?: string | Date;
+};
 
 export default function PartnerPage() {
   const { data: me, isLoading } = trpc.auth.getMe.useQuery();
@@ -26,10 +42,18 @@ export default function PartnerPage() {
   const [copied, setCopied] = useState(false);
   const [linking, setLinking] = useState(false);
   const [unlinkOpen, setUnlinkOpen] = useState(false);
+  const [selectedDate, setSelectedDate] = useState(new Date());
 
   const generateCode = trpc.auth.generatePartnerCode.useMutation();
   const linkPartner = trpc.auth.linkPartner.useMutation();
   const unlinkPartner = trpc.auth.unlinkPartner.useMutation();
+
+  // Fetch partner's daily entries
+  const dateStr = format(selectedDate, "yyyy-MM-dd");
+  const { data: partnerDay } = trpc.stats.getPartnerDailySummary.useQuery(
+    { date: dateStr },
+    { enabled: !!me?.partner }
+  );
 
   async function handleGenerateCode() {
     try {
@@ -84,43 +108,68 @@ export default function PartnerPage() {
   return (
     <div className="mx-auto max-w-lg px-4">
       <div className="py-3">
-        <h1 className="text-lg font-bold">Partner</h1>
+        <h1 className="font-caveat text-xl text-foreground">
+          {hasPartner
+            ? COPY.partnerDiaryBanner(me?.partner?.name ?? "Partner")
+            : COPY.partnerHeading}
+        </h1>
       </div>
 
       {hasPartner ? (
         <>
-          <Card className="mb-4">
-            <CardContent className="py-6 text-center">
-              <p className="text-sm text-muted-foreground">Linked with</p>
-              <p className="mt-1 text-xl font-bold">{me?.partner?.name ?? "Partner"}</p>
-            </CardContent>
-          </Card>
+          {/* Partner's diary */}
+          <DateNavigator date={selectedDate} onDateChange={setSelectedDate} />
 
-          <Dialog open={unlinkOpen} onOpenChange={setUnlinkOpen}>
-            <DialogTrigger asChild>
-              <Button variant="outline" className="w-full text-destructive">
-                <Unlink className="mr-2 h-4 w-4" />
-                Unlink Partner
-              </Button>
-            </DialogTrigger>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>Unlink Partner</DialogTitle>
-                <DialogDescription>
-                  Are you sure you want to unlink from {me?.partner?.name ?? "your partner"}?
-                  You will no longer be able to see each other&apos;s progress.
-                </DialogDescription>
-              </DialogHeader>
-              <DialogFooter>
-                <Button variant="outline" onClick={() => setUnlinkOpen(false)}>
-                  Cancel
+          {partnerDay && (
+            <div className="mt-2 space-y-1.5">
+              {(partnerDay.entries as PartnerEntry[]).length > 0 ? (
+                (partnerDay.entries as PartnerEntry[]).map((entry) => (
+                  <DiaryEntryCard
+                    key={entry.id}
+                    entry={entry}
+                    showCalories={false}
+                  />
+                ))
+              ) : (
+                <Card>
+                  <CardContent className="py-6 text-center">
+                    <p className="text-sm text-muted-foreground">
+                      No entries yet for this day
+                    </p>
+                  </CardContent>
+                </Card>
+              )}
+            </div>
+          )}
+
+          {/* Manage link */}
+          <div className="mt-6">
+            <Dialog open={unlinkOpen} onOpenChange={setUnlinkOpen}>
+              <DialogTrigger asChild>
+                <Button variant="outline" className="w-full text-destructive" size="sm">
+                  <Unlink className="mr-2 h-4 w-4" />
+                  Unlink Partner
                 </Button>
-                <Button variant="destructive" onClick={handleUnlink}>
-                  Unlink
-                </Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Unlink Partner</DialogTitle>
+                  <DialogDescription>
+                    Are you sure you want to unlink from {me?.partner?.name ?? "your partner"}?
+                    You will no longer be able to see each other&apos;s diary.
+                  </DialogDescription>
+                </DialogHeader>
+                <DialogFooter>
+                  <Button variant="outline" onClick={() => setUnlinkOpen(false)}>
+                    Cancel
+                  </Button>
+                  <Button variant="destructive" onClick={handleUnlink}>
+                    Unlink
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+          </div>
         </>
       ) : (
         <div className="space-y-6">

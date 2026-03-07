@@ -63,7 +63,7 @@ export default function SearchPage() {
         <div className="relative">
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <Input
-            placeholder="Search food..."
+            placeholder="e.g., chicken breast 150g, rice 200g"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             className="pl-9"
@@ -109,7 +109,7 @@ export default function SearchPage() {
       {!isLoading && debouncedQuery.length >= 2 && results.length === 0 && (
         <div className="flex flex-col items-center gap-3 py-8 text-center">
           <p className="text-sm text-muted-foreground">
-            No results for &ldquo;{debouncedQuery}&rdquo;
+            Hmm, I couldn&apos;t find &ldquo;{debouncedQuery}&rdquo;. Try describing it differently?
           </p>
           {data?.sources?.fatsecret?.error && (
             <p className="text-xs text-destructive">
@@ -117,7 +117,7 @@ export default function SearchPage() {
             </p>
           )}
           <Button size="sm" onClick={() => router.push("/add")}>
-            Add it yourself
+            Describe it yourself
           </Button>
         </div>
       )}

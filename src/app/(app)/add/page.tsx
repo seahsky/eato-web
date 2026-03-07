@@ -12,6 +12,17 @@ import { Label } from "@/components/ui/label";
 import { trpc } from "@/trpc/react";
 import { toast } from "sonner";
 import { usePetReaction } from "@/components/app/pixel-pet/pet-reaction-provider";
+import { MealTypePills } from "@/components/app/meal-type-pills";
+import { COPY } from "@/lib/copy";
+import type { MealType } from "@/server/client-types";
+
+const MOOD_EMOJIS = [
+  { emoji: "\u{1F60A}", label: "Happy" },
+  { emoji: "\u{1F60C}", label: "Content" },
+  { emoji: "\u{1F610}", label: "Neutral" },
+  { emoji: "\u{1F614}", label: "Meh" },
+  { emoji: "\u{1F62B}", label: "Tired" },
+];
 
 export default function AddFoodPage() {
   const router = useRouter();
@@ -45,6 +56,10 @@ export default function AddFoodPage() {
 
   const [servingSize, setServingSize] = useState(product?.servingSize ?? 100);
   const [saving, setSaving] = useState(false);
+  const [mealType, setMealType] = useState<MealType | null>(null);
+  const [selectedMood, setSelectedMood] = useState<string | null>(null);
+  const [note, setNote] = useState("");
+  const [showConfirmation, setShowConfirmation] = useState(false);
 
   // Manual entry form
   const [manualName, setManualName] = useState("");
@@ -70,11 +85,29 @@ export default function AddFoodPage() {
     };
   }, [product, servingSize]);
 
+  function saveMoodNote(entryId: string) {
+    if (selectedMood || note) {
+      try {
+        const key = `eato-entry-meta-${entryId}`;
+        localStorage.setItem(key, JSON.stringify({ mood: selectedMood, note }));
+      } catch {
+        // ignore localStorage errors
+      }
+    }
+  }
+
   async function handleSaveProduct() {
     if (!product || !nutrition) return;
+
+    // Show confirmation first
+    if (!showConfirmation) {
+      setShowConfirmation(true);
+      return;
+    }
+
     setSaving(true);
     try {
-      await logFood.mutateAsync({
+      const result = await logFood.mutateAsync({
         name: product.name,
         brand: product.brand,
         calories: nutrition.calories,
@@ -84,10 +117,12 @@ export default function AddFoodPage() {
         fiber: nutrition.fiber,
         servingSize,
         servingUnit: product.servingUnit,
+        mealType: mealType ?? undefined,
         consumedAt: format(new Date(), "yyyy-MM-dd"),
         dataSource: (product.dataSource as "FATSECRET" | "MANUAL") ?? "FATSECRET",
         fatSecretId: product.fatSecretId,
       });
+      saveMoodNote(result.id);
       triggerReaction("food_logged");
       utils.stats.getDailySummary.invalidate();
       router.replace("/dashboard");
@@ -95,14 +130,22 @@ export default function AddFoodPage() {
       console.error("Failed to log food:", error);
       toast.error(error instanceof Error ? error.message : "Failed to log food. Please try again.");
       setSaving(false);
+      setShowConfirmation(false);
     }
   }
 
   async function handleSaveManual() {
     if (!manualName || !manualCalories) return;
+
+    // Show confirmation first
+    if (!showConfirmation) {
+      setShowConfirmation(true);
+      return;
+    }
+
     setSaving(true);
     try {
-      await logFood.mutateAsync({
+      const result = await logFood.mutateAsync({
         name: manualName,
         calories: Number(manualCalories),
         protein: manualProtein ? Number(manualProtein) : undefined,
@@ -110,10 +153,12 @@ export default function AddFoodPage() {
         fat: manualFat ? Number(manualFat) : undefined,
         servingSize: manualServingSize,
         servingUnit: manualServingUnit,
+        mealType: mealType ?? undefined,
         consumedAt: format(new Date(), "yyyy-MM-dd"),
         isManualEntry: true,
         dataSource: "MANUAL",
       });
+      saveMoodNote(result.id);
       triggerReaction("food_logged");
       utils.stats.getDailySummary.invalidate();
       router.replace("/dashboard");
@@ -121,8 +166,11 @@ export default function AddFoodPage() {
       console.error("Failed to log food:", error);
       toast.error(error instanceof Error ? error.message : "Failed to log food. Please try again.");
       setSaving(false);
+      setShowConfirmation(false);
     }
   }
+
+  const confirmCalories = product ? nutrition?.calories : manualCalories ? Number(manualCalories) : 0;
 
   return (
     <div className="mx-auto max-w-lg px-4">
@@ -131,8 +179,19 @@ export default function AddFoodPage() {
         <Link href="/search">
           <ArrowLeft className="h-5 w-5" />
         </Link>
-        <h1 className="text-lg font-bold">Add to diary</h1>
+        <h1 className="text-lg font-bold">{product ? COPY.addHeading : COPY.addManualHeading}</h1>
       </div>
+
+      {/* Confirmation card */}
+      {showConfirmation && confirmCalories !== undefined && confirmCalories > 0 && (
+        <Card className="mb-4 border-primary/20 bg-primary/5">
+          <CardContent className="py-3 text-center">
+            <p className="font-caveat text-lg text-foreground">
+              {COPY.addConfirmation(confirmCalories)}
+            </p>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Product mode */}
       {product ? (
@@ -155,6 +214,12 @@ export default function AddFoodPage() {
               value={servingSize}
               onChange={(e) => setServingSize(Number(e.target.value) || 1)}
             />
+          </div>
+
+          {/* Meal type */}
+          <div>
+            <Label className="mb-1.5 block">Meal</Label>
+            <MealTypePills value={mealType} onChange={setMealType} />
           </div>
 
           {/* Nutrition preview */}
@@ -181,14 +246,47 @@ export default function AddFoodPage() {
             </Card>
           )}
 
+          {/* Mood emoji row */}
+          <div>
+            <Label className="mb-1.5 block">How are you feeling?</Label>
+            <div className="flex gap-3">
+              {MOOD_EMOJIS.map((m) => (
+                <button
+                  key={m.label}
+                  type="button"
+                  className={`rounded-lg p-2 text-xl transition-all ${
+                    selectedMood === m.emoji
+                      ? "scale-110 bg-accent ring-2 ring-primary/30"
+                      : "hover:bg-accent"
+                  }`}
+                  onClick={() => setSelectedMood(selectedMood === m.emoji ? null : m.emoji)}
+                  title={m.label}
+                >
+                  {m.emoji}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Note */}
+          <div>
+            <Label>Note</Label>
+            <textarea
+              className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+              rows={2}
+              placeholder={COPY.moodPlaceholder}
+              value={note}
+              onChange={(e) => setNote(e.target.value)}
+            />
+          </div>
+
           <Button className="w-full" disabled={saving} onClick={handleSaveProduct}>
-            {saving ? "Saving..." : "Add to diary"}
+            {saving ? "Saving..." : COPY.addButton}
           </Button>
         </div>
       ) : (
         /* Manual entry mode */
         <div className="space-y-4">
-          <h2 className="text-base font-semibold">Add your own</h2>
           <div className="space-y-3">
             <div>
               <Label>Food name</Label>
@@ -207,6 +305,13 @@ export default function AddFoodPage() {
                 onChange={(e) => setManualCalories(e.target.value ? Number(e.target.value) : "")}
               />
             </div>
+
+            {/* Meal type */}
+            <div>
+              <Label className="mb-1.5 block">Meal</Label>
+              <MealTypePills value={mealType} onChange={setMealType} />
+            </div>
+
             <div className="grid grid-cols-3 gap-2">
               <div>
                 <Label>Protein (g)</Label>
@@ -268,12 +373,46 @@ export default function AddFoodPage() {
             </div>
           </div>
 
+          {/* Mood emoji row */}
+          <div>
+            <Label className="mb-1.5 block">How are you feeling?</Label>
+            <div className="flex gap-3">
+              {MOOD_EMOJIS.map((m) => (
+                <button
+                  key={m.label}
+                  type="button"
+                  className={`rounded-lg p-2 text-xl transition-all ${
+                    selectedMood === m.emoji
+                      ? "scale-110 bg-accent ring-2 ring-primary/30"
+                      : "hover:bg-accent"
+                  }`}
+                  onClick={() => setSelectedMood(selectedMood === m.emoji ? null : m.emoji)}
+                  title={m.label}
+                >
+                  {m.emoji}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Note */}
+          <div>
+            <Label>Note</Label>
+            <textarea
+              className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+              rows={2}
+              placeholder={COPY.moodPlaceholder}
+              value={note}
+              onChange={(e) => setNote(e.target.value)}
+            />
+          </div>
+
           <Button
             className="w-full"
             disabled={!manualName || !manualCalories || saving}
             onClick={handleSaveManual}
           >
-            {saving ? "Saving..." : "Add to diary"}
+            {saving ? "Saving..." : COPY.addButton}
           </Button>
         </div>
       )}
