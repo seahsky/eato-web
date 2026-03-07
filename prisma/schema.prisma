@@ -166,6 +166,10 @@ model FoodEntry {
   // Meal categorization
   mealType        MealType?
 
+  // Diary enrichments
+  mood            String?
+  note            String?
+
   // Timestamps
   loggedAt        DateTime  @default(now())
   consumedAt      DateTime

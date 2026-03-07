@@ -22,6 +22,8 @@ type EntryData = {
   mealGroupId?: string | null;
   loggedAt?: string | Date;
   consumedAt?: string | Date;
+  mood?: string | null;
+  note?: string | null;
 };
 
 /** Group entries by mealGroupId, preserving chronological order */

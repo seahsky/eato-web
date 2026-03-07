@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { trpc } from "@/trpc/react";
+import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { usePetReaction } from "@/components/app/pixel-pet/pet-reaction-provider";
 import { parseIngredientLines } from "@/lib/meal-parser";
@@ -46,6 +47,8 @@ export default function LogPage() {
   const [reviewItems, setReviewItems] = useState<ReviewItem[]>([]);
   const [isSearching, setIsSearching] = useState(false);
   const [isAnalyzingPhoto, setIsAnalyzingPhoto] = useState(false);
+  const [selectedMood, setSelectedMood] = useState<string | null>(null);
+  const [note, setNote] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const batchLog = trpc.food.batchLog.useMutation();
@@ -253,6 +256,8 @@ export default function LogPage() {
           servingUnit: item.servingUnit,
           mealGroupId,
           consumedAt,
+          mood: selectedMood ?? undefined,
+          note: note || undefined,
           dataSource: (item.matchedProduct?.dataSource as "FATSECRET" | "MANUAL") ?? "MANUAL",
           fatSecretId: item.matchedProduct?.fatSecretId ?? undefined,
           isManualEntry: !item.matchedProduct,
@@ -425,6 +430,36 @@ export default function LogPage() {
                   {reviewItems.length} item{reviewItems.length !== 1 ? "s" : ""}{" "}
                   &middot; ~{totalCalories} kcal total
                 </p>
+              </div>
+
+              {/* Mood & note */}
+              <div className="space-y-2">
+                <div className="flex items-center gap-1.5">
+                  {["😋", "😊", "😐", "🤢", "🥱"].map((emoji) => (
+                    <button
+                      key={emoji}
+                      type="button"
+                      className={cn(
+                        "rounded-full p-1.5 text-lg transition-colors",
+                        selectedMood === emoji
+                          ? "bg-accent ring-1 ring-primary/40"
+                          : "hover:bg-accent/50"
+                      )}
+                      onClick={() =>
+                        setSelectedMood(selectedMood === emoji ? null : emoji)
+                      }
+                    >
+                      {emoji}
+                    </button>
+                  ))}
+                </div>
+                <Input
+                  placeholder="Add a note (optional)"
+                  value={note}
+                  onChange={(e) => setNote(e.target.value)}
+                  maxLength={500}
+                  className="text-sm"
+                />
               </div>
 
               <div className="flex gap-2">

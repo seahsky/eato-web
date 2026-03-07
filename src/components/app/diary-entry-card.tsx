@@ -13,6 +13,8 @@ interface DiaryEntry {
   servingUnit: string;
   consumedAt?: string | Date;
   loggedAt?: string | Date;
+  mood?: string | null;
+  note?: string | null;
 }
 
 interface DiaryEntryCardProps {
@@ -37,7 +39,7 @@ export function DiaryEntryCard({
         onClick && "cursor-pointer hover:bg-accent hover:shadow-warm-lg hover:-translate-y-0.5"
       )}
       onClick={onClick}
-      {...(onClick ? { role: "button", "aria-label": `${entry.name}, ${Math.round(entry.calories)} calories` } : {})}
+      {...(onClick ? { role: "button", "aria-label": `${entry.name}, ${Math.round(entry.calories)} calories${entry.mood ? `, mood: ${entry.mood}` : ""}${entry.note ? `, note: ${entry.note}` : ""}` } : {})}
     >
       <CardContent className="py-3">
         {/* Time */}
@@ -62,6 +64,14 @@ export function DiaryEntryCard({
             </span>
           )}
         </div>
+
+        {/* Mood & note */}
+        {(entry.mood || entry.note) && (
+          <div className="mt-1.5 flex items-start gap-1.5 text-xs text-muted-foreground">
+            {entry.mood && <span>{entry.mood}</span>}
+            {entry.note && <span className="italic line-clamp-2">{entry.note}</span>}
+          </div>
+        )}
       </CardContent>
     </Card>
   );

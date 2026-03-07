@@ -18,6 +18,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { trpc } from "@/trpc/react";
+import { cn } from "@/lib/utils";
 import { COPY } from "@/lib/copy";
 
 export default function EditFoodPage() {
@@ -36,11 +37,15 @@ export default function EditFoodPage() {
   const entry = entries?.find((e: { id: string }) => e.id === id);
 
   const [servingSize, setServingSize] = useState<number | null>(null);
+  const [mood, setMood] = useState<string | null>(null);
+  const [note, setNote] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
 
   // Initialize form values when entry loads
   const currentServingSize = servingSize ?? entry?.servingSize ?? 100;
+  const currentMood = mood !== null ? mood : (entry?.mood ?? null);
+  const currentNote = note !== null ? note : (entry?.note ?? "");
 
   const updateEntry = trpc.food.update.useMutation();
   const deleteEntry = trpc.food.delete.useMutation();
@@ -53,6 +58,8 @@ export default function EditFoodPage() {
         id: entry.id,
         data: {
           servingSize: currentServingSize,
+          mood: currentMood ?? undefined,
+          note: currentNote || undefined,
         },
       });
       utils.stats.getDailySummary.invalidate();
@@ -181,6 +188,40 @@ export default function EditFoodPage() {
             )}
           </CardContent>
         </Card>
+
+        {/* Mood & note */}
+        <div className="space-y-2">
+          <Label>Mood</Label>
+          <div className="flex items-center gap-1.5">
+            {["😋", "😊", "😐", "🤢", "🥱"].map((emoji) => (
+              <button
+                key={emoji}
+                type="button"
+                className={cn(
+                  "rounded-full p-1.5 text-lg transition-colors",
+                  currentMood === emoji
+                    ? "bg-accent ring-1 ring-primary/40"
+                    : "hover:bg-accent/50"
+                )}
+                onClick={() =>
+                  setMood(currentMood === emoji ? "" : emoji)
+                }
+              >
+                {emoji}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div>
+          <Label>Note</Label>
+          <Input
+            placeholder="Add a note (optional)"
+            value={currentNote}
+            onChange={(e) => setNote(e.target.value)}
+            maxLength={500}
+          />
+        </div>
 
         <Button className="w-full" disabled={saving} onClick={handleSave}>
           {saving ? "Saving..." : "Save Changes"}

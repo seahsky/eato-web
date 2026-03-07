@@ -33,6 +33,8 @@ const foodEntrySchema = z.object({
   servingSize: z.number().min(0),
   servingUnit: z.string(),
   mealGroupId: z.string().optional(),
+  mood: z.string().max(10).optional(),
+  note: z.string().max(500).optional(),
   consumedAt: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Date must be in YYYY-MM-DD format"),
   isManualEntry: z.boolean().default(false),
   dataSource: z.enum(["FATSECRET", "MANUAL", "OPEN_FOOD_FACTS", "USDA"]).default("MANUAL"),

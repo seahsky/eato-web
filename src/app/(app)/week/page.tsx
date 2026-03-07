@@ -20,6 +20,8 @@ type DayEntry = {
   servingUnit: string;
   loggedAt?: string | Date;
   consumedAt?: string | Date;
+  mood?: string | null;
+  note?: string | null;
 };
 
 export default function WeekPage() {
