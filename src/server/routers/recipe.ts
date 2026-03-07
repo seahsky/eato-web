@@ -1,7 +1,6 @@
 import { z } from "zod";
 import { router, protectedProcedure } from "../trpc";
 import { TRPCError } from "@trpc/server";
-import { startOfDay } from "date-fns";
 import {
   calculateRecipeNutrition,
   calculatePortionNutrition,
@@ -40,7 +39,6 @@ const createRecipeSchema = z.object({
 const logRecipeSchema = z.object({
   recipeId: z.string(),
   consumedWeight: z.number().min(0),
-  mealType: z.enum(["BREAKFAST", "LUNCH", "DINNER", "SNACK"]).optional(),
   consumedAt: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Date must be in YYYY-MM-DD format"),
 });
 
@@ -414,7 +412,6 @@ export const recipeRouter = router({
           fiber: portionNutrition.fiber,
           servingSize: input.consumedWeight,
           servingUnit: "g",
-          mealType: input.mealType,
           consumedAt,
           isManualEntry: false,
           recipeId: recipe.id,

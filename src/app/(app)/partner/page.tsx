@@ -28,7 +28,6 @@ type PartnerEntry = {
   calories: number;
   servingSize: number;
   servingUnit: string;
-  mealType?: string | null;
   loggedAt?: string | Date;
   consumedAt?: string | Date;
 };

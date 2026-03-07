@@ -185,6 +185,9 @@ model FoodEntry {
   // Recipe reference (if logged from a recipe)
   recipeId        String?   @db.ObjectId
 
+  // Meal group (entries logged together share an ID)
+  mealGroupId     String?
+
   // Partner logging fields
   loggedByUserId  String?        @db.ObjectId
   approvalStatus  ApprovalStatus @default(APPROVED)
@@ -404,12 +407,7 @@ model NotificationSettings {
   // Nudge notifications
   receiveNudges Boolean @default(true)
 
-  // Daily reminder preferences (HH:MM format, null = disabled)
-  breakfastReminderTime String?
-  lunchReminderTime     String?
-  dinnerReminderTime    String?
-
-  // Timezone for meal reminders (IANA format, e.g., "America/New_York")
+  // Timezone (IANA format, e.g., "America/New_York")
   timezone String @default("UTC")
 
   createdAt DateTime @default(now())

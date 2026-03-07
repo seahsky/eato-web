@@ -65,10 +65,8 @@ export async function getAgenda(): Promise<Agenda> {
 /**
  * Define all job types
  */
-async function defineJobs(agenda: Agenda): Promise<void> {
-  // Import and define all job types
-  const { defineMealReminderJob } = await import("./jobs/meal-reminder");
-  defineMealReminderJob(agenda);
+async function defineJobs(_agenda: Agenda): Promise<void> {
+  // No jobs currently defined (meal reminders removed)
 }
 
 /**

@@ -1,12 +1,4 @@
 import { sendNotificationToUser, isNotificationEnabled, userHasAnySubscription } from "./sender";
-import type { MealType } from "@prisma/client";
-
-const MEAL_TYPE_LABELS: Record<MealType, string> = {
-  BREAKFAST: "breakfast",
-  LUNCH: "lunch",
-  DINNER: "dinner",
-  SNACK: "a snack",
-};
 
 /**
  * Notify partner that they have a pending approval for food logged by user
@@ -18,7 +10,6 @@ export async function notifyPendingApproval(
     id: string;
     name: string;
     calories: number;
-    mealType: MealType | null;
   }
 ): Promise<void> {
   const hasSubscription = await userHasAnySubscription(partnerId);
@@ -37,7 +28,6 @@ export async function notifyPendingApproval(
       entryId: entry.id,
       entryName: entry.name,
       calories: entry.calories,
-      mealType: entry.mealType,
       loggerName,
     },
   });
@@ -49,20 +39,16 @@ export async function notifyPendingApproval(
 export async function notifyPartnerFoodLogged(
   partnerId: string,
   loggerName: string,
-  foodName: string,
-  mealType: MealType | null
+  foodName: string
 ): Promise<void> {
-  // Check if partner has subscriptions and notifications enabled
   const hasSubscription = await userHasAnySubscription(partnerId);
   if (!hasSubscription) return;
 
   const isEnabled = await isNotificationEnabled(partnerId, "partnerFoodLogged");
   if (!isEnabled) return;
 
-  const mealLabel = mealType ? MEAL_TYPE_LABELS[mealType] : "food";
-
   await sendNotificationToUser(partnerId, {
-    title: `${loggerName} logged ${mealLabel}`,
+    title: `${loggerName} logged food`,
     body: foodName,
     tag: "partner-food-logged",
     url: "/partner",
@@ -133,26 +119,6 @@ export async function sendNudgeNotification(
   });
 
   return result.sent > 0;
-}
-
-/**
- * Send meal reminder notification
- */
-export async function sendMealReminder(
-  userId: string,
-  mealType: MealType
-): Promise<void> {
-  const hasSubscription = await userHasAnySubscription(userId);
-  if (!hasSubscription) return;
-
-  const mealLabel = MEAL_TYPE_LABELS[mealType];
-
-  await sendNotificationToUser(userId, {
-    title: `Time for ${mealLabel}!`,
-    body: `Don't forget to log your ${mealLabel}`,
-    tag: `reminder-${mealType.toLowerCase()}`,
-    url: "/search",
-  });
 }
 
 /**

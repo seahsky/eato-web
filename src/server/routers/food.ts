@@ -4,7 +4,7 @@ import { TRPCError } from "@trpc/server";
 import { getProductByBarcode, getProductById } from "../services/fatsecret";
 import { searchFoods, searchFoodsFast } from "../services/food-search";
 import { hashQuery, cleanupExpiredCache } from "../services/search-cache";
-import { startOfDay, endOfDay } from "date-fns";
+import { startOfDay } from "date-fns";
 import { notifyPartnerFoodLogged, notifyPartnerGoalReached, notifyPendingApproval, notifyBadgeUnlocked, notifyApprovalResult } from "@/lib/notifications/triggers";
 import {
   calculateStreakUpdateWithRestDays,
@@ -31,7 +31,7 @@ const foodEntrySchema = z.object({
   sodium: z.number().min(0).optional(),
   servingSize: z.number().min(0),
   servingUnit: z.string(),
-  mealType: z.enum(["BREAKFAST", "LUNCH", "DINNER", "SNACK"]).optional(),
+  mealGroupId: z.string().optional(),
   consumedAt: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Date must be in YYYY-MM-DD format"),
   isManualEntry: z.boolean().default(false),
   dataSource: z.enum(["FATSECRET", "MANUAL", "OPEN_FOOD_FACTS", "USDA"]).default("MANUAL"),
@@ -337,8 +337,7 @@ export const foodRouter = router({
         notifyPartnerFoodLogged(
           userWithPartner.partnerId,
           userWithPartner.name || "Your partner",
-          input.name,
-          input.mealType ?? null
+          input.name
         ).catch(() => {});
 
         // Check if goal was just reached (within 90-100% of goal)
@@ -371,13 +370,213 @@ export const foodRouter = router({
           id: entry.id,
           name: input.name,
           calories: input.calories,
-          mealType: input.mealType ?? null,
         }
       ).catch(() => {});
     }
 
     return entry;
   }),
+
+  // Batch log multiple food entries at once (meal group)
+  batchLog: protectedProcedure
+    .meta({ openapi: { method: "POST", path: "/food/batch-log" } })
+    .input(
+      z.object({
+        entries: z.array(foodEntrySchema).min(1).max(15),
+        mealGroupId: z.string(),
+        consumedAt: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Date must be in YYYY-MM-DD format"),
+      })
+    )
+    .output(z.any())
+    .mutation(async ({ ctx, input }) => {
+      const dayStart = new Date(input.consumedAt + "T00:00:00.000Z");
+      const consumedAt = new Date(input.consumedAt + "T12:00:00.000Z");
+
+      // Get or create daily log
+      const profile = await ctx.prisma.profile.findUnique({
+        where: { userId: ctx.user.id },
+      });
+      const calorieGoal = profile?.calorieGoal ?? 2000;
+
+      let dailyLog = await ctx.prisma.dailyLog.findUnique({
+        where: {
+          userId_date: {
+            userId: ctx.user.id,
+            date: dayStart,
+          },
+        },
+      });
+
+      if (!dailyLog) {
+        dailyLog = await ctx.prisma.dailyLog.create({
+          data: {
+            userId: ctx.user.id,
+            date: dayStart,
+            calorieGoal,
+          },
+        });
+      }
+
+      // Create all food entries
+      const createdEntries = [];
+      let totalCalories = 0;
+      let totalProtein = 0;
+      let totalCarbs = 0;
+      let totalFat = 0;
+      let totalFiber = 0;
+
+      for (const entryData of input.entries) {
+        const { forPartnerId, consumedAt: _entryDate, mealGroupId: _mg, ...rest } = entryData;
+        const entry = await ctx.prisma.foodEntry.create({
+          data: {
+            userId: ctx.user.id,
+            dailyLogId: dailyLog!.id,
+            approvalStatus: "APPROVED",
+            ...rest,
+            mealGroupId: input.mealGroupId,
+            consumedAt,
+          },
+        });
+        createdEntries.push(entry);
+        totalCalories += entryData.calories;
+        totalProtein += entryData.protein ?? 0;
+        totalCarbs += entryData.carbs ?? 0;
+        totalFat += entryData.fat ?? 0;
+        totalFiber += entryData.fiber ?? 0;
+      }
+
+      // Update daily log totals once
+      const updatedLog = await ctx.prisma.dailyLog.update({
+        where: { id: dailyLog.id },
+        data: {
+          totalCalories: { increment: totalCalories },
+          totalProtein: { increment: totalProtein },
+          totalCarbs: { increment: totalCarbs },
+          totalFat: { increment: totalFat },
+          totalFiber: { increment: totalFiber },
+        },
+      });
+
+      // Update streaks once for the batch
+      const userData = await ctx.prisma.user.findUnique({
+        where: { id: ctx.user.id },
+        select: {
+          currentStreak: true,
+          longestStreak: true,
+          goalStreak: true,
+          longestGoalStreak: true,
+          lastLogDate: true,
+          streakFreezes: true,
+          restDayDates: true,
+          restDaysRemaining: true,
+          lastRestDayReset: true,
+          weeklyStreak: true,
+          longestWeeklyStreak: true,
+          currentWeekDays: true,
+          weekStartDate: true,
+          achievements: { select: { badgeId: true } },
+          name: true,
+          partnerId: true,
+        },
+      });
+
+      if (userData) {
+        const needsRestDayReset = shouldResetRestDays(userData.lastRestDayReset);
+        const streakResult = calculateStreakUpdateWithRestDays(
+          {
+            currentStreak: userData.currentStreak,
+            longestStreak: userData.longestStreak,
+            goalStreak: userData.goalStreak,
+            longestGoalStreak: userData.longestGoalStreak,
+            lastLogDate: userData.lastLogDate,
+            streakFreezes: userData.streakFreezes,
+            restDayDates: userData.restDayDates,
+            restDaysRemaining: userData.restDaysRemaining,
+            lastRestDayReset: userData.lastRestDayReset,
+          },
+          consumedAt
+        );
+        const weeklyResult = calculateWeeklyStreakUpdate(
+          {
+            weeklyStreak: userData.weeklyStreak,
+            longestWeeklyStreak: userData.longestWeeklyStreak,
+            currentWeekDays: userData.currentWeekDays,
+            weekStartDate: userData.weekStartDate,
+          },
+          consumedAt
+        );
+
+        await ctx.prisma.user.update({
+          where: { id: ctx.user.id },
+          data: {
+            currentStreak: streakResult.newStreak,
+            longestStreak: streakResult.longestStreak,
+            streakFreezes: streakResult.freezesRemaining,
+            lastLogDate: consumedAt,
+            weeklyStreak: weeklyResult.weeklyStreak,
+            longestWeeklyStreak: weeklyResult.longestWeeklyStreak,
+            currentWeekDays: weeklyResult.currentWeekDays,
+            weekStartDate: weeklyResult.weekStartDate,
+            ...(needsRestDayReset && {
+              restDaysRemaining: MAX_REST_DAYS_PER_MONTH,
+              lastRestDayReset: new Date(),
+            }),
+          },
+        });
+
+        // Check for new badges
+        const unlockedBadgeIds = userData.achievements.map((a) => a.badgeId);
+        const newDailyBadges = getStreakBadgesToUnlock(streakResult.newStreak, unlockedBadgeIds);
+        const newWeeklyBadges = getWeeklyStreakBadgesToUnlock(weeklyResult.weeklyStreak, unlockedBadgeIds);
+        const newBadges = [...newDailyBadges, ...newWeeklyBadges];
+
+        for (const badgeId of newBadges) {
+          try {
+            await ctx.prisma.achievement.create({
+              data: { userId: ctx.user.id, badgeId },
+            });
+          } catch {
+            // Ignore duplicate key errors
+          }
+        }
+
+        if (newBadges.length > 0) {
+          const { BADGES } = await import("@/lib/gamification/badges");
+          const badgeNames = newBadges
+            .map((id) => BADGES[id]?.name)
+            .filter(Boolean) as string[];
+          notifyBadgeUnlocked(ctx.user.id, badgeNames).catch(() => {});
+        }
+
+        // Send one partner notification for the batch
+        if (userData.partnerId) {
+          const itemCount = input.entries.length;
+          const foodSummary = itemCount === 1
+            ? input.entries[0].name
+            : `${itemCount} items`;
+          notifyPartnerFoodLogged(
+            userData.partnerId,
+            userData.name || "Your partner",
+            foodSummary
+          ).catch(() => {});
+
+          // Check if goal was just reached
+          const goalProgress = updatedLog.totalCalories / updatedLog.calorieGoal;
+          if (!updatedLog.goalMet && goalProgress >= 0.9 && goalProgress <= 1.0) {
+            await ctx.prisma.dailyLog.update({
+              where: { id: dailyLog.id },
+              data: { goalMet: true },
+            });
+            notifyPartnerGoalReached(
+              userData.partnerId,
+              userData.name || "Your partner"
+            ).catch(() => {});
+          }
+        }
+      }
+
+      return { entries: createdEntries, mealGroupId: input.mealGroupId };
+    }),
 
   // Get entries for a date
   getByDate: protectedProcedure
@@ -786,22 +985,16 @@ export const foodRouter = router({
       return { success: true };
     }),
 
-  // Clone meal to partner
-  cloneMealToPartner: protectedProcedure
-    .meta({ openapi: { method: "POST", path: "/food/clone-meal-to-partner" } })
+  // Clone meal group to partner
+  cloneMealGroupToPartner: protectedProcedure
+    .meta({ openapi: { method: "POST", path: "/food/clone-meal-group-to-partner" } })
     .input(
       z.object({
-        mealType: z.enum(["BREAKFAST", "LUNCH", "DINNER", "SNACK"]),
-        date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Date must be in YYYY-MM-DD format").optional(),
+        mealGroupId: z.string(),
       })
     )
     .output(z.object({ clonedCount: z.number(), partnerName: z.string().nullable() }))
     .mutation(async ({ ctx, input }) => {
-      // If no date provided, use today's date in a timezone-safe way
-      const dateStr = input.date ?? new Date().toISOString().split("T")[0];
-      const dayStart = new Date(dateStr + "T00:00:00.000Z");
-      const dayEnd = new Date(dateStr + "T23:59:59.999Z");
-
       // Get user with partner info
       const user = await ctx.prisma.user.findUnique({
         where: { id: ctx.user.id },
@@ -819,22 +1012,21 @@ export const foodRouter = router({
         });
       }
 
-      // Get user's approved entries for this meal
+      // Get user's approved entries for this meal group
       const entries = await ctx.prisma.foodEntry.findMany({
         where: {
           userId: ctx.user.id,
-          mealType: input.mealType,
+          mealGroupId: input.mealGroupId,
           approvalStatus: "APPROVED",
-          consumedAt: {
-            gte: dayStart,
-            lte: dayEnd,
-          },
         },
       });
 
       if (entries.length === 0) {
         return { clonedCount: 0, partnerName: user.partner.name };
       }
+
+      // Use the date from the first entry
+      const dayStart = startOfDay(entries[0].consumedAt);
 
       // Get or create partner's daily log
       const partnerProfile = await ctx.prisma.profile.findUnique({
@@ -861,7 +1053,8 @@ export const foodRouter = router({
         });
       }
 
-      // Clone entries for partner
+      // Clone entries for partner with a new meal group ID
+      const newMealGroupId = crypto.randomUUID();
       const clonedEntries = await ctx.prisma.foodEntry.createMany({
         data: entries.map((entry) => ({
           userId: user.partner!.id,
@@ -881,7 +1074,7 @@ export const foodRouter = router({
           sodium: entry.sodium,
           servingSize: entry.servingSize,
           servingUnit: entry.servingUnit,
-          mealType: entry.mealType,
+          mealGroupId: newMealGroupId,
           consumedAt: entry.consumedAt,
           isManualEntry: entry.isManualEntry,
           dataSource: entry.dataSource,
@@ -1243,7 +1436,6 @@ export const foodRouter = router({
     .input(
       z.object({
         entryId: z.string(),
-        mealType: z.enum(["BREAKFAST", "LUNCH", "DINNER", "SNACK"]).optional(),
         consumedAt: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Date must be in YYYY-MM-DD format").optional(),
       })
     )
@@ -1282,7 +1474,6 @@ export const foodRouter = router({
       const dateStr = input.consumedAt ?? new Date().toISOString().split("T")[0];
       const dayStart = new Date(dateStr + "T00:00:00.000Z");
       const consumedAt = new Date(dateStr + "T12:00:00.000Z");
-      const mealType = input.mealType ?? partnerEntry.mealType;
 
       // Get or create daily log for current user
       const profile = await ctx.prisma.profile.findUnique({
@@ -1328,7 +1519,6 @@ export const foodRouter = router({
           sodium: partnerEntry.sodium,
           servingSize: partnerEntry.servingSize,
           servingUnit: partnerEntry.servingUnit,
-          mealType,
           consumedAt,
           isManualEntry: partnerEntry.isManualEntry,
           dataSource: partnerEntry.dataSource,

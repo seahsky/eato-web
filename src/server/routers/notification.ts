@@ -2,7 +2,6 @@ import { z } from "zod";
 import { router, protectedProcedure } from "../trpc";
 import { TRPCError } from "@trpc/server";
 import { sendNudgeNotification } from "@/lib/notifications/triggers";
-import { syncMealReminders } from "@/lib/agenda/scheduler";
 
 // 4 hours in milliseconds
 const NUDGE_COOLDOWN_MS = 4 * 60 * 60 * 1000;
@@ -114,9 +113,6 @@ export const notificationRouter = router({
         partnerGoalReached: true,
         partnerLinked: true,
         receiveNudges: true,
-        breakfastReminderTime: null,
-        lunchReminderTime: null,
-        dinnerReminderTime: null,
         timezone: "UTC",
       };
     }
@@ -126,9 +122,6 @@ export const notificationRouter = router({
       partnerGoalReached: settings.partnerGoalReached,
       partnerLinked: settings.partnerLinked,
       receiveNudges: settings.receiveNudges,
-      breakfastReminderTime: settings.breakfastReminderTime,
-      lunchReminderTime: settings.lunchReminderTime,
-      dinnerReminderTime: settings.dinnerReminderTime,
       timezone: settings.timezone,
     };
   }),
@@ -142,18 +135,6 @@ export const notificationRouter = router({
         partnerGoalReached: z.boolean().optional(),
         partnerLinked: z.boolean().optional(),
         receiveNudges: z.boolean().optional(),
-        breakfastReminderTime: z.string().regex(/^\d{2}:\d{2}$/).refine((val) => {
-          const [h, m] = val.split(":").map(Number);
-          return h >= 0 && h <= 23 && m >= 0 && m <= 59;
-        }, "Invalid time. Hours must be 00-23, minutes 00-59").nullable().optional(),
-        lunchReminderTime: z.string().regex(/^\d{2}:\d{2}$/).refine((val) => {
-          const [h, m] = val.split(":").map(Number);
-          return h >= 0 && h <= 23 && m >= 0 && m <= 59;
-        }, "Invalid time. Hours must be 00-23, minutes 00-59").nullable().optional(),
-        dinnerReminderTime: z.string().regex(/^\d{2}:\d{2}$/).refine((val) => {
-          const [h, m] = val.split(":").map(Number);
-          return h >= 0 && h <= 23 && m >= 0 && m <= 59;
-        }, "Invalid time. Hours must be 00-23, minutes 00-59").nullable().optional(),
         timezone: z.string().optional(),
       })
     )
@@ -166,20 +147,6 @@ export const notificationRouter = router({
           ...input,
         },
       });
-
-      // Sync meal reminder jobs when settings change
-      const mealReminderChanged =
-        input.breakfastReminderTime !== undefined ||
-        input.lunchReminderTime !== undefined ||
-        input.dinnerReminderTime !== undefined ||
-        input.timezone !== undefined;
-
-      if (mealReminderChanged) {
-        // Fire and forget - don't block the response
-        syncMealReminders(ctx.user.id).catch((error) => {
-          console.error("Failed to sync meal reminders:", error);
-        });
-      }
 
       return settings;
     }),

@@ -19,30 +19,27 @@ type EntryData = {
   calories: number;
   servingSize: number;
   servingUnit: string;
-  mealType?: string | null;
+  mealGroupId?: string | null;
   loggedAt?: string | Date;
   consumedAt?: string | Date;
 };
 
-const MEAL_ORDER = ["BREAKFAST", "LUNCH", "DINNER", "SNACK"];
+/** Group entries by mealGroupId, preserving chronological order */
+function groupEntries(entries: EntryData[]): { groupId: string | null; items: EntryData[] }[] {
+  const groups: { groupId: string | null; items: EntryData[] }[] = [];
+  const seenGroups = new Map<string, number>();
 
-function groupByMealType(entries: EntryData[]) {
-  const groups = new Map<string, EntryData[]>();
   for (const entry of entries) {
-    const key = entry.mealType ?? "OTHER";
-    const group = groups.get(key) ?? [];
-    group.push(entry);
-    groups.set(key, group);
+    const gid = entry.mealGroupId ?? null;
+    if (gid && seenGroups.has(gid)) {
+      groups[seenGroups.get(gid)!].items.push(entry);
+    } else {
+      const idx = groups.length;
+      groups.push({ groupId: gid, items: [entry] });
+      if (gid) seenGroups.set(gid, idx);
+    }
   }
-  // Sort groups by meal order
-  const sorted: [string, EntryData[]][] = [];
-  for (const meal of MEAL_ORDER) {
-    const group = groups.get(meal);
-    if (group) sorted.push([meal, group]);
-  }
-  const other = groups.get("OTHER");
-  if (other) sorted.push(["OTHER", other]);
-  return sorted;
+  return groups;
 }
 
 export default function DashboardPage() {
@@ -60,8 +57,7 @@ export default function DashboardPage() {
   );
 
   const entries = (data?.entries ?? []) as EntryData[];
-  const grouped = groupByMealType(entries);
-  const hasMealTypes = entries.some((e) => e.mealType);
+  const grouped = groupEntries(entries);
 
   return (
     <div className="mx-auto max-w-lg px-4">
@@ -107,23 +103,28 @@ export default function DashboardPage() {
         <>
           {entries.length > 0 && (
             <div className="space-y-1.5">
-              {hasMealTypes
-                ? grouped.map(([, groupEntries]) =>
-                    groupEntries.map((entry, i) => (
-                      <div key={entry.id} className={i < 5 ? `animate-fade-in-delay-${i}` : "animate-fade-in-delay-4"}>
-                        <Link href={`/food/edit/${entry.id}`}>
+              {grouped.map((group) => {
+                if (group.groupId && group.items.length > 1) {
+                  // Meal group — cluster in a shared card
+                  return (
+                    <div key={group.groupId} className="rounded-lg border border-border/50 bg-muted/30 p-1.5 space-y-1">
+                      {group.items.map((entry) => (
+                        <Link key={entry.id} href={`/food/edit/${entry.id}`}>
                           <DiaryEntryCard entry={entry} />
                         </Link>
-                      </div>
-                    ))
-                  )
-                : entries.map((entry, i) => (
-                    <div key={entry.id} className={i < 5 ? `animate-fade-in-delay-${i}` : "animate-fade-in-delay-4"}>
-                      <Link href={`/food/edit/${entry.id}`}>
-                        <DiaryEntryCard entry={entry} />
-                      </Link>
+                      ))}
                     </div>
-                  ))}
+                  );
+                }
+                // Individual entries (no group or single-item group)
+                return group.items.map((entry, i) => (
+                  <div key={entry.id} className={i < 5 ? `animate-fade-in-delay-${i}` : "animate-fade-in-delay-4"}>
+                    <Link href={`/food/edit/${entry.id}`}>
+                      <DiaryEntryCard entry={entry} />
+                    </Link>
+                  </div>
+                ));
+              })}
             </div>
           )}
 
@@ -142,7 +143,7 @@ export default function DashboardPage() {
               description={COPY.emptyDiaryDescription}
               action={
                 <Button asChild size="sm">
-                  <Link href="/search">{COPY.emptyDiaryCta}</Link>
+                  <Link href="/log">{COPY.emptyDiaryCta}</Link>
                 </Button>
               }
             />
@@ -152,7 +153,7 @@ export default function DashboardPage() {
 
       {/* Floating action button - warm pill */}
       <Link
-        href="/search"
+        href="/log"
         className="fixed bottom-24 right-4 z-40 flex items-center gap-2 rounded-full bg-primary px-4 py-3 text-sm font-medium text-primary-foreground shadow-lg transition-transform hover:scale-105 active:scale-95"
       >
         <Plus className="h-4 w-4" />

@@ -9,7 +9,6 @@
 export type { AppRouter } from './routers'
 
 // Mirror Prisma enums as plain TS types (no Prisma dependency)
-export type MealType = 'BREAKFAST' | 'LUNCH' | 'DINNER' | 'SNACK'
 export type Gender = 'MALE' | 'FEMALE'
 export type ActivityLevel =
   | 'SEDENTARY'
