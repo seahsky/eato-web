@@ -103,16 +103,15 @@ export default function ProfileSetupPage() {
           </div>
           <div className="grid grid-cols-2 gap-3">
             {(["MALE", "FEMALE"] as Gender[]).map((g) => (
-              <Card
+              <button
                 key={g}
-                className={`cursor-pointer transition-all ${gender === g ? "ring-2 ring-primary" : ""}`}
+                type="button"
+                className={`flex flex-col items-center gap-2 rounded-2xl border bg-card py-6 text-card-foreground shadow-warm-sm cursor-pointer transition-all ${gender === g ? "ring-2 ring-primary" : ""}`}
                 onClick={() => setGender(g)}
               >
-                <CardContent className="flex flex-col items-center gap-2 py-6">
-                  {g === "MALE" ? <User className="h-8 w-8" /> : <UserRound className="h-8 w-8" />}
-                  <span className="font-semibold">{g === "MALE" ? "Male" : "Female"}</span>
-                </CardContent>
-              </Card>
+                {g === "MALE" ? <User className="h-8 w-8" /> : <UserRound className="h-8 w-8" />}
+                <span className="font-semibold">{g === "MALE" ? "Male" : "Female"}</span>
+              </button>
             ))}
           </div>
           <Button className="w-full" disabled={!gender} onClick={() => setStep(1)}>
@@ -181,16 +180,15 @@ export default function ProfileSetupPage() {
           <h2 className="text-lg font-semibold">How active are you?</h2>
           <div className="space-y-2">
             {ACTIVITY_OPTIONS.map((opt) => (
-              <Card
+              <button
                 key={opt.value}
-                className={`cursor-pointer transition-all ${activityLevel === opt.value ? "ring-2 ring-primary" : ""}`}
+                type="button"
+                className={`w-full rounded-2xl border bg-card px-6 py-3 text-left text-card-foreground shadow-warm-sm cursor-pointer transition-all ${activityLevel === opt.value ? "ring-2 ring-primary" : ""}`}
                 onClick={() => setActivityLevel(opt.value)}
               >
-                <CardContent className="py-3">
-                  <div className="font-medium">{opt.label}</div>
-                  <div className="text-sm text-muted-foreground">{opt.description}</div>
-                </CardContent>
-              </Card>
+                <div className="font-medium">{opt.label}</div>
+                <div className="text-sm text-muted-foreground">{opt.description}</div>
+              </button>
             ))}
           </div>
           <div className="flex gap-3">

@@ -214,16 +214,15 @@ export default function ProfilePage() {
               <Label>Activity Level</Label>
               <div className="mt-1 space-y-1">
                 {ACTIVITY_OPTIONS.map((opt) => (
-                  <Card
+                  <button
                     key={opt.value}
-                    className={`cursor-pointer transition-all ${activityLevel === opt.value ? "ring-2 ring-primary" : ""}`}
+                    type="button"
+                    className={`w-full rounded-2xl border bg-card px-6 py-2 text-left text-card-foreground shadow-warm-sm cursor-pointer transition-all ${activityLevel === opt.value ? "ring-2 ring-primary" : ""}`}
                     onClick={() => setActivityLevel(opt.value)}
                   >
-                    <CardContent className="py-2">
-                      <div className="text-sm font-medium">{opt.label}</div>
-                      <div className="text-xs text-muted-foreground">{opt.description}</div>
-                    </CardContent>
-                  </Card>
+                    <div className="text-sm font-medium">{opt.label}</div>
+                    <div className="text-xs text-muted-foreground">{opt.description}</div>
+                  </button>
                 ))}
               </div>
             </div>
