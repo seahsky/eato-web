@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useMemo } from "react";
+import { useState, useRef, useMemo, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, Camera, Loader2, X, RotateCcw } from "lucide-react";
 import Link from "next/link";
@@ -50,7 +50,10 @@ export default function LogPage() {
   const [selectedMood, setSelectedMood] = useState<string | null>(null);
   const [note, setNote] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const streamRef = useRef<MediaStream | null>(null);
 
+  const [cameraUnavailable, setCameraUnavailable] = useState(false);
   const [capturedImage, setCapturedImage] = useState<string | null>(null);
   const [photoUrl, setPhotoUrl] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
@@ -60,6 +63,67 @@ export default function LogPage() {
   const batchLog = trpc.food.batchLog.useMutation();
   const analyzePhoto = trpc.food.analyzePhoto.useMutation();
   const uploadPhoto = trpc.food.uploadPhoto.useMutation();
+
+  const stopStream = useCallback(() => {
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach((track) => track.stop());
+      streamRef.current = null;
+    }
+  }, []);
+
+  useEffect(() => {
+    if (stage !== "photo" || cameraUnavailable) return;
+
+    let cancelled = false;
+
+    navigator.mediaDevices
+      .getUserMedia({ video: { facingMode: "environment" } })
+      .then((stream) => {
+        if (cancelled) {
+          stream.getTracks().forEach((track) => track.stop());
+          return;
+        }
+        streamRef.current = stream;
+        if (videoRef.current) {
+          videoRef.current.srcObject = stream;
+        }
+      })
+      .catch(() => {
+        if (!cancelled) setCameraUnavailable(true);
+      });
+
+    return () => {
+      cancelled = true;
+      stopStream();
+    };
+  }, [stage, cameraUnavailable, stopStream]);
+
+  function handleShutterPress() {
+    const video = videoRef.current;
+    if (!video) return;
+
+    const canvas = document.createElement("canvas");
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+
+    ctx.drawImage(video, 0, 0);
+    const dataUrl = canvas.toDataURL("image/jpeg", 0.7);
+    const base64 = dataUrl.replace(/^data:image\/\w+;base64,/, "");
+
+    stopStream();
+    setCapturedImage(base64);
+    setStage("choose");
+
+    // Upload in background
+    setIsUploading(true);
+    uploadPhoto
+      .mutateAsync({ image: base64, mealGroupId })
+      .then((result) => setPhotoUrl(result.url))
+      .catch(() => toast.error("Photo upload failed — food will be logged without photo"))
+      .finally(() => setIsUploading(false));
+  }
 
   async function handlePhotoCapture(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -301,6 +365,7 @@ export default function LogPage() {
   function handleRetake() {
     setCapturedImage(null);
     setPhotoUrl(null);
+    setCameraUnavailable(false);
     setStage("photo");
   }
 
@@ -319,19 +384,51 @@ export default function LogPage() {
         <h1 className="font-caveat text-xl">{headerText}</h1>
       </div>
 
-      {/* Stage: Photo capture */}
+      {/* Stage: Photo capture — viewfinder or fallback */}
       {stage === "photo" && (
-        <div className="flex flex-col items-center gap-6 py-12">
-          <button
-            type="button"
-            className="flex h-28 w-28 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg transition-transform hover:scale-105 active:scale-95"
-            onClick={() => fileInputRef.current?.click()}
-          >
-            <Camera className="h-10 w-10" />
-          </button>
-          <p className="text-sm text-muted-foreground">
-            Take a photo of your meal
-          </p>
+        <div className="flex flex-col items-center gap-4 py-6">
+          {!cameraUnavailable ? (
+            <>
+              <div className="w-full overflow-hidden rounded-2xl bg-black">
+                <video
+                  ref={videoRef}
+                  autoPlay
+                  playsInline
+                  muted
+                  className="h-80 w-full object-cover"
+                />
+              </div>
+              <button
+                type="button"
+                aria-label="Take photo"
+                className="flex h-18 w-18 items-center justify-center rounded-full border-4 border-white bg-white/20 shadow-lg transition-transform active:scale-90"
+                onClick={handleShutterPress}
+              >
+                <div className="h-14 w-14 rounded-full bg-white" />
+              </button>
+            </>
+          ) : (
+            <>
+              <button
+                type="button"
+                className="flex h-28 w-28 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg transition-transform hover:scale-105 active:scale-95"
+                onClick={() => fileInputRef.current?.click()}
+              >
+                <Camera className="h-10 w-10" />
+              </button>
+              <p className="text-sm text-muted-foreground">
+                Take a photo of your meal
+              </p>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                capture="environment"
+                className="hidden"
+                onChange={handlePhotoCapture}
+              />
+            </>
+          )}
           <button
             type="button"
             className="text-sm text-muted-foreground underline underline-offset-2 hover:text-foreground"
@@ -339,14 +436,6 @@ export default function LogPage() {
           >
             Skip, log manually
           </button>
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept="image/*"
-            capture="environment"
-            className="hidden"
-            onChange={handlePhotoCapture}
-          />
         </div>
       )}
 
