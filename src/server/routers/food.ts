@@ -4,6 +4,7 @@ import { TRPCError } from "@trpc/server";
 import { getProductByBarcode, getProductById } from "../services/fatsecret";
 import { searchFoods, searchFoodsFast } from "../services/food-search";
 import { analyzeFoodImage } from "../services/openai";
+import { uploadImage } from "../services/r2";
 import { hashQuery, cleanupExpiredCache } from "../services/search-cache";
 import { startOfDay } from "date-fns";
 import { notifyPartnerFoodLogged, notifyPartnerGoalReached, notifyPendingApproval, notifyBadgeUnlocked, notifyApprovalResult } from "@/lib/notifications/triggers";
@@ -182,6 +183,19 @@ export const foodRouter = router({
           servingUnit: "g",
         };
       });
+    }),
+
+  // Upload a food photo to R2
+  uploadPhoto: protectedProcedure
+    .input(
+      z.object({
+        image: z.string().max(2 * 1024 * 1024, "Image too large (max ~1.5MB)"),
+        mealGroupId: z.string(),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      const url = await uploadImage(input.image, ctx.user.id, input.mealGroupId);
+      return { url };
     }),
 
   // Get product by barcode (FatSecret)

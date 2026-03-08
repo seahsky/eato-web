@@ -135,6 +135,19 @@ export default function EditFoodPage() {
       </div>
 
       <div className="space-y-4">
+        {/* Photo */}
+        {entry.imageUrl && (
+          <div className="overflow-hidden rounded-lg">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={entry.imageUrl}
+              alt=""
+              className="h-40 w-full object-cover"
+              loading="lazy"
+            />
+          </div>
+        )}
+
         {/* Food info */}
         <Card>
           <CardHeader className="pb-2">

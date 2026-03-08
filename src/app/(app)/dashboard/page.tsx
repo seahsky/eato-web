@@ -24,6 +24,7 @@ type EntryData = {
   consumedAt?: string | Date;
   mood?: string | null;
   note?: string | null;
+  imageUrl?: string | null;
 };
 
 /** Group entries by mealGroupId, preserving chronological order */
@@ -108,8 +109,20 @@ export default function DashboardPage() {
               {grouped.map((group) => {
                 if (group.groupId && group.items.length > 1) {
                   // Meal group — cluster in a shared card
+                  const groupImageUrl = group.items.find((e) => e.imageUrl)?.imageUrl;
                   return (
                     <div key={group.groupId} className="rounded-lg border border-border/50 bg-muted/30 p-1.5 space-y-1">
+                      {groupImageUrl && (
+                        <div className="overflow-hidden rounded-md">
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img
+                            src={groupImageUrl}
+                            alt=""
+                            className="h-28 w-full object-cover"
+                            loading="lazy"
+                          />
+                        </div>
+                      )}
                       {group.items.map((entry) => (
                         <Link key={entry.id} href={`/food/edit/${entry.id}`}>
                           <DiaryEntryCard entry={entry} />

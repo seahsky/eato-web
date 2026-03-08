@@ -15,6 +15,7 @@ interface DiaryEntry {
   loggedAt?: string | Date;
   mood?: string | null;
   note?: string | null;
+  imageUrl?: string | null;
 }
 
 interface DiaryEntryCardProps {
@@ -42,6 +43,19 @@ export function DiaryEntryCard({
       {...(onClick ? { role: "button", "aria-label": `${entry.name}, ${Math.round(entry.calories)} calories${entry.mood ? `, mood: ${entry.mood}` : ""}${entry.note ? `, note: ${entry.note}` : ""}` } : {})}
     >
       <CardContent className="py-3">
+        {/* Photo */}
+        {entry.imageUrl && (
+          <div className="-mx-4 -mt-3 mb-2 overflow-hidden rounded-t-lg">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={entry.imageUrl}
+              alt=""
+              className="h-28 w-full object-cover"
+              loading="lazy"
+            />
+          </div>
+        )}
+
         {/* Time */}
         {time && (
           <div className="text-xs text-muted-foreground">

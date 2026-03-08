@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useMemo } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Camera, Loader2, X } from "lucide-react";
+import { ArrowLeft, Camera, Loader2, X, RotateCcw } from "lucide-react";
 import Link from "next/link";
 import { format } from "date-fns";
 import { Button } from "@/components/ui/button";
@@ -35,14 +35,14 @@ interface ReviewItem {
   servingUnit: string;
 }
 
-type Stage = "input" | "review" | "saving";
+type Stage = "photo" | "choose" | "input" | "review" | "saving";
 
 export default function LogPage() {
   const router = useRouter();
   const utils = trpc.useUtils();
   const { triggerReaction } = usePetReaction();
 
-  const [stage, setStage] = useState<Stage>("input");
+  const [stage, setStage] = useState<Stage>("photo");
   const [text, setText] = useState("");
   const [reviewItems, setReviewItems] = useState<ReviewItem[]>([]);
   const [isSearching, setIsSearching] = useState(false);
@@ -51,8 +51,74 @@ export default function LogPage() {
   const [note, setNote] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  const [capturedImage, setCapturedImage] = useState<string | null>(null);
+  const [photoUrl, setPhotoUrl] = useState<string | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
+
+  const mealGroupId = useMemo(() => crypto.randomUUID(), []);
+
   const batchLog = trpc.food.batchLog.useMutation();
   const analyzePhoto = trpc.food.analyzePhoto.useMutation();
+  const uploadPhoto = trpc.food.uploadPhoto.useMutation();
+
+  async function handlePhotoCapture(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    e.target.value = "";
+
+    try {
+      const base64 = await compressImage(file);
+      setCapturedImage(base64);
+      setStage("choose");
+
+      // Upload in background
+      setIsUploading(true);
+      uploadPhoto
+        .mutateAsync({ image: base64, mealGroupId })
+        .then((result) => setPhotoUrl(result.url))
+        .catch(() => toast.error("Photo upload failed — food will be logged without photo"))
+        .finally(() => setIsUploading(false));
+    } catch {
+      toast.error("Failed to process photo. Please try again.");
+    }
+  }
+
+  async function handleAIRecognition() {
+    if (!capturedImage) return;
+    setIsAnalyzingPhoto(true);
+
+    try {
+      const results = await analyzePhoto.mutateAsync({ image: capturedImage });
+
+      if (!results || results.length === 0) {
+        toast.error("No food items detected. Try again or log manually.");
+        return;
+      }
+
+      const items: ReviewItem[] = results.map((r: ReviewItem) => ({
+        id: r.id,
+        rawLine: r.ingredientName,
+        ingredientName: r.ingredientName,
+        quantity: r.normalizedGrams,
+        unit: "g",
+        normalizedGrams: r.normalizedGrams,
+        matchedProduct: r.matchedProduct,
+        calories: r.calories,
+        protein: r.protein,
+        carbs: r.carbs,
+        fat: r.fat,
+        servingSize: r.servingSize,
+        servingUnit: r.servingUnit,
+      }));
+
+      setReviewItems(items);
+      setStage("review");
+    } catch {
+      toast.error("Failed to analyze photo. Please try again.");
+    } finally {
+      setIsAnalyzingPhoto(false);
+    }
+  }
 
   async function handleCalculate() {
     const trimmed = text.trim();
@@ -71,7 +137,6 @@ export default function LogPage() {
 
     setIsSearching(true);
 
-    // Build queries for items that need nutrition lookup
     const queries = parsed
       .filter((p) => !p.parseError && !p.isDirectEnergy)
       .map((p) => ({
@@ -80,7 +145,6 @@ export default function LogPage() {
       }));
 
     try {
-      // Fetch nutrition data via batchSearch
       let searchResults: Array<{
         id: string;
         query: string;
@@ -94,7 +158,6 @@ export default function LogPage() {
         searchResults = result as typeof searchResults;
       }
 
-      // Map results back to parsed items
       const items: ReviewItem[] = parsed.map((p) => {
         if (p.parseError) {
           return {
@@ -153,55 +216,10 @@ export default function LogPage() {
 
       setReviewItems(items.filter((i) => !i.parseError));
       setStage("review");
-    } catch (error) {
-      console.error("Batch search failed:", error);
+    } catch {
       toast.error("Failed to look up nutrition data. Please try again.");
     } finally {
       setIsSearching(false);
-    }
-  }
-
-  async function handlePhotoSelected(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    // Reset input so the same file can be re-selected
-    e.target.value = "";
-
-    setIsAnalyzingPhoto(true);
-
-    try {
-      const base64 = await compressImage(file);
-      const results = await analyzePhoto.mutateAsync({ image: base64 });
-
-      if (!results || results.length === 0) {
-        toast.error("No food items detected in this photo. Try again or type manually.");
-        return;
-      }
-
-      const items: ReviewItem[] = results.map((r: ReviewItem) => ({
-        id: r.id,
-        rawLine: r.ingredientName,
-        ingredientName: r.ingredientName,
-        quantity: r.normalizedGrams,
-        unit: "g",
-        normalizedGrams: r.normalizedGrams,
-        matchedProduct: r.matchedProduct,
-        calories: r.calories,
-        protein: r.protein,
-        carbs: r.carbs,
-        fat: r.fat,
-        servingSize: r.servingSize,
-        servingUnit: r.servingUnit,
-      }));
-
-      setReviewItems(items);
-      setStage("review");
-    } catch (error) {
-      console.error("Photo analysis failed:", error);
-      toast.error("Failed to analyze photo. Please try again.");
-    } finally {
-      setIsAnalyzingPhoto(false);
     }
   }
 
@@ -237,8 +255,13 @@ export default function LogPage() {
   async function handleLogAll() {
     if (reviewItems.length === 0) return;
 
+    // Wait for upload if still in progress
+    if (isUploading) {
+      toast.info("Uploading photo...");
+      return;
+    }
+
     setStage("saving");
-    const mealGroupId = crypto.randomUUID();
     const consumedAt = format(new Date(), "yyyy-MM-dd");
 
     try {
@@ -254,6 +277,7 @@ export default function LogPage() {
           fat: item.fat || undefined,
           servingSize: item.servingSize,
           servingUnit: item.servingUnit,
+          imageUrl: photoUrl ?? undefined,
           mealGroupId,
           consumedAt,
           mood: selectedMood ?? undefined,
@@ -267,13 +291,23 @@ export default function LogPage() {
       utils.stats.getDailySummary.invalidate();
       router.replace("/dashboard");
     } catch (error) {
-      console.error("Batch log failed:", error);
       toast.error(
         error instanceof Error ? error.message : "Failed to log food. Please try again."
       );
       setStage("review");
     }
   }
+
+  function handleRetake() {
+    setCapturedImage(null);
+    setPhotoUrl(null);
+    setStage("photo");
+  }
+
+  const headerText =
+    stage === "review" || stage === "saving"
+      ? "Review your meal"
+      : "What did you eat?";
 
   return (
     <div className="mx-auto max-w-lg px-4">
@@ -282,71 +316,127 @@ export default function LogPage() {
         <Link href="/dashboard">
           <ArrowLeft className="h-5 w-5" />
         </Link>
-        <h1 className="font-caveat text-xl">
-          {stage === "input" ? "What did you eat?" : "Review your meal"}
-        </h1>
+        <h1 className="font-caveat text-xl">{headerText}</h1>
       </div>
 
-      {/* Stage 1: Textarea Input */}
-      {stage === "input" && (
+      {/* Stage: Photo capture */}
+      {stage === "photo" && (
+        <div className="flex flex-col items-center gap-6 py-12">
+          <button
+            type="button"
+            className="flex h-28 w-28 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg transition-transform hover:scale-105 active:scale-95"
+            onClick={() => fileInputRef.current?.click()}
+          >
+            <Camera className="h-10 w-10" />
+          </button>
+          <p className="text-sm text-muted-foreground">
+            Take a photo of your meal
+          </p>
+          <button
+            type="button"
+            className="text-sm text-muted-foreground underline underline-offset-2 hover:text-foreground"
+            onClick={() => setStage("input")}
+          >
+            Skip, log manually
+          </button>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/*"
+            capture="environment"
+            className="hidden"
+            onChange={handlePhotoCapture}
+          />
+        </div>
+      )}
+
+      {/* Stage: Choose — AI or manual */}
+      {stage === "choose" && (
         <div className="space-y-4">
+          {capturedImage && (
+            <div className="overflow-hidden rounded-lg">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={`data:image/jpeg;base64,${capturedImage}`}
+                alt="Captured meal"
+                className="h-48 w-full object-cover"
+              />
+            </div>
+          )}
+
           {isAnalyzingPhoto ? (
-            <div className="flex flex-col items-center gap-3 py-8">
+            <div className="flex flex-col items-center gap-3 py-6">
               <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
               <p className="text-sm text-muted-foreground">Analyzing your meal...</p>
             </div>
           ) : (
-            <>
-              <textarea
-                className="w-full rounded-md border border-input bg-background px-3 py-3 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-                rows={6}
-                placeholder={"200g chicken breast\n100g rice\n2 eggs\n352kj canned salmon"}
-                value={text}
-                onChange={(e) => setText(e.target.value)}
-                autoFocus
-              />
-              <p className="text-xs text-muted-foreground">
-                One item per line. Format: quantity + unit + food name (e.g. 200g chicken breast)
-              </p>
-              <div className="flex gap-2">
-                <Button
-                  variant="outline"
-                  className="shrink-0"
-                  disabled={isSearching}
-                  onClick={() => fileInputRef.current?.click()}
-                >
-                  <Camera className="mr-2 h-4 w-4" />
-                  Photo
-                </Button>
-                <Button
-                  className="flex-1"
-                  disabled={!text.trim() || isSearching}
-                  onClick={handleCalculate}
-                >
-                  {isSearching ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Looking up nutrition...
-                    </>
-                  ) : (
-                    "Calculate"
-                  )}
-                </Button>
-              </div>
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept="image/*"
-                capture="environment"
-                className="hidden"
-                onChange={handlePhotoSelected}
-              />
-            </>
+            <div className="space-y-2">
+              <Button className="w-full" onClick={handleAIRecognition}>
+                Use AI Recognition
+              </Button>
+              <Button
+                variant="outline"
+                className="w-full"
+                onClick={() => setStage("input")}
+              >
+                Log Manually
+              </Button>
+              <button
+                type="button"
+                className="flex w-full items-center justify-center gap-1.5 py-2 text-sm text-muted-foreground hover:text-foreground"
+                onClick={handleRetake}
+              >
+                <RotateCcw className="h-3.5 w-3.5" />
+                Retake
+              </button>
+            </div>
           )}
         </div>
       )}
 
-      {/* Stage 2: Review */}
+      {/* Stage: Manual input */}
+      {stage === "input" && (
+        <div className="space-y-4">
+          <textarea
+            className="w-full rounded-md border border-input bg-background px-3 py-3 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+            rows={6}
+            placeholder={"200g chicken breast\n100g rice\n2 eggs\n352kj canned salmon"}
+            value={text}
+            onChange={(e) => setText(e.target.value)}
+            autoFocus
+          />
+          <p className="text-xs text-muted-foreground">
+            One item per line. Format: quantity + unit + food name (e.g. 200g chicken breast)
+          </p>
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              className="flex-1"
+              onClick={() =>
+                capturedImage ? setStage("choose") : setStage("photo")
+              }
+            >
+              Back
+            </Button>
+            <Button
+              className="flex-1"
+              disabled={!text.trim() || isSearching}
+              onClick={handleCalculate}
+            >
+              {isSearching ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Looking up nutrition...
+                </>
+              ) : (
+                "Calculate"
+              )}
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {/* Stage: Review */}
       {stage === "review" && (
         <div className="space-y-3">
           {reviewItems.length === 0 ? (
@@ -363,6 +453,18 @@ export default function LogPage() {
             </div>
           ) : (
             <>
+              {/* Photo preview in review */}
+              {capturedImage && (
+                <div className="overflow-hidden rounded-lg">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={`data:image/jpeg;base64,${capturedImage}`}
+                    alt="Meal photo"
+                    className="h-32 w-full object-cover"
+                  />
+                </div>
+              )}
+
               {reviewItems.map((item, i) => (
                 <Card
                   key={item.id}
@@ -435,7 +537,7 @@ export default function LogPage() {
               {/* Mood & note */}
               <div className="space-y-2">
                 <div className="flex items-center gap-1.5">
-                  {["😋", "😊", "😐", "🤢", "🥱"].map((emoji) => (
+                  {["\u{1F60B}", "\u{1F60A}", "\u{1F610}", "\u{1F922}", "\u{1F971}"].map((emoji) => (
                     <button
                       key={emoji}
                       type="button"
@@ -466,16 +568,25 @@ export default function LogPage() {
                 <Button
                   variant="outline"
                   className="flex-1"
-                  onClick={() => setStage("input")}
+                  onClick={() =>
+                    capturedImage ? setStage("choose") : setStage("input")
+                  }
                 >
                   Back
                 </Button>
                 <Button
                   className="flex-1"
-                  disabled={reviewItems.length === 0}
+                  disabled={reviewItems.length === 0 || isUploading}
                   onClick={handleLogAll}
                 >
-                  Log all
+                  {isUploading ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Uploading photo...
+                    </>
+                  ) : (
+                    "Log all"
+                  )}
                 </Button>
               </div>
             </>
@@ -483,7 +594,7 @@ export default function LogPage() {
         </div>
       )}
 
-      {/* Stage 3: Saving */}
+      {/* Stage: Saving */}
       {stage === "saving" && (
         <div className="flex flex-col items-center gap-3 py-8">
           <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
