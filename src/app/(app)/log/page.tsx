@@ -386,29 +386,36 @@ export default function LogPage() {
 
       {/* Stage: Photo capture — viewfinder or fallback */}
       {stage === "photo" && (
-        <div className="flex flex-col items-center gap-4 py-6">
+        <div className="flex flex-col items-center">
           {!cameraUnavailable ? (
             <>
-              <div className="w-full overflow-hidden rounded-2xl bg-black">
+              <div className="-mx-4 relative w-full overflow-hidden bg-black">
                 <video
                   ref={videoRef}
                   autoPlay
                   playsInline
                   muted
-                  className="h-80 w-full object-cover"
+                  className="h-[calc(100dvh-5rem)] w-full object-cover"
                 />
+                <button
+                  type="button"
+                  aria-label="Take photo"
+                  className="absolute bottom-8 left-1/2 flex h-18 w-18 -translate-x-1/2 items-center justify-center rounded-full border-4 border-white bg-white/20 shadow-lg transition-transform active:scale-90"
+                  onClick={handleShutterPress}
+                >
+                  <div className="h-14 w-14 rounded-full bg-white" />
+                </button>
+                <button
+                  type="button"
+                  className="absolute bottom-2 left-1/2 -translate-x-1/2 text-sm text-white/70 underline underline-offset-2 hover:text-white"
+                  onClick={() => setStage("input")}
+                >
+                  Skip, log manually
+                </button>
               </div>
-              <button
-                type="button"
-                aria-label="Take photo"
-                className="flex h-18 w-18 items-center justify-center rounded-full border-4 border-white bg-white/20 shadow-lg transition-transform active:scale-90"
-                onClick={handleShutterPress}
-              >
-                <div className="h-14 w-14 rounded-full bg-white" />
-              </button>
             </>
           ) : (
-            <>
+            <div className="flex flex-col items-center gap-4 py-6">
               <button
                 type="button"
                 className="flex h-28 w-28 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg transition-transform hover:scale-105 active:scale-95"
@@ -427,15 +434,15 @@ export default function LogPage() {
                 className="hidden"
                 onChange={handlePhotoCapture}
               />
-            </>
+              <button
+                type="button"
+                className="text-sm text-muted-foreground underline underline-offset-2 hover:text-foreground"
+                onClick={() => setStage("input")}
+              >
+                Skip, log manually
+              </button>
+            </div>
           )}
-          <button
-            type="button"
-            className="text-sm text-muted-foreground underline underline-offset-2 hover:text-foreground"
-            onClick={() => setStage("input")}
-          >
-            Skip, log manually
-          </button>
         </div>
       )}
 
