@@ -150,7 +150,7 @@ export default function HistoryPage() {
                 <button
                   key={dateKey}
                   className={cn(
-                    "flex flex-col items-center gap-0.5 rounded-md py-1.5 text-xs transition-colors hover:bg-accent/50",
+                    "flex flex-col items-center gap-0.5 rounded-md py-2.5 text-xs transition-colors hover:bg-accent/50",
                     !inMonth && "opacity-30",
                     isSelected && "bg-primary text-primary-foreground shadow-warm-sm",
                     isTodayDay && !isSelected && "font-bold text-primary"

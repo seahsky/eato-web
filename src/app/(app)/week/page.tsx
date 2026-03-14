@@ -130,7 +130,7 @@ export default function WeekPage() {
               <button
                 key={i}
                 className={cn(
-                  "flex flex-col items-center gap-1 rounded-lg py-2 text-xs shadow-warm-sm transition-colors",
+                  "flex flex-col items-center gap-1 rounded-lg min-h-[44px] py-2.5 text-xs shadow-warm-sm transition-colors",
                   isExpanded && "bg-accent",
                   isTodayDay && !isExpanded && "ring-1 ring-primary/40",
                   !hasData && "opacity-50"

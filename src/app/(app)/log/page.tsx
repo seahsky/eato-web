@@ -12,6 +12,7 @@ import { trpc } from "@/trpc/react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { usePetReaction } from "@/components/app/pixel-pet/pet-reaction-provider";
+import { MOOD_OPTIONS } from "@/lib/constants";
 import { parseIngredientLines } from "@/lib/meal-parser";
 import { compressImage } from "@/lib/image-utils";
 import type { FoodProduct } from "@/types/food";
@@ -378,7 +379,7 @@ export default function LogPage() {
     <div className="mx-auto max-w-lg px-4">
       {/* Header */}
       <div className="flex items-center gap-2 py-3">
-        <Link href="/dashboard">
+        <Link href="/dashboard" aria-label="Back to diary">
           <ArrowLeft className="h-5 w-5" />
         </Link>
         <h1 className="font-caveat text-xl">{headerText}</h1>
@@ -395,6 +396,7 @@ export default function LogPage() {
                   autoPlay
                   playsInline
                   muted
+                  aria-label="Camera viewfinder"
                   className="h-[calc(100dvh-5rem)] w-full object-cover"
                 />
                 <button
@@ -407,7 +409,7 @@ export default function LogPage() {
                 </button>
                 <button
                   type="button"
-                  className="absolute bottom-2 left-1/2 -translate-x-1/2 text-sm text-white/70 underline underline-offset-2 hover:text-white"
+                  className="absolute bottom-2 left-1/2 -translate-x-1/2 px-4 py-3 text-sm text-white/70 underline underline-offset-2 hover:text-white"
                   onClick={() => setStage("input")}
                 >
                   Skip, log manually
@@ -494,7 +496,7 @@ export default function LogPage() {
       {stage === "input" && (
         <div className="space-y-4">
           <textarea
-            className="w-full rounded-md border border-input bg-background px-3 py-3 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+            className="w-full rounded-md border border-input bg-background px-3 py-3 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/20 focus-visible:border-primary/50"
             rows={6}
             placeholder={"200g chicken breast\n100g rice\n2 eggs\n352kj canned salmon"}
             value={text}
@@ -593,7 +595,7 @@ export default function LogPage() {
                         </span>
                         <button
                           onClick={() => removeItem(item.id)}
-                          className="rounded p-0.5 text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
+                          className="flex items-center justify-center rounded min-h-[44px] min-w-[44px] p-2 text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
                           aria-label={`Remove ${item.ingredientName}`}
                         >
                           <X className="h-4 w-4" />
@@ -633,10 +635,12 @@ export default function LogPage() {
               {/* Mood & note */}
               <div className="space-y-2">
                 <div className="flex items-center gap-1.5">
-                  {["\u{1F60B}", "\u{1F60A}", "\u{1F610}", "\u{1F922}", "\u{1F971}"].map((emoji) => (
+                  {MOOD_OPTIONS.map(({ emoji, label }) => (
                     <button
                       key={emoji}
                       type="button"
+                      aria-label={label}
+                      aria-pressed={selectedMood === emoji}
                       className={cn(
                         "rounded-full p-1.5 text-lg transition-colors",
                         selectedMood === emoji

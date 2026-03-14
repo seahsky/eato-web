@@ -664,6 +664,29 @@ export const foodRouter = router({
       return { entries: createdEntries, mealGroupId: input.mealGroupId };
     }),
 
+  // Get a single entry by ID
+  getById: protectedProcedure
+    .meta({ openapi: { method: "GET", path: "/food/entries/{id}" } })
+    .input(z.object({ id: z.string() }))
+    .output(z.any())
+    .query(async ({ ctx, input }) => {
+      const entry = await ctx.prisma.foodEntry.findFirst({
+        where: {
+          id: input.id,
+          userId: ctx.user.id,
+        },
+      });
+
+      if (!entry) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Entry not found",
+        });
+      }
+
+      return entry;
+    }),
+
   // Get entries for a date
   getByDate: protectedProcedure
     .meta({ openapi: { method: "GET", path: "/food/entries/by-date" } })

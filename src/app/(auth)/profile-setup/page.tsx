@@ -7,23 +7,11 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Badge } from "@/components/ui/badge";
 import { trpc } from "@/trpc/react";
+import { toast } from "sonner";
 import { COPY } from "@/lib/copy";
+import { ACTIVITY_OPTIONS } from "@/lib/constants";
 import type { Gender, ActivityLevel } from "@/server/client-types";
-
-const ACTIVITY_OPTIONS: {
-  value: ActivityLevel;
-  label: string;
-  description: string;
-  multiplier: number;
-}[] = [
-  { value: "SEDENTARY", label: "Sedentary", description: "Little or no exercise", multiplier: 1.2 },
-  { value: "LIGHTLY_ACTIVE", label: "Lightly Active", description: "Light exercise 1-3 days/week", multiplier: 1.375 },
-  { value: "MODERATELY_ACTIVE", label: "Moderately Active", description: "Moderate exercise 3-5 days/week", multiplier: 1.55 },
-  { value: "ACTIVE", label: "Active", description: "Hard exercise 6-7 days/week", multiplier: 1.725 },
-  { value: "VERY_ACTIVE", label: "Very Active", description: "Very hard exercise, physical job", multiplier: 1.9 },
-];
 
 function calculateBmr(weight: number, height: number, age: number, gender: Gender): number {
   if (gender === "MALE") {
@@ -76,6 +64,7 @@ export default function ProfileSetupPage() {
       });
       router.replace("/dashboard");
     } catch {
+      toast.error("Failed to save profile. Please try again.");
       setSaving(false);
     }
   }
@@ -246,14 +235,18 @@ export default function ProfileSetupPage() {
           <p className="text-sm text-muted-foreground">Choose a target or set your own</p>
           <div className="flex flex-wrap gap-2">
             {goalOptions.map((opt) => (
-              <Badge
+              <button
                 key={opt.label}
-                variant={calorieGoal === opt.daily ? "default" : "secondary"}
-                className="cursor-pointer px-3 py-1.5 text-sm active:scale-95 transition-transform"
+                type="button"
+                className={`inline-flex items-center rounded-full px-3 py-1.5 text-sm font-medium transition-transform active:scale-95 ${
+                  calorieGoal === opt.daily
+                    ? "bg-primary text-primary-foreground"
+                    : "bg-secondary text-secondary-foreground hover:bg-secondary/80"
+                }`}
                 onClick={() => setCalorieGoal(opt.daily)}
               >
                 {COPY.onboardingGoalOption(opt.label, opt.weekly)}
-              </Badge>
+              </button>
             ))}
           </div>
           <div>

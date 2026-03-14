@@ -17,6 +17,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { trpc } from "@/trpc/react";
+import { toast } from "sonner";
 import { DateNavigator } from "@/components/app/date-navigator";
 import { DiaryEntryCard } from "@/components/app/diary-entry-card";
 import { COPY } from "@/lib/copy";
@@ -61,7 +62,7 @@ export default function PartnerPage() {
       const result = await generateCode.mutateAsync();
       setGeneratedCode(result.code);
     } catch {
-      // stay
+      toast.error("Failed to generate code. Please try again.");
     }
   }
 
@@ -80,7 +81,7 @@ export default function PartnerPage() {
       utils.auth.getMe.invalidate();
       setCode("");
     } catch {
-      // stay
+      toast.error("Invalid code or code has expired. Please try again.");
     } finally {
       setLinking(false);
     }
@@ -92,7 +93,7 @@ export default function PartnerPage() {
       utils.auth.getMe.invalidate();
       setUnlinkOpen(false);
     } catch {
-      // stay
+      toast.error("Failed to unlink partner. Please try again.");
     }
   }
 

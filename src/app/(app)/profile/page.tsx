@@ -8,24 +8,12 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Badge } from "@/components/ui/badge";
 import { trpc } from "@/trpc/react";
 import { toast } from "sonner";
+import { cn } from "@/lib/utils";
 import { COPY } from "@/lib/copy";
+import { ACTIVITY_OPTIONS } from "@/lib/constants";
 import type { Gender, ActivityLevel } from "@/server/client-types";
-
-const ACTIVITY_OPTIONS: {
-  value: ActivityLevel;
-  label: string;
-  description: string;
-  multiplier: number;
-}[] = [
-  { value: "SEDENTARY", label: "Sedentary", description: "Little or no exercise", multiplier: 1.2 },
-  { value: "LIGHTLY_ACTIVE", label: "Lightly Active", description: "Light exercise 1-3 days/week", multiplier: 1.375 },
-  { value: "MODERATELY_ACTIVE", label: "Moderately Active", description: "Moderate exercise 3-5 days/week", multiplier: 1.55 },
-  { value: "ACTIVE", label: "Active", description: "Hard exercise 6-7 days/week", multiplier: 1.725 },
-  { value: "VERY_ACTIVE", label: "Very Active", description: "Very hard exercise, physical job", multiplier: 1.9 },
-];
 
 export default function ProfilePage() {
   const { signOut } = useClerk();
@@ -73,7 +61,7 @@ export default function ProfilePage() {
       utils.auth.getMe.invalidate();
       setEditing(false);
     } catch {
-      // stay in editing mode
+      toast.error("Failed to save profile. Please try again.");
     } finally {
       setSaving(false);
     }
@@ -273,25 +261,34 @@ export default function ProfilePage() {
             {goalOptions.length > 0 && (
               <div className="flex flex-wrap gap-2">
                 {goalOptions.map((opt) => (
-                  <Badge
+                  <button
                     key={opt.label}
-                    variant={Math.round(profile.calorieGoal) === opt.daily ? "default" : "secondary"}
-                    className="cursor-pointer px-3 py-1.5 text-sm active:scale-95 transition-transform"
+                    type="button"
+                    className={cn(
+                      "inline-flex items-center rounded-full px-3 py-1.5 text-sm font-medium transition-transform active:scale-95",
+                      Math.round(profile.calorieGoal) === opt.daily
+                        ? "bg-primary text-primary-foreground"
+                        : "bg-secondary text-secondary-foreground hover:bg-secondary/80"
+                    )}
                     onClick={async () => {
-                      await upsertProfile.mutateAsync({
-                        gender: profile.gender as Gender,
-                        age: profile.age,
-                        weight: profile.weight,
-                        height: profile.height,
-                        activityLevel: profile.activityLevel as ActivityLevel,
-                        calorieGoal: opt.daily,
-                      });
-                      utils.auth.getMe.invalidate();
-                      toast.success(`Goal updated to ${opt.weekly.toLocaleString()} kcal/week`);
+                      try {
+                        await upsertProfile.mutateAsync({
+                          gender: profile.gender as Gender,
+                          age: profile.age,
+                          weight: profile.weight,
+                          height: profile.height,
+                          activityLevel: profile.activityLevel as ActivityLevel,
+                          calorieGoal: opt.daily,
+                        });
+                        utils.auth.getMe.invalidate();
+                        toast.success(`Goal updated to ${opt.weekly.toLocaleString()} kcal/week`);
+                      } catch {
+                        toast.error("Failed to update goal. Please try again.");
+                      }
                     }}
                   >
                     {opt.label} ({opt.weekly.toLocaleString()}/week)
-                  </Badge>
+                  </button>
                 ))}
               </div>
             )}

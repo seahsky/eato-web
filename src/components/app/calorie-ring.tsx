@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useId } from "react";
 
 interface CalorieRingProps {
   consumed: number;
@@ -9,6 +9,7 @@ interface CalorieRingProps {
 }
 
 export function CalorieRing({ consumed, budget, weekLabel }: CalorieRingProps) {
+  const gradientId = useId();
   const percentage = budget > 0 ? Math.min(consumed / budget, 1) : 0;
 
   const radius = 60;
@@ -35,7 +36,7 @@ export function CalorieRing({ consumed, budget, weekLabel }: CalorieRingProps) {
           aria-valuemax={Math.round(budget)}
         >
           <defs>
-            <linearGradient id="ring-gradient" x1="0%" y1="0%" x2="100%" y2="0%">
+            <linearGradient id={gradientId} x1="0%" y1="0%" x2="100%" y2="0%">
               <stop offset="0%" stopColor="oklch(0.93 0.02 70)" />
               <stop offset="100%" stopColor="oklch(0.588 0.114 46)" />
             </linearGradient>
@@ -56,7 +57,7 @@ export function CalorieRing({ consumed, budget, weekLabel }: CalorieRingProps) {
             cy="80"
             r={radius}
             fill="none"
-            stroke="url(#ring-gradient)"
+            stroke={`url(#${gradientId})`}
             strokeWidth="10"
             strokeLinecap="round"
             strokeDasharray={circumference}

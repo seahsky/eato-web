@@ -19,7 +19,9 @@ import {
 } from "@/components/ui/dialog";
 import { trpc } from "@/trpc/react";
 import { cn } from "@/lib/utils";
+import { toast } from "sonner";
 import { COPY } from "@/lib/copy";
+import { MOOD_OPTIONS } from "@/lib/constants";
 
 export default function EditFoodPage() {
   const router = useRouter();
@@ -27,14 +29,10 @@ export default function EditFoodPage() {
   const id = params.id as string;
   const utils = trpc.useUtils();
 
-  const { data: entries, isLoading } = trpc.food.getByDate.useQuery(
-    { date: new Date().toISOString().split("T")[0] },
+  const { data: entry, isLoading } = trpc.food.getById.useQuery(
+    { id },
     { enabled: !!id }
   );
-
-  // Find the entry in question — try from daily entries first
-  // If not found there, we'll do a broader search
-  const entry = entries?.find((e: { id: string }) => e.id === id);
 
   const [servingSize, setServingSize] = useState<number | null>(null);
   const [mood, setMood] = useState<string | null>(null);
@@ -65,6 +63,7 @@ export default function EditFoodPage() {
       utils.stats.getDailySummary.invalidate();
       router.back();
     } catch {
+      toast.error("Failed to save changes. Please try again.");
       setSaving(false);
     }
   }
@@ -76,7 +75,7 @@ export default function EditFoodPage() {
       utils.stats.getDailySummary.invalidate();
       router.replace("/dashboard");
     } catch {
-      // stay on page
+      toast.error("Failed to delete entry. Please try again.");
     }
   }
 
@@ -104,7 +103,7 @@ export default function EditFoodPage() {
       {/* Header */}
       <div className="flex items-center justify-between py-3">
         <div className="flex items-center gap-2">
-          <button onClick={() => router.back()}>
+          <button onClick={() => router.back()} aria-label="Go back">
             <ArrowLeft className="h-5 w-5" />
           </button>
           <h1 className="font-caveat text-xl">{COPY.editHeading}</h1>
@@ -206,10 +205,12 @@ export default function EditFoodPage() {
         <div className="space-y-2">
           <Label>Mood</Label>
           <div className="flex items-center gap-1.5">
-            {["😋", "😊", "😐", "🤢", "🥱"].map((emoji) => (
+            {MOOD_OPTIONS.map(({ emoji, label }) => (
               <button
                 key={emoji}
                 type="button"
+                aria-label={label}
+                aria-pressed={currentMood === emoji}
                 className={cn(
                   "rounded-full p-1.5 text-lg transition-colors",
                   currentMood === emoji
