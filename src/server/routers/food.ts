@@ -20,9 +20,9 @@ import {
 } from "@/lib/gamification/badges";
 
 const foodEntrySchema = z.object({
-  name: z.string().min(1),
+  name: z.string().min(1).max(200),
   barcode: z.string().optional(),
-  brand: z.string().nullable().optional(),
+  brand: z.string().max(100).nullable().optional(),
   imageUrl: z.string().optional(),
   calories: z.number().min(0),
   protein: z.number().min(0).optional(),

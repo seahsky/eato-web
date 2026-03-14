@@ -69,8 +69,9 @@ export default function ProfilePage() {
 
   if (isLoading) {
     return (
-      <div className="flex justify-center py-12">
-        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+      <div className="flex justify-center py-12" role="status" aria-live="polite">
+        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" aria-hidden="true" />
+        <span className="sr-only">Loading profile...</span>
       </div>
     );
   }
@@ -90,20 +91,6 @@ export default function ProfilePage() {
       <div className="py-3">
         <h1 className="font-caveat text-xl text-foreground">{COPY.profileHeading}</h1>
       </div>
-
-      {/* Weekly Budget Display */}
-      {profile && !editing && (
-        <Card className="mb-4 border-primary/20 bg-primary/5">
-          <CardContent className="py-4 text-center">
-            <div className="text-2xl font-bold text-primary">
-              {weeklyBudget.toLocaleString()} kcal/week
-            </div>
-            <p className="mt-1 text-xs text-muted-foreground">
-              {COPY.weeklyBudgetDisplay(tdee, weeklyBudget)}
-            </p>
-          </CardContent>
-        </Card>
-      )}
 
       {/* Physical Stats */}
       {profile && !editing && (
@@ -151,10 +138,12 @@ export default function ProfilePage() {
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <Label>Gender</Label>
-                <div className="flex gap-1">
+                <div className="flex gap-1" role="radiogroup" aria-label="Gender">
                   {(["MALE", "FEMALE"] as Gender[]).map((g) => (
                     <Button
                       key={g}
+                      role="radio"
+                      aria-checked={gender === g}
                       variant={gender === g ? "default" : "outline"}
                       size="sm"
                       className="flex-1"
@@ -166,8 +155,9 @@ export default function ProfilePage() {
                 </div>
               </div>
               <div>
-                <Label>Age</Label>
+                <Label htmlFor="profile-age">Age</Label>
                 <Input
+                  id="profile-age"
                   type="number"
                   min={13}
                   max={120}
@@ -178,8 +168,9 @@ export default function ProfilePage() {
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <Label>Weight (kg)</Label>
+                <Label htmlFor="profile-weight">Weight (kg)</Label>
                 <Input
+                  id="profile-weight"
                   type="number"
                   min={30}
                   max={300}
@@ -189,8 +180,9 @@ export default function ProfilePage() {
                 />
               </div>
               <div>
-                <Label>Height (cm)</Label>
+                <Label htmlFor="profile-height">Height (cm)</Label>
                 <Input
+                  id="profile-height"
                   type="number"
                   min={100}
                   max={250}
@@ -201,11 +193,13 @@ export default function ProfilePage() {
             </div>
             <div>
               <Label>Activity Level</Label>
-              <div className="mt-1 space-y-1">
+              <div className="mt-1 space-y-1" role="radiogroup" aria-label="Activity level">
                 {ACTIVITY_OPTIONS.map((opt) => (
                   <button
                     key={opt.value}
                     type="button"
+                    role="radio"
+                    aria-checked={activityLevel === opt.value}
                     className={`w-full rounded-2xl border bg-card px-6 py-2 text-left text-card-foreground shadow-warm-sm cursor-pointer transition-all ${activityLevel === opt.value ? "ring-2 ring-primary" : ""}`}
                     onClick={() => setActivityLevel(opt.value)}
                   >
@@ -264,6 +258,7 @@ export default function ProfilePage() {
                   <button
                     key={opt.label}
                     type="button"
+                    aria-pressed={Math.round(profile.calorieGoal) === opt.daily}
                     className={cn(
                       "inline-flex items-center rounded-full px-3 py-1.5 text-sm font-medium transition-transform active:scale-95",
                       Math.round(profile.calorieGoal) === opt.daily

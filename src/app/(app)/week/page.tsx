@@ -89,8 +89,9 @@ export default function WeekPage() {
 
       {/* Budget ring */}
       {budgetLoading && !budgetData && (
-        <div className="flex justify-center py-8">
-          <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+        <div className="flex justify-center py-8" role="status" aria-live="polite">
+          <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" aria-hidden="true" />
+          <span className="sr-only">Loading weekly budget...</span>
         </div>
       )}
 
@@ -129,6 +130,7 @@ export default function WeekPage() {
             return (
               <button
                 key={i}
+                aria-label={`${format(dayDate, "EEEE, MMMM d")}${hasData ? `, ${Math.round(day.totalCalories)} calories` : ", no entries"}`}
                 className={cn(
                   "flex flex-col items-center gap-1 rounded-lg min-h-[44px] py-2.5 text-xs shadow-warm-sm transition-colors",
                   isExpanded && "bg-accent",
@@ -170,8 +172,9 @@ export default function WeekPage() {
       )}
 
       {weeklyLoading && !weeklyData && (
-        <div className="flex justify-center py-8">
-          <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+        <div className="flex justify-center py-8" role="status" aria-live="polite">
+          <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" aria-hidden="true" />
+          <span className="sr-only">Loading weekly data...</span>
         </div>
       )}
     </div>

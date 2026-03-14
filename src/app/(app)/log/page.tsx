@@ -379,7 +379,7 @@ export default function LogPage() {
     <div className="mx-auto max-w-lg px-4">
       {/* Header */}
       <div className="flex items-center gap-2 py-3">
-        <Link href="/dashboard" aria-label="Back to diary">
+        <Link href="/dashboard" aria-label="Back to diary" className="flex items-center justify-center min-h-[44px] min-w-[44px]">
           <ArrowLeft className="h-5 w-5" />
         </Link>
         <h1 className="font-caveat text-xl">{headerText}</h1>
@@ -463,7 +463,7 @@ export default function LogPage() {
           )}
 
           {isAnalyzingPhoto ? (
-            <div className="flex flex-col items-center gap-3 py-6">
+            <div className="flex flex-col items-center gap-3 py-6" role="status" aria-live="polite">
               <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
               <p className="text-sm text-muted-foreground">Analyzing your meal...</p>
             </div>
@@ -496,6 +496,7 @@ export default function LogPage() {
       {stage === "input" && (
         <div className="space-y-4">
           <textarea
+            aria-label="Food items to log"
             className="w-full rounded-md border border-input bg-background px-3 py-3 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/20 focus-visible:border-primary/50"
             rows={6}
             placeholder={"200g chicken breast\n100g rice\n2 eggs\n352kj canned salmon"}
@@ -575,7 +576,7 @@ export default function LogPage() {
                   <CardContent className="py-3">
                     <div className="flex items-start justify-between gap-2">
                       <div className="min-w-0 flex-1">
-                        <div className="text-sm font-medium">
+                        <div className="truncate text-sm font-medium">
                           {item.matchedProduct?.name ?? item.ingredientName}
                         </div>
                         {item.matchedProduct?.brand && (
@@ -584,7 +585,7 @@ export default function LogPage() {
                           </div>
                         )}
                         {!item.matchedProduct && !item.isDirectEnergy && (
-                          <div className="text-xs text-amber-600">
+                          <div className="text-xs text-warning">
                             No match found — calories set to 0
                           </div>
                         )}
@@ -609,6 +610,7 @@ export default function LogPage() {
                         <Input
                           type="number"
                           min={1}
+                          aria-label={`Quantity for ${item.ingredientName}`}
                           value={item.servingSize}
                           onChange={(e) =>
                             updateQuantity(item.id, Number(e.target.value) || 1)
@@ -642,7 +644,7 @@ export default function LogPage() {
                       aria-label={label}
                       aria-pressed={selectedMood === emoji}
                       className={cn(
-                        "rounded-full p-1.5 text-lg transition-colors",
+                        "flex items-center justify-center rounded-full min-h-[44px] min-w-[44px] text-lg transition-colors",
                         selectedMood === emoji
                           ? "bg-accent ring-1 ring-primary/40"
                           : "hover:bg-accent/50"
@@ -696,7 +698,7 @@ export default function LogPage() {
 
       {/* Stage: Saving */}
       {stage === "saving" && (
-        <div className="flex flex-col items-center gap-3 py-8">
+        <div className="flex flex-col items-center gap-3 py-8" role="status" aria-live="polite">
           <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
           <p className="text-sm text-muted-foreground">Saving your meal...</p>
         </div>

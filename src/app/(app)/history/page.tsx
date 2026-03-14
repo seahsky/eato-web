@@ -149,6 +149,7 @@ export default function HistoryPage() {
               return (
                 <button
                   key={dateKey}
+                  aria-label={`${format(day, "EEEE, MMMM d")}${hasData ? ", has entries" : ""}`}
                   className={cn(
                     "flex flex-col items-center gap-0.5 rounded-md py-2.5 text-xs transition-colors hover:bg-accent/50",
                     !inMonth && "opacity-30",
@@ -196,8 +197,9 @@ export default function HistoryPage() {
 
       {/* Loading */}
       {isLoading && (
-        <div className="flex justify-center py-6">
-          <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+        <div className="flex justify-center py-6" role="status" aria-live="polite">
+          <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" aria-hidden="true" />
+          <span className="sr-only">Loading calendar...</span>
         </div>
       )}
 
@@ -234,6 +236,7 @@ function WeekSection({ start, end, endStr }: { start: Date; end: Date; endStr: s
       <CardContent className="py-3">
         <button
           className="flex w-full items-center justify-between text-left"
+          aria-expanded={expanded}
           onClick={() => setExpanded(!expanded)}
         >
           <div>

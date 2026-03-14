@@ -10,7 +10,7 @@ import {
 // Zod schema for recipe ingredients
 const ingredientSchema = z.object({
   id: z.string().optional(), // Client-side ID for UI management
-  name: z.string().min(1),
+  name: z.string().min(1).max(100),
   quantity: z.number().min(0),
   unit: z.enum(["g", "kg", "ml", "L", "%"]),
   isPercentage: z.boolean().default(false),
@@ -27,7 +27,7 @@ const ingredientSchema = z.object({
 
 // Zod schema for creating a recipe
 const createRecipeSchema = z.object({
-  name: z.string().min(1),
+  name: z.string().min(1).max(200),
   description: z.string().optional(),
   imageUrl: z.string().optional(),
   yieldWeight: z.number().min(1),

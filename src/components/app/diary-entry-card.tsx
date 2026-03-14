@@ -36,8 +36,8 @@ export function DiaryEntryCard({
   return (
     <Card
       className={cn(
-        "transition-all duration-200",
-        onClick && "cursor-pointer hover:bg-accent hover:shadow-warm-lg hover:-translate-y-0.5"
+        "transition-[background-color,box-shadow,transform] duration-200",
+        onClick && "cursor-pointer hover:bg-accent hover:shadow-warm-lg hover:-translate-y-0.5 will-change-transform"
       )}
       onClick={onClick}
       {...(onClick ? { role: "button", "aria-label": `${entry.name}, ${Math.round(entry.calories)} calories${entry.mood ? `, mood: ${entry.mood}` : ""}${entry.note ? `, note: ${entry.note}` : ""}` } : {})}
@@ -49,7 +49,7 @@ export function DiaryEntryCard({
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src={entry.imageUrl}
-              alt=""
+              alt={entry.name ? `Photo of ${entry.name}` : "Food photo"}
               className="h-28 w-full object-cover"
               loading="lazy"
             />
@@ -66,7 +66,7 @@ export function DiaryEntryCard({
         {/* Food name and calories */}
         <div className="mt-0.5 flex items-start justify-between gap-2">
           <div className="min-w-0 flex-1">
-            <div className="text-sm font-medium">{entry.name}</div>
+            <div className="truncate text-sm font-medium">{entry.name}</div>
             <div className="text-xs text-muted-foreground">
               {entry.servingSize}{entry.servingUnit}
               {entry.brand ? ` \u00b7 ${entry.brand}` : ""}

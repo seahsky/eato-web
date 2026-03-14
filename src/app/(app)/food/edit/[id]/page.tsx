@@ -81,8 +81,9 @@ export default function EditFoodPage() {
 
   if (isLoading) {
     return (
-      <div className="flex justify-center py-12">
-        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+      <div className="flex justify-center py-12" role="status" aria-live="polite">
+        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" aria-hidden="true" />
+        <span className="sr-only">Loading entry...</span>
       </div>
     );
   }
@@ -103,14 +104,14 @@ export default function EditFoodPage() {
       {/* Header */}
       <div className="flex items-center justify-between py-3">
         <div className="flex items-center gap-2">
-          <button onClick={() => router.back()} aria-label="Go back">
+          <button onClick={() => router.back()} aria-label="Go back" className="flex items-center justify-center min-h-[44px] min-w-[44px]">
             <ArrowLeft className="h-5 w-5" />
           </button>
           <h1 className="font-caveat text-xl">{COPY.editHeading}</h1>
         </div>
         <Dialog open={deleteOpen} onOpenChange={setDeleteOpen}>
           <DialogTrigger asChild>
-            <Button variant="ghost" size="icon" className="min-h-[44px] min-w-[44px] text-destructive">
+            <Button variant="ghost" size="icon" className="text-destructive">
               <Trash2 className="h-5 w-5" />
             </Button>
           </DialogTrigger>
@@ -140,7 +141,7 @@ export default function EditFoodPage() {
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src={entry.imageUrl}
-              alt=""
+              alt={`Photo of ${entry.name}`}
               className="h-40 w-full object-cover"
               loading="lazy"
             />
@@ -150,7 +151,7 @@ export default function EditFoodPage() {
         {/* Food info */}
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-base">{entry.name}</CardTitle>
+            <CardTitle className="truncate text-base">{entry.name}</CardTitle>
             {entry.brand && (
               <p className="text-sm text-muted-foreground">{entry.brand}</p>
             )}
@@ -159,8 +160,9 @@ export default function EditFoodPage() {
 
         {/* Edit form */}
         <div>
-          <Label>Serving size</Label>
+          <Label htmlFor="serving-size">Serving size</Label>
           <Input
+            id="serving-size"
             type="number"
             min={1}
             value={currentServingSize}
@@ -169,8 +171,8 @@ export default function EditFoodPage() {
         </div>
 
         <div>
-          <Label>Unit</Label>
-          <Input value={entry.servingUnit} readOnly className="bg-muted" />
+          <Label htmlFor="serving-unit">Unit</Label>
+          <Input id="serving-unit" value={entry.servingUnit} readOnly className="bg-muted" />
         </div>
 
         {/* Nutrition info */}
@@ -212,7 +214,7 @@ export default function EditFoodPage() {
                 aria-label={label}
                 aria-pressed={currentMood === emoji}
                 className={cn(
-                  "rounded-full p-1.5 text-lg transition-colors",
+                  "flex items-center justify-center rounded-full min-h-[44px] min-w-[44px] text-lg transition-colors",
                   currentMood === emoji
                     ? "bg-accent ring-1 ring-primary/40"
                     : "hover:bg-accent/50"
@@ -228,8 +230,9 @@ export default function EditFoodPage() {
         </div>
 
         <div>
-          <Label>Note</Label>
+          <Label htmlFor="entry-note">Note</Label>
           <Input
+            id="entry-note"
             placeholder="Add a note (optional)"
             value={currentNote}
             onChange={(e) => setNote(e.target.value)}

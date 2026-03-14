@@ -37,8 +37,8 @@ export function CalorieRing({ consumed, budget, weekLabel }: CalorieRingProps) {
         >
           <defs>
             <linearGradient id={gradientId} x1="0%" y1="0%" x2="100%" y2="0%">
-              <stop offset="0%" stopColor="oklch(0.93 0.02 70)" />
-              <stop offset="100%" stopColor="oklch(0.588 0.114 46)" />
+              <stop offset="0%" style={{ stopColor: 'var(--color-accent)' }} />
+              <stop offset="100%" style={{ stopColor: 'var(--color-primary)' }} />
             </linearGradient>
           </defs>
           {/* Background circle */}

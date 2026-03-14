@@ -72,7 +72,14 @@ export default function ProfileSetupPage() {
   return (
     <div className="w-full max-w-md space-y-6">
       {/* Progress bar */}
-      <div className="h-1.5 w-full rounded-full bg-muted">
+      <div
+        className="h-1.5 w-full rounded-full bg-muted"
+        role="progressbar"
+        aria-valuenow={step + 1}
+        aria-valuemin={1}
+        aria-valuemax={4}
+        aria-label="Setup progress"
+      >
         <div
           className="h-full rounded-full bg-primary transition-all"
           style={{ width: `${((step + 1) / 4) * 100}%` }}
@@ -90,11 +97,13 @@ export default function ProfileSetupPage() {
               {COPY.onboardingGenderHelp}
             </p>
           </div>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-2 gap-3" role="radiogroup" aria-label="Gender">
             {(["MALE", "FEMALE"] as Gender[]).map((g) => (
               <button
                 key={g}
                 type="button"
+                role="radio"
+                aria-checked={gender === g}
                 className={`flex flex-col items-center gap-2 rounded-2xl border bg-card py-6 text-card-foreground shadow-warm-sm cursor-pointer transition-all ${gender === g ? "bg-primary/10 border-primary" : ""}`}
                 onClick={() => setGender(g)}
               >
@@ -118,8 +127,9 @@ export default function ProfileSetupPage() {
           </div>
           <div className="space-y-3">
             <div>
-              <Label>Age</Label>
+              <Label htmlFor="setup-age">Age</Label>
               <Input
+                id="setup-age"
                 type="number"
                 placeholder="25"
                 min={13}
@@ -129,8 +139,9 @@ export default function ProfileSetupPage() {
               />
             </div>
             <div>
-              <Label>Weight (kg)</Label>
+              <Label htmlFor="setup-weight">Weight (kg)</Label>
               <Input
+                id="setup-weight"
                 type="number"
                 placeholder="70"
                 min={30}
@@ -141,8 +152,9 @@ export default function ProfileSetupPage() {
               />
             </div>
             <div>
-              <Label>Height (cm)</Label>
+              <Label htmlFor="setup-height">Height (cm)</Label>
               <Input
+                id="setup-height"
                 type="number"
                 placeholder="170"
                 min={100}
@@ -167,11 +179,13 @@ export default function ProfileSetupPage() {
       {step === 2 && (
         <div className="animate-fade-in space-y-4" key={2}>
           <h2 className="text-lg font-semibold">How active are you?</h2>
-          <div className="space-y-2">
+          <div className="space-y-2" role="radiogroup" aria-label="Activity level">
             {ACTIVITY_OPTIONS.map((opt) => (
               <button
                 key={opt.value}
                 type="button"
+                role="radio"
+                aria-checked={activityLevel === opt.value}
                 className={`w-full rounded-2xl border bg-card px-6 py-3 text-left text-card-foreground shadow-warm-sm cursor-pointer transition-all ${activityLevel === opt.value ? "bg-primary/10 border-primary" : ""}`}
                 onClick={() => setActivityLevel(opt.value)}
               >
@@ -238,6 +252,7 @@ export default function ProfileSetupPage() {
               <button
                 key={opt.label}
                 type="button"
+                aria-pressed={calorieGoal === opt.daily}
                 className={`inline-flex items-center rounded-full px-3 py-1.5 text-sm font-medium transition-transform active:scale-95 ${
                   calorieGoal === opt.daily
                     ? "bg-primary text-primary-foreground"
@@ -250,8 +265,9 @@ export default function ProfileSetupPage() {
             ))}
           </div>
           <div>
-            <Label>Custom daily goal (kcal)</Label>
+            <Label htmlFor="setup-calorie-goal">Custom daily goal (kcal)</Label>
             <Input
+              id="setup-calorie-goal"
               type="number"
               min={800}
               max={10000}

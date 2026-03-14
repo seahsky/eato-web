@@ -86,8 +86,8 @@ export default function DashboardPage() {
 
       {/* Loading */}
       {isLoading && !data && (
-        <div className="flex flex-col items-center gap-3 py-8">
-          <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+        <div className="flex flex-col items-center gap-3 py-8" role="status" aria-live="polite">
+          <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" aria-hidden="true" />
           <p className="text-sm text-muted-foreground">Loading...</p>
         </div>
       )}
@@ -105,7 +105,7 @@ export default function DashboardPage() {
       {data && (
         <>
           {entries.length > 0 && (
-            <div className="space-y-1.5">
+            <div className="space-y-1.5 mb-28">
               {grouped.map((group) => {
                 if (group.groupId && group.items.length > 1) {
                   // Meal group — cluster in a shared card
@@ -117,7 +117,7 @@ export default function DashboardPage() {
                           {/* eslint-disable-next-line @next/next/no-img-element */}
                           <img
                             src={groupImageUrl}
-                            alt=""
+                            alt="Meal photo"
                             className="h-28 w-full object-cover"
                             loading="lazy"
                           />

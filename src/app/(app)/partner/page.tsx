@@ -99,8 +99,9 @@ export default function PartnerPage() {
 
   if (isLoading) {
     return (
-      <div className="flex justify-center py-12">
-        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+      <div className="flex justify-center py-12" role="status" aria-live="polite">
+        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" aria-hidden="true" />
+        <span className="sr-only">Loading partner data...</span>
       </div>
     );
   }
@@ -213,7 +214,8 @@ export default function PartnerPage() {
                   value={code}
                   onChange={(e) => setCode(e.target.value.toUpperCase())}
                   maxLength={6}
-                  className="text-center text-lg font-mono tracking-widest"
+                  autoComplete="off"
+                  className="text-center text-lg font-mono tracking-widest uppercase"
                 />
               </div>
               <Button
