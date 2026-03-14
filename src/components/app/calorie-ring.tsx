@@ -62,7 +62,7 @@ export function CalorieRing({ consumed, budget, weekLabel }: CalorieRingProps) {
             strokeLinecap="round"
             strokeDasharray={circumference}
             strokeDashoffset={mounted ? targetOffset : circumference}
-            style={{ transition: "stroke-dashoffset 1.2s ease-out" }}
+            style={{ transition: "stroke-dashoffset 1.2s var(--ease-out-expo)" }}
           />
         </svg>
         <div className="absolute inset-0 flex flex-col items-center justify-center">

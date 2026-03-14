@@ -63,7 +63,7 @@ export default function DashboardPage() {
   const grouped = groupEntries(entries);
 
   return (
-    <div className="mx-auto max-w-lg px-4">
+    <div className="mx-auto max-w-lg px-4 animate-fade-in">
       {/* Date header */}
       <div className="pt-4 pb-1">
         <h1 className="font-caveat text-2xl text-foreground">
@@ -169,7 +169,7 @@ export default function DashboardPage() {
       {/* Floating action button - warm pill */}
       <Link
         href="/log"
-        className="fixed bottom-24 right-4 z-40 flex items-center gap-2 rounded-full bg-primary px-4 py-3 text-sm font-medium text-primary-foreground shadow-lg transition-transform hover:scale-105 active:scale-95"
+        className="fixed bottom-24 right-4 z-40 flex items-center gap-2 rounded-full bg-primary px-4 py-3 text-sm font-medium text-primary-foreground shadow-lg animate-scale-in-delayed transition-[transform] duration-[var(--duration-instant)] hover:scale-105 active:scale-95"
       >
         <Plus className="h-4 w-4" />
         {COPY.fab}

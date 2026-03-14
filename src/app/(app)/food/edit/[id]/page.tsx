@@ -100,7 +100,7 @@ export default function EditFoodPage() {
   }
 
   return (
-    <div className="mx-auto max-w-lg px-4">
+    <div className="mx-auto max-w-lg px-4 animate-fade-in">
       {/* Header */}
       <div className="flex items-center justify-between py-3">
         <div className="flex items-center gap-2">
@@ -214,9 +214,9 @@ export default function EditFoodPage() {
                 aria-label={label}
                 aria-pressed={currentMood === emoji}
                 className={cn(
-                  "flex items-center justify-center rounded-full min-h-[44px] min-w-[44px] text-lg transition-colors",
+                  "flex items-center justify-center rounded-full min-h-[44px] min-w-[44px] text-lg transition-[color,background-color,box-shadow,transform] duration-[var(--duration-fast)]",
                   currentMood === emoji
-                    ? "bg-accent ring-1 ring-primary/40"
+                    ? "bg-accent ring-1 ring-primary/40 scale-110"
                     : "hover:bg-accent/50"
                 )}
                 onClick={() =>

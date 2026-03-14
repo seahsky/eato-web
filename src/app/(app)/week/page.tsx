@@ -67,7 +67,7 @@ export default function WeekPage() {
   const isCurrentWeek = weekOffset === 0;
 
   return (
-    <div className="mx-auto max-w-lg px-4">
+    <div className="mx-auto max-w-lg px-4 animate-fade-in">
       {/* Header with navigation */}
       <div className="flex items-center justify-between py-3">
         <Button variant="ghost" size="icon" onClick={() => setWeekOffset((o) => o - 1)}>
@@ -132,7 +132,7 @@ export default function WeekPage() {
                 key={i}
                 aria-label={`${format(dayDate, "EEEE, MMMM d")}${hasData ? `, ${Math.round(day.totalCalories)} calories` : ", no entries"}`}
                 className={cn(
-                  "flex flex-col items-center gap-1 rounded-lg min-h-[44px] py-2.5 text-xs shadow-warm-sm transition-colors",
+                  "flex flex-col items-center gap-1 rounded-lg min-h-[44px] py-2.5 text-xs shadow-warm-sm transition-[color,background-color,transform] duration-[var(--duration-fast)] active:scale-[0.97]",
                   isExpanded && "bg-accent",
                   isTodayDay && !isExpanded && "ring-1 ring-primary/40",
                   !hasData && "opacity-50"
@@ -152,24 +152,31 @@ export default function WeekPage() {
       )}
 
       {/* Expanded day entries */}
-      {expandedDay !== null && dayData && (
-        <div className="mt-4 animate-fade-in space-y-1.5">
-          <h3 className="text-sm font-medium text-muted-foreground">
-            {format(addDays(weekStart, expandedDay), "EEEE, MMM d")}
-          </h3>
-          {(dayData.entries as DayEntry[]).length > 0 ? (
-            (dayData.entries as DayEntry[]).map((entry) => (
-              <Link key={entry.id} href={`/food/edit/${entry.id}`}>
-                <DiaryEntryCard entry={entry} />
-              </Link>
-            ))
-          ) : (
-            <p className="py-4 text-center text-sm text-muted-foreground">
-              {COPY.noEntriesDay}
-            </p>
+      <div
+        className="grid transition-[grid-template-rows] duration-[var(--duration-normal)] ease-[var(--ease-out-expo)]"
+        style={{ gridTemplateRows: expandedDay !== null && dayData ? '1fr' : '0fr' }}
+      >
+        <div className="overflow-hidden">
+          {expandedDay !== null && dayData && (
+            <div className="mt-4 animate-fade-in space-y-1.5">
+              <h3 className="text-sm font-medium text-muted-foreground">
+                {format(addDays(weekStart, expandedDay), "EEEE, MMM d")}
+              </h3>
+              {(dayData.entries as DayEntry[]).length > 0 ? (
+                (dayData.entries as DayEntry[]).map((entry) => (
+                  <Link key={entry.id} href={`/food/edit/${entry.id}`}>
+                    <DiaryEntryCard entry={entry} />
+                  </Link>
+                ))
+              ) : (
+                <p className="py-4 text-center text-sm text-muted-foreground">
+                  {COPY.noEntriesDay}
+                </p>
+              )}
+            </div>
           )}
         </div>
-      )}
+      </div>
 
       {weeklyLoading && !weeklyData && (
         <div className="flex justify-center py-8" role="status" aria-live="polite">

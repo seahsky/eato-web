@@ -98,7 +98,7 @@ export default function HistoryPage() {
   }, []);
 
   return (
-    <div className="mx-auto max-w-lg px-4">
+    <div className="mx-auto max-w-lg px-4 animate-fade-in">
       <div className="py-3">
         <h1 className="font-caveat text-xl text-foreground">{COPY.historyHeading}</h1>
       </div>
@@ -151,7 +151,7 @@ export default function HistoryPage() {
                   key={dateKey}
                   aria-label={`${format(day, "EEEE, MMMM d")}${hasData ? ", has entries" : ""}`}
                   className={cn(
-                    "flex flex-col items-center gap-0.5 rounded-md py-2.5 text-xs transition-colors hover:bg-accent/50",
+                    "flex flex-col items-center gap-0.5 rounded-md py-2.5 text-xs transition-[color,background-color,box-shadow] duration-[var(--duration-fast)] hover:bg-accent/50",
                     !inMonth && "opacity-30",
                     isSelected && "bg-primary text-primary-foreground shadow-warm-sm",
                     isTodayDay && !isSelected && "font-bold text-primary"
@@ -249,27 +249,32 @@ function WeekSection({ start, end, endStr }: { start: Date; end: Date; endStr: s
           </div>
           <ChevronRight
             className={cn(
-              "h-4 w-4 text-muted-foreground transition-transform",
+              "h-4 w-4 text-muted-foreground transition-transform duration-[var(--duration-normal)] ease-[var(--ease-out-expo)]",
               expanded && "rotate-90"
             )}
           />
         </button>
 
-        {expanded && (
-          <div className="mt-3 animate-fade-in space-y-2">
-            {data.days.map((day) => {
-              if (day.totalCalories === 0) return null;
-              return (
-                <div key={format(day.date, "yyyy-MM-dd")} className="border-t pt-2">
-                  <div className="flex items-center justify-between text-xs text-muted-foreground">
-                    <span>{format(day.date, "EEEE, MMM d")}</span>
-                    <span>{Math.round(day.totalCalories)} kcal</span>
+        <div
+          className="grid transition-[grid-template-rows] duration-[var(--duration-normal)] ease-[var(--ease-out-expo)]"
+          style={{ gridTemplateRows: expanded ? '1fr' : '0fr' }}
+        >
+          <div className="overflow-hidden">
+            <div className="mt-3 space-y-2">
+              {data.days.map((day) => {
+                if (day.totalCalories === 0) return null;
+                return (
+                  <div key={format(day.date, "yyyy-MM-dd")} className="border-t pt-2">
+                    <div className="flex items-center justify-between text-xs text-muted-foreground">
+                      <span>{format(day.date, "EEEE, MMM d")}</span>
+                      <span>{Math.round(day.totalCalories)} kcal</span>
+                    </div>
                   </div>
-                </div>
-              );
-            })}
+                );
+              })}
+            </div>
           </div>
-        )}
+        </div>
       </CardContent>
     </Card>
   );

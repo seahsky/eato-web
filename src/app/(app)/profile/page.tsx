@@ -87,7 +87,7 @@ export default function ProfilePage() {
   ] : [];
 
   return (
-    <div className="mx-auto max-w-lg px-4">
+    <div className="mx-auto max-w-lg px-4 animate-fade-in">
       <div className="py-3">
         <h1 className="font-caveat text-xl text-foreground">{COPY.profileHeading}</h1>
       </div>

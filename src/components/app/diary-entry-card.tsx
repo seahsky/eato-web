@@ -36,7 +36,7 @@ export function DiaryEntryCard({
   return (
     <Card
       className={cn(
-        "transition-[background-color,box-shadow,transform] duration-200",
+        "transition-[background-color,box-shadow,transform] duration-[var(--duration-fast)] ease-[var(--ease-out-quart)]",
         onClick && "cursor-pointer hover:bg-accent hover:shadow-warm-lg hover:-translate-y-0.5 will-change-transform"
       )}
       onClick={onClick}

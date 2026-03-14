@@ -22,7 +22,9 @@ export function DateNavigator({ date, onDateChange }: DateNavigatorProps) {
         <ChevronLeft className="h-5 w-5" />
       </Button>
       <button
-        className="rounded-md px-3 py-1 text-sm font-medium transition-colors hover:bg-accent"
+        key={formatDisplayDate(date)}
+        className="animate-fade-in rounded-md px-3 py-1 text-sm font-medium transition-colors hover:bg-accent"
+        style={{ animationDuration: 'var(--duration-fast)' }}
         aria-label="Go to today"
         onClick={() => onDateChange(new Date())}
       >

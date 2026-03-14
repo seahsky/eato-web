@@ -50,6 +50,7 @@ export default function LogPage() {
   const [isAnalyzingPhoto, setIsAnalyzingPhoto] = useState(false);
   const [selectedMood, setSelectedMood] = useState<string | null>(null);
   const [note, setNote] = useState("");
+  const [removingIds, setRemovingIds] = useState<Set<string>>(new Set());
   const fileInputRef = useRef<HTMLInputElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
@@ -289,7 +290,15 @@ export default function LogPage() {
   }
 
   function removeItem(id: string) {
-    setReviewItems((items) => items.filter((i) => i.id !== id));
+    setRemovingIds((prev) => new Set(prev).add(id));
+    setTimeout(() => {
+      setReviewItems((items) => items.filter((i) => i.id !== id));
+      setRemovingIds((prev) => {
+        const next = new Set(prev);
+        next.delete(id);
+        return next;
+      });
+    }, 250);
   }
 
   function updateQuantity(id: string, newSize: number) {
@@ -376,7 +385,7 @@ export default function LogPage() {
       : "What did you eat?";
 
   return (
-    <div className="mx-auto max-w-lg px-4">
+    <div className="mx-auto max-w-lg px-4 animate-fade-in">
       {/* Header */}
       <div className="flex items-center gap-2 py-3">
         <Link href="/dashboard" aria-label="Back to diary" className="flex items-center justify-center min-h-[44px] min-w-[44px]">
@@ -387,7 +396,7 @@ export default function LogPage() {
 
       {/* Stage: Photo capture — viewfinder or fallback */}
       {stage === "photo" && (
-        <div className="flex flex-col items-center">
+        <div className="flex flex-col items-center animate-fade-in">
           {!cameraUnavailable ? (
             <>
               <div className="-mx-4 relative w-full overflow-hidden bg-black">
@@ -450,7 +459,7 @@ export default function LogPage() {
 
       {/* Stage: Choose — AI or manual */}
       {stage === "choose" && (
-        <div className="space-y-4">
+        <div className="space-y-4 animate-fade-in">
           {capturedImage && (
             <div className="overflow-hidden rounded-lg">
               {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -494,7 +503,7 @@ export default function LogPage() {
 
       {/* Stage: Manual input */}
       {stage === "input" && (
-        <div className="space-y-4">
+        <div className="space-y-4 animate-fade-in">
           <textarea
             aria-label="Food items to log"
             className="w-full rounded-md border border-input bg-background px-3 py-3 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/20 focus-visible:border-primary/50"
@@ -537,7 +546,7 @@ export default function LogPage() {
 
       {/* Stage: Review */}
       {stage === "review" && (
-        <div className="space-y-3">
+        <div className="space-y-3 animate-fade-in">
           {reviewItems.length === 0 ? (
             <div className="py-8 text-center text-sm text-muted-foreground">
               <p>No items to log.</p>
@@ -567,11 +576,12 @@ export default function LogPage() {
               {reviewItems.map((item, i) => (
                 <Card
                   key={item.id}
-                  className={
+                  className={cn(
                     i < 5
                       ? `animate-fade-in-delay-${i}`
-                      : "animate-fade-in-delay-4"
-                  }
+                      : "animate-fade-in-delay-4",
+                    removingIds.has(item.id) && "animate-slide-out"
+                  )}
                 >
                   <CardContent className="py-3">
                     <div className="flex items-start justify-between gap-2">
@@ -644,9 +654,9 @@ export default function LogPage() {
                       aria-label={label}
                       aria-pressed={selectedMood === emoji}
                       className={cn(
-                        "flex items-center justify-center rounded-full min-h-[44px] min-w-[44px] text-lg transition-colors",
+                        "flex items-center justify-center rounded-full min-h-[44px] min-w-[44px] text-lg transition-[color,background-color,box-shadow,transform] duration-[var(--duration-fast)]",
                         selectedMood === emoji
-                          ? "bg-accent ring-1 ring-primary/40"
+                          ? "bg-accent ring-1 ring-primary/40 scale-110"
                           : "hover:bg-accent/50"
                       )}
                       onClick={() =>
