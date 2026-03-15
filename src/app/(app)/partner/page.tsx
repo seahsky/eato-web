@@ -185,7 +185,7 @@ export default function PartnerPage() {
               </p>
               {generatedCode ? (
                 <div className="flex items-center gap-2">
-                  <div className="flex-1 rounded-md bg-muted px-4 py-3 text-center text-2xl font-mono font-semibold tracking-wide">
+                  <div className="flex-1 rounded-md bg-muted px-4 py-3 text-center text-2xl font-mono font-medium tracking-wider">
                     {generatedCode}
                   </div>
                   <Button variant="outline" size="icon" onClick={handleCopyCode}>

@@ -82,7 +82,7 @@ export default function ProfileSetupPage() {
         aria-label="Setup progress"
       >
         <div
-          className="h-full rounded-full bg-primary transition-all"
+          className="h-full rounded-full bg-primary transition-[width] duration-[var(--duration-normal)] ease-[var(--ease-out-expo)]"
           style={{ width: `${((step + 1) / 4) * 100}%` }}
         />
       </div>
@@ -235,21 +235,13 @@ export default function ProfileSetupPage() {
           )}
 
           {bmr > 0 && (
-            <div className="flex gap-3">
-              <Card className="flex-1">
-                <CardContent className="py-3 text-center">
-                  <div className="text-sm text-muted-foreground">{COPY.onboardingBmrLabel}</div>
-                  <div className="text-lg font-bold text-primary">{Math.round(bmr)} kcal</div>
-                  <div className="text-xs text-muted-foreground">{COPY.onboardingBmrSubtitle}</div>
-                </CardContent>
-              </Card>
-              <Card className="flex-1">
-                <CardContent className="py-3 text-center">
-                  <div className="text-sm text-muted-foreground">{COPY.onboardingTdeeLabel}</div>
-                  <div className="text-lg font-bold text-primary">{Math.round(tdee)} kcal/day</div>
-                  <div className="text-xs text-muted-foreground">{COPY.onboardingTdeeSubtitle}</div>
-                </CardContent>
-              </Card>
+            <div className="space-y-1 text-sm text-muted-foreground">
+              <p>
+                Your body burns ~<span className="font-semibold text-foreground">{Math.round(bmr)} kcal/day</span> at rest (BMR)
+              </p>
+              <p>
+                With activity, you use ~<span className="font-semibold text-foreground">{Math.round(tdee)} kcal/day</span> (TDEE)
+              </p>
             </div>
           )}
 
