@@ -5,7 +5,7 @@ import { SignIn } from "@clerk/nextjs";
 
 export default function LoginPage() {
   return (
-    <div className="flex flex-col items-center gap-6">
+    <div className="flex min-h-dvh flex-col items-center justify-center gap-6 px-4">
       <div className="text-center">
         <Image
           src="/icons/Icon-192.png"

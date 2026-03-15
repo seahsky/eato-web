@@ -98,7 +98,7 @@ export default function HistoryPage() {
   }, []);
 
   return (
-    <div className="mx-auto max-w-lg px-4 animate-fade-in">
+    <div className="mx-auto max-w-lg px-4 animate-fade-in" aria-busy={isLoading}>
       <div className="py-3">
         <h1 className="font-caveat text-xl text-foreground">{COPY.historyHeading}</h1>
       </div>
@@ -239,6 +239,7 @@ function WeekSection({ start, end, endStr }: { start: Date; end: Date; endStr: s
         <button
           className="flex w-full items-center justify-between text-left"
           aria-expanded={expanded}
+          aria-label={`${format(start, "MMM d")} to ${format(end, "MMM d")}, ${expanded ? "collapse" : "expand"}`}
           onClick={() => setExpanded(!expanded)}
         >
           <div>

@@ -64,7 +64,7 @@ export default function DashboardPage() {
   const grouped = groupEntries(entries);
 
   return (
-    <div className="mx-auto max-w-lg px-4 animate-fade-in">
+    <div className="mx-auto max-w-lg px-4 animate-fade-in" aria-busy={isLoading && !data}>
       {/* Date header */}
       <div className="pt-4 pb-1">
         <h1 className="font-caveat text-2xl text-foreground">

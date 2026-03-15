@@ -208,6 +208,10 @@ body::after {
   animation: fade-in var(--duration-normal) var(--ease-out-expo) both;
 }
 
+@utility animate-fade-in-delay-0 {
+  animation: fade-in var(--duration-normal) var(--ease-out-expo) both;
+}
+
 @utility animate-fade-in-delay-1 {
   animation: fade-in var(--duration-normal) var(--ease-out-expo) 80ms both;
 }
@@ -247,5 +251,9 @@ body::after {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
+  }
+
+  body::after {
+    display: none;
   }
 }

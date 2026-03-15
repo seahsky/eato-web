@@ -26,9 +26,8 @@ export function CalorieRing({ consumed, budget, weekLabel }: CalorieRingProps) {
     <div className="flex flex-col items-center py-4">
       <div className="relative">
         <svg
-          width="160"
-          height="160"
-          className="-rotate-90"
+          viewBox="0 0 160 160"
+          className="-rotate-90 w-32 sm:w-40 h-auto"
           role="progressbar"
           aria-label={`${Math.round(consumed).toLocaleString()} of ${Math.round(budget).toLocaleString()} calories consumed`}
           aria-valuenow={Math.round(consumed)}

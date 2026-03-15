@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { ArrowLeft, Trash2, Loader2 } from "lucide-react";
 import Link from "next/link";
+import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -100,7 +101,7 @@ export default function EditFoodPage() {
   }
 
   return (
-    <div className="mx-auto max-w-lg px-4 animate-fade-in">
+    <div className="mx-auto max-w-lg px-4 animate-fade-in" aria-busy={isLoading}>
       {/* Header */}
       <div className="flex items-center justify-between py-3">
         <div className="flex items-center gap-2">
@@ -111,7 +112,7 @@ export default function EditFoodPage() {
         </div>
         <Dialog open={deleteOpen} onOpenChange={setDeleteOpen}>
           <DialogTrigger asChild>
-            <Button variant="ghost" size="icon" className="text-destructive">
+            <Button variant="ghost" size="icon" className="text-destructive" aria-label="Delete entry">
               <Trash2 className="h-5 w-5" />
             </Button>
           </DialogTrigger>
@@ -126,7 +127,7 @@ export default function EditFoodPage() {
               <Button variant="outline" onClick={() => setDeleteOpen(false)}>
                 Cancel
               </Button>
-              <Button variant="outline" className="text-destructive" onClick={handleDelete}>
+              <Button variant="destructive" onClick={handleDelete}>
                 Remove
               </Button>
             </DialogFooter>
@@ -137,13 +138,13 @@ export default function EditFoodPage() {
       <div className="space-y-4">
         {/* Photo */}
         {entry.imageUrl && (
-          <div className="overflow-hidden rounded-lg">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
+          <div className="overflow-hidden rounded-lg relative h-40">
+            <Image
               src={entry.imageUrl}
               alt={`Photo of ${entry.name}`}
-              className="h-40 w-full object-cover"
-              loading="lazy"
+              fill
+              className="object-cover"
+              sizes="(max-width: 512px) 100vw, 512px"
             />
           </div>
         )}
@@ -175,38 +176,45 @@ export default function EditFoodPage() {
           <Input id="serving-unit" value={entry.servingUnit} readOnly className="bg-muted" />
         </div>
 
-        {/* Nutrition info */}
+        {/* Nutrition info (recalculates based on serving size) */}
         <Card>
           <CardContent className="space-y-1 py-3 text-sm">
-            <div className="flex justify-between">
-              <span>Calories</span>
-              <strong>{Math.round(entry.calories)} kcal</strong>
-            </div>
-            {entry.protein != null && (
-              <div className="flex justify-between">
-                <span>Protein</span>
-                <span>{entry.protein}g</span>
-              </div>
-            )}
-            {entry.carbs != null && (
-              <div className="flex justify-between">
-                <span>Carbs</span>
-                <span>{entry.carbs}g</span>
-              </div>
-            )}
-            {entry.fat != null && (
-              <div className="flex justify-between">
-                <span>Fat</span>
-                <span>{entry.fat}g</span>
-              </div>
-            )}
+            {(() => {
+              const ratio = entry.servingSize > 0 ? currentServingSize / entry.servingSize : 1;
+              return (
+                <>
+                  <div className="flex justify-between">
+                    <span>Calories</span>
+                    <strong>{Math.round(entry.calories * ratio)} kcal</strong>
+                  </div>
+                  {entry.protein != null && (
+                    <div className="flex justify-between">
+                      <span>Protein</span>
+                      <span>{Math.round(entry.protein * ratio * 10) / 10}g</span>
+                    </div>
+                  )}
+                  {entry.carbs != null && (
+                    <div className="flex justify-between">
+                      <span>Carbs</span>
+                      <span>{Math.round(entry.carbs * ratio * 10) / 10}g</span>
+                    </div>
+                  )}
+                  {entry.fat != null && (
+                    <div className="flex justify-between">
+                      <span>Fat</span>
+                      <span>{Math.round(entry.fat * ratio * 10) / 10}g</span>
+                    </div>
+                  )}
+                </>
+              );
+            })()}
           </CardContent>
         </Card>
 
         {/* Mood & note */}
         <div className="space-y-2">
-          <Label>Mood</Label>
-          <div className="flex items-center gap-1.5">
+          <Label id="mood-label">Mood</Label>
+          <div className="flex items-center gap-1.5" role="radiogroup" aria-labelledby="mood-label">
             {MOOD_OPTIONS.map(({ emoji, label }) => (
               <button
                 key={emoji}

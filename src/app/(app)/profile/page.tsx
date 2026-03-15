@@ -101,30 +101,30 @@ export default function ProfilePage() {
               Edit
             </Button>
           </div>
-          <div className="mt-2 grid grid-cols-2 gap-2 text-sm">
+          <dl className="mt-2 grid grid-cols-2 gap-2 text-sm">
             <div>
-              <span className="text-muted-foreground">Gender</span>
-              <p className="font-medium">{profile.gender === "MALE" ? "Male" : "Female"}</p>
+              <dt className="text-muted-foreground">Gender</dt>
+              <dd className="font-medium">{profile.gender === "MALE" ? "Male" : "Female"}</dd>
             </div>
             <div>
-              <span className="text-muted-foreground">Age</span>
-              <p className="font-medium">{profile.age}</p>
+              <dt className="text-muted-foreground">Age</dt>
+              <dd className="font-medium">{profile.age}</dd>
             </div>
             <div>
-              <span className="text-muted-foreground">Weight</span>
-              <p className="font-medium">{profile.weight} kg</p>
+              <dt className="text-muted-foreground">Weight</dt>
+              <dd className="font-medium">{profile.weight} kg</dd>
             </div>
             <div>
-              <span className="text-muted-foreground">Height</span>
-              <p className="font-medium">{profile.height} cm</p>
+              <dt className="text-muted-foreground">Height</dt>
+              <dd className="font-medium">{profile.height} cm</dd>
             </div>
             <div className="col-span-2">
-              <span className="text-muted-foreground">Activity Level</span>
-              <p className="font-medium">
+              <dt className="text-muted-foreground">Activity Level</dt>
+              <dd className="font-medium">
                 {ACTIVITY_OPTIONS.find((a) => a.value === profile.activityLevel)?.label ?? profile.activityLevel}
-              </p>
+              </dd>
             </div>
-          </div>
+          </dl>
         </div>
       )}
 
@@ -135,8 +135,8 @@ export default function ProfilePage() {
             <h2 className="font-semibold">Edit Stats</h2>
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <Label>Gender</Label>
-                <div className="flex gap-1" role="radiogroup" aria-label="Gender">
+                <Label id="gender-label">Gender</Label>
+                <div className="flex gap-1" role="radiogroup" aria-labelledby="gender-label">
                   {(["MALE", "FEMALE"] as Gender[]).map((g) => (
                     <Button
                       key={g}
@@ -190,8 +190,8 @@ export default function ProfilePage() {
               </div>
             </div>
             <div>
-              <Label>Activity Level</Label>
-              <div className="mt-1 space-y-1" role="radiogroup" aria-label="Activity level">
+              <Label id="activity-level-label">Activity Level</Label>
+              <div className="mt-1 space-y-1" role="radiogroup" aria-labelledby="activity-level-label">
                 {ACTIVITY_OPTIONS.map((opt) => (
                   <button
                     key={opt.value}

@@ -406,7 +406,7 @@ export default function LogPage() {
                   playsInline
                   muted
                   aria-label="Camera viewfinder"
-                  className="h-[calc(100dvh-5rem)] w-full object-cover"
+                  className="h-[calc(100dvh-5rem)] max-h-[70vh] landscape:max-h-[60vh] w-full object-cover"
                 />
                 <button
                   type="button"

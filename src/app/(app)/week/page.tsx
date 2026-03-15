@@ -67,7 +67,7 @@ export default function WeekPage() {
   const isCurrentWeek = weekOffset === 0;
 
   return (
-    <div className="mx-auto max-w-lg px-4 animate-fade-in">
+    <div className="mx-auto max-w-lg px-4 animate-fade-in" aria-busy={budgetLoading && !budgetData}>
       {/* Header with navigation */}
       <div className="flex items-center justify-between py-3">
         <Button variant="ghost" size="icon" aria-label="Previous week" onClick={() => setWeekOffset((o) => o - 1)}>

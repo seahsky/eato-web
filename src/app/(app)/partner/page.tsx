@@ -188,7 +188,7 @@ export default function PartnerPage() {
                   <div className="flex-1 rounded-md bg-muted px-4 py-3 text-center text-2xl font-mono font-medium tracking-wider">
                     {generatedCode}
                   </div>
-                  <Button variant="outline" size="icon" onClick={handleCopyCode}>
+                  <Button variant="outline" size="icon" onClick={handleCopyCode} aria-label={copied ? "Copied" : "Copy code"}>
                     {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
                   </Button>
                 </div>
@@ -209,13 +209,15 @@ export default function PartnerPage() {
               </p>
               <form onSubmit={(e) => { e.preventDefault(); handleLinkPartner(); }}>
                 <div>
-                  <Label>Partner Code</Label>
+                  <Label htmlFor="partner-code">Partner Code</Label>
                   <Input
+                    id="partner-code"
                     placeholder="ABC123"
                     value={code}
-                    onChange={(e) => setCode(e.target.value.toUpperCase())}
+                    onChange={(e) => setCode(e.target.value.replace(/[^A-Za-z0-9]/g, "").toUpperCase())}
                     maxLength={6}
                     autoComplete="off"
+                    pattern="[A-Z0-9]*"
                     className="text-center text-lg font-mono tracking-widest uppercase"
                   />
                 </div>
