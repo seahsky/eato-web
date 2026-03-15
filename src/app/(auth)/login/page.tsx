@@ -10,9 +10,9 @@ export default function LoginPage() {
         <Image
           src="/icons/Icon-192.png"
           alt="Eato"
-          width={80}
-          height={80}
-          className="mx-auto mb-4 rounded-2xl"
+          width={56}
+          height={56}
+          className="mx-auto mb-4 rounded-xl"
           priority
         />
         <h1 className="text-3xl font-bold text-primary">Eato</h1>

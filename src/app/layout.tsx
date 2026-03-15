@@ -19,7 +19,10 @@ const caveat = Caveat({
 });
 
 export const metadata: Metadata = {
-  title: "Eato",
+  title: {
+    template: "%s - Eato",
+    default: "Eato",
+  },
   description: "Your food diary, together",
   manifest: "/manifest.json",
   appleWebApp: {

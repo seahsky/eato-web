@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { trpc } from "@/trpc/react";
 import { toast } from "sonner";
+import { cn } from "@/lib/utils";
 import { COPY } from "@/lib/copy";
 import { ACTIVITY_OPTIONS } from "@/lib/constants";
 import type { Gender, ActivityLevel } from "@/server/client-types";
@@ -104,11 +105,14 @@ export default function ProfileSetupPage() {
                 type="button"
                 role="radio"
                 aria-checked={gender === g}
-                className={`flex flex-col items-center gap-2 rounded-2xl border bg-card py-6 text-card-foreground shadow-warm-sm cursor-pointer transition-all ${gender === g ? "bg-primary/10 border-primary" : ""}`}
+                className={cn(
+                  "flex flex-col items-center gap-2 rounded-2xl border bg-card py-6 text-card-foreground shadow-warm-sm cursor-pointer transition-colors",
+                  gender === g && "bg-primary/10 border-primary"
+                )}
                 onClick={() => setGender(g)}
               >
-                {g === "MALE" ? <User className={`h-8 w-8 ${gender === g ? "text-primary" : ""}`} /> : <UserRound className={`h-8 w-8 ${gender === g ? "text-primary" : ""}`} />}
-                <span className={`font-semibold ${gender === g ? "text-primary" : ""}`}>{g === "MALE" ? "Male" : "Female"}</span>
+                {g === "MALE" ? <User className={cn("h-8 w-8", gender === g && "text-primary")} /> : <UserRound className={cn("h-8 w-8", gender === g && "text-primary")} />}
+                <span className={cn("font-semibold", gender === g && "text-primary")}>{g === "MALE" ? "Male" : "Female"}</span>
               </button>
             ))}
           </div>
@@ -186,10 +190,13 @@ export default function ProfileSetupPage() {
                 type="button"
                 role="radio"
                 aria-checked={activityLevel === opt.value}
-                className={`w-full rounded-2xl border bg-card px-6 py-3 text-left text-card-foreground shadow-warm-sm cursor-pointer transition-all ${activityLevel === opt.value ? "bg-primary/10 border-primary" : ""}`}
+                className={cn(
+                  "w-full rounded-2xl border bg-card px-6 py-3 text-left text-card-foreground shadow-warm-sm cursor-pointer transition-colors",
+                  activityLevel === opt.value && "bg-primary/10 border-primary"
+                )}
                 onClick={() => setActivityLevel(opt.value)}
               >
-                <div className={`font-medium ${activityLevel === opt.value ? "text-primary" : ""}`}>{opt.label}</div>
+                <div className={cn("font-medium", activityLevel === opt.value && "text-primary")}>{opt.label}</div>
                 <div className="text-sm text-muted-foreground">{opt.description}</div>
               </button>
             ))}
@@ -253,11 +260,12 @@ export default function ProfileSetupPage() {
                 key={opt.label}
                 type="button"
                 aria-pressed={calorieGoal === opt.daily}
-                className={`inline-flex items-center rounded-full px-3 py-1.5 text-sm font-medium transition-transform active:scale-95 ${
+                className={cn(
+                  "inline-flex items-center rounded-full px-3 py-1.5 text-sm font-medium transition-transform active:scale-95",
                   calorieGoal === opt.daily
                     ? "bg-primary text-primary-foreground"
                     : "bg-secondary text-secondary-foreground hover:bg-secondary/80"
-                }`}
+                )}
                 onClick={() => setCalorieGoal(opt.daily)}
               >
                 {COPY.onboardingGoalOption(opt.label, opt.weekly)}

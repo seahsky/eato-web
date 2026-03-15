@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Image from "next/image";
 import Link from "next/link";
 import { format } from "date-fns";
 import { Plus, Loader2, BookOpen } from "lucide-react";
@@ -111,15 +112,15 @@ export default function DashboardPage() {
                   // Meal group — cluster in a shared card
                   const groupImageUrl = group.items.find((e) => e.imageUrl)?.imageUrl;
                   return (
-                    <div key={group.groupId} className="rounded-lg border border-border/50 bg-muted/30 p-1.5 space-y-1">
+                    <div key={group.groupId} className="border-l-2 border-primary/20 pl-3 space-y-1.5">
                       {groupImageUrl && (
-                        <div className="overflow-hidden rounded-md">
-                          {/* eslint-disable-next-line @next/next/no-img-element */}
-                          <img
+                        <div className="overflow-hidden rounded-md relative h-28 w-full">
+                          <Image
                             src={groupImageUrl}
                             alt="Meal photo"
-                            className="h-28 w-full object-cover"
-                            loading="lazy"
+                            fill
+                            className="object-cover"
+                            sizes="(max-width: 512px) 100vw, 512px"
                           />
                         </div>
                       )}

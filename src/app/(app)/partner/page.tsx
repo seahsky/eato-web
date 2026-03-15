@@ -185,7 +185,7 @@ export default function PartnerPage() {
               </p>
               {generatedCode ? (
                 <div className="flex items-center gap-2">
-                  <div className="flex-1 rounded-md bg-muted px-4 py-3 text-center text-2xl font-mono font-bold tracking-widest">
+                  <div className="flex-1 rounded-md bg-muted px-4 py-3 text-center text-2xl font-mono font-semibold tracking-wide">
                     {generatedCode}
                   </div>
                   <Button variant="outline" size="icon" onClick={handleCopyCode}>
@@ -207,24 +207,26 @@ export default function PartnerPage() {
               <p className="text-sm text-muted-foreground">
                 {COPY.partnerEnterDescription}
               </p>
-              <div>
-                <Label>Partner Code</Label>
-                <Input
-                  placeholder="ABC123"
-                  value={code}
-                  onChange={(e) => setCode(e.target.value.toUpperCase())}
-                  maxLength={6}
-                  autoComplete="off"
-                  className="text-center text-lg font-mono tracking-widest uppercase"
-                />
-              </div>
-              <Button
-                className="w-full"
-                disabled={code.trim().length < 6 || linking}
-                onClick={handleLinkPartner}
-              >
-                {linking ? "Linking..." : "Link Partner"}
-              </Button>
+              <form onSubmit={(e) => { e.preventDefault(); handleLinkPartner(); }}>
+                <div>
+                  <Label>Partner Code</Label>
+                  <Input
+                    placeholder="ABC123"
+                    value={code}
+                    onChange={(e) => setCode(e.target.value.toUpperCase())}
+                    maxLength={6}
+                    autoComplete="off"
+                    className="text-center text-lg font-mono tracking-widest uppercase"
+                  />
+                </div>
+                <Button
+                  type="submit"
+                  className="mt-3 w-full"
+                  disabled={code.trim().length < 6 || linking}
+                >
+                  {linking ? "Linking..." : "Link Partner"}
+                </Button>
+              </form>
             </CardContent>
           </Card>
         </div>

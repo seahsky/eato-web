@@ -70,7 +70,7 @@ export default function WeekPage() {
     <div className="mx-auto max-w-lg px-4 animate-fade-in">
       {/* Header with navigation */}
       <div className="flex items-center justify-between py-3">
-        <Button variant="ghost" size="icon" onClick={() => setWeekOffset((o) => o - 1)}>
+        <Button variant="ghost" size="icon" aria-label="Previous week" onClick={() => setWeekOffset((o) => o - 1)}>
           <ChevronLeft className="h-5 w-5" />
         </Button>
         <div className="text-center">
@@ -80,6 +80,7 @@ export default function WeekPage() {
         <Button
           variant="ghost"
           size="icon"
+          aria-label="Next week"
           disabled={isCurrentWeek}
           onClick={() => setWeekOffset((o) => o + 1)}
         >
@@ -102,9 +103,6 @@ export default function WeekPage() {
             budget={budgetData.weeklyBudget}
             weekLabel={weekLabel}
           />
-          <p className="text-center text-sm font-medium text-foreground">
-            {COPY.weekBudgetLabel(budgetData.weeklyConsumed, budgetData.weeklyBudget)}
-          </p>
           {!isOver && weeklyRemaining > 0 && (
             <p className="mt-1 text-center text-xs text-muted-foreground">
               {COPY.weekRemainingLabel(weeklyRemaining)}
@@ -145,6 +143,9 @@ export default function WeekPage() {
                 <span className={cn("font-semibold", hasData ? "text-foreground" : "text-muted-foreground")}>
                   {hasData ? Math.round(day.totalCalories) : "\u2014"}
                 </span>
+                {hasData && (
+                  <span className="h-1.5 w-1.5 rounded-full bg-primary" aria-hidden="true" />
+                )}
               </button>
             );
           })}
@@ -159,14 +160,16 @@ export default function WeekPage() {
         <div className="overflow-hidden">
           {expandedDay !== null && dayData && (
             <div className="mt-4 animate-fade-in space-y-1.5">
-              <h3 className="text-sm font-medium text-muted-foreground">
+              <h2 className="text-sm font-medium text-muted-foreground">
                 {format(addDays(weekStart, expandedDay), "EEEE, MMM d")}
-              </h3>
+              </h2>
               {(dayData.entries as DayEntry[]).length > 0 ? (
-                (dayData.entries as DayEntry[]).map((entry) => (
-                  <Link key={entry.id} href={`/food/edit/${entry.id}`}>
-                    <DiaryEntryCard entry={entry} />
-                  </Link>
+                (dayData.entries as DayEntry[]).map((entry, i) => (
+                  <div key={entry.id} className={i < 5 ? `animate-fade-in-delay-${i}` : "animate-fade-in-delay-4"}>
+                    <Link href={`/food/edit/${entry.id}`}>
+                      <DiaryEntryCard entry={entry} />
+                    </Link>
+                  </div>
                 ))
               ) : (
                 <p className="py-4 text-center text-sm text-muted-foreground">

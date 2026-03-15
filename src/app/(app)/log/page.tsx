@@ -418,7 +418,7 @@ export default function LogPage() {
                 </button>
                 <button
                   type="button"
-                  className="absolute bottom-2 left-1/2 -translate-x-1/2 px-4 py-3 text-sm text-white/70 underline underline-offset-2 hover:text-white"
+                  className="absolute bottom-2 left-1/2 -translate-x-1/2 min-h-[44px] px-4 py-3 text-sm text-white/70 underline underline-offset-2 hover:text-white bg-black/30 backdrop-blur-sm rounded-full"
                   onClick={() => setStage("input")}
                 >
                   Skip, log manually
@@ -511,7 +511,6 @@ export default function LogPage() {
             placeholder={"200g chicken breast\n100g rice\n2 eggs\n352kj canned salmon"}
             value={text}
             onChange={(e) => setText(e.target.value)}
-            autoFocus
           />
           <p className="text-xs text-muted-foreground">
             One item per line. Format: quantity + unit + food name (e.g. 200g chicken breast)

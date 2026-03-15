@@ -12,7 +12,7 @@ interface EmptyStateProps {
 
 export function EmptyState({ icon, title, description, action }: EmptyStateProps) {
   return (
-    <Card className="animate-fade-in" role="status">
+    <Card className="animate-fade-in">
       <CardContent className="flex flex-col items-center gap-3 py-8 text-center">
         {icon && <div className="text-muted-foreground [&>svg]:h-12 [&>svg]:w-12">{icon}</div>}
         <h2 className="font-caveat text-xl text-foreground">{title}</h2>

@@ -1,5 +1,7 @@
 "use client";
 
+import { memo } from "react";
+import Image from "next/image";
 import { format } from "date-fns";
 import { Card, CardContent } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
@@ -24,7 +26,7 @@ interface DiaryEntryCardProps {
   onClick?: () => void;
 }
 
-export function DiaryEntryCard({
+export const DiaryEntryCard = memo(function DiaryEntryCard({
   entry,
   showCalories = true,
   onClick,
@@ -37,7 +39,7 @@ export function DiaryEntryCard({
     <Card
       className={cn(
         "transition-[background-color,box-shadow,transform] duration-[var(--duration-fast)] ease-[var(--ease-out-quart)]",
-        onClick && "cursor-pointer hover:bg-accent hover:shadow-warm-lg hover:-translate-y-0.5 will-change-transform"
+        onClick && "cursor-pointer hover:bg-accent hover:shadow-warm-lg hover:-translate-y-0.5"
       )}
       onClick={onClick}
       {...(onClick ? { role: "button", "aria-label": `${entry.name}, ${Math.round(entry.calories)} calories${entry.mood ? `, mood: ${entry.mood}` : ""}${entry.note ? `, note: ${entry.note}` : ""}` } : {})}
@@ -45,13 +47,13 @@ export function DiaryEntryCard({
       <CardContent className="py-3">
         {/* Photo */}
         {entry.imageUrl && (
-          <div className="-mx-4 -mt-3 mb-2 overflow-hidden rounded-t-lg">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
+          <div className="-mx-4 -mt-3 mb-2 overflow-hidden rounded-t-lg relative h-28">
+            <Image
               src={entry.imageUrl}
               alt={entry.name ? `Photo of ${entry.name}` : "Food photo"}
-              className="h-28 w-full object-cover"
-              loading="lazy"
+              fill
+              className="object-cover"
+              sizes="(max-width: 512px) 100vw, 512px"
             />
           </div>
         )}
@@ -89,4 +91,4 @@ export function DiaryEntryCard({
       </CardContent>
     </Card>
   );
-}
+});

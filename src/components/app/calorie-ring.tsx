@@ -29,7 +29,7 @@ export function CalorieRing({ consumed, budget, weekLabel }: CalorieRingProps) {
           width="160"
           height="160"
           className="-rotate-90"
-          role="img"
+          role="progressbar"
           aria-label={`${Math.round(consumed).toLocaleString()} of ${Math.round(budget).toLocaleString()} calories consumed`}
           aria-valuenow={Math.round(consumed)}
           aria-valuemin={0}

@@ -111,6 +111,7 @@ export default function HistoryPage() {
             <Button
               variant="ghost"
               size="icon"
+              aria-label="Previous month"
               onClick={() => setCurrentMonth((m) => subMonths(m, 1))}
             >
               <ChevronLeft className="h-4 w-4" />
@@ -121,6 +122,7 @@ export default function HistoryPage() {
             <Button
               variant="ghost"
               size="icon"
+              aria-label="Next month"
               disabled={isSameMonth(currentMonth, new Date())}
               onClick={() => setCurrentMonth((m) => addMonths(m, 1))}
             >
@@ -151,7 +153,7 @@ export default function HistoryPage() {
                   key={dateKey}
                   aria-label={`${format(day, "EEEE, MMMM d")}${hasData ? ", has entries" : ""}`}
                   className={cn(
-                    "flex flex-col items-center gap-0.5 rounded-md py-2.5 text-xs transition-[color,background-color,box-shadow] duration-[var(--duration-fast)] hover:bg-accent/50",
+                    "flex flex-col items-center gap-0.5 rounded-md py-2.5 min-h-[44px] text-xs transition-[color,background-color,box-shadow] duration-[var(--duration-fast)] hover:bg-accent/50",
                     !inMonth && "opacity-30",
                     isSelected && "bg-primary text-primary-foreground shadow-warm-sm",
                     isTodayDay && !isSelected && "font-bold text-primary"
@@ -175,12 +177,12 @@ export default function HistoryPage() {
       {/* Selected day entries */}
       {selectedDate && dayData && (
         <div className="mb-4 animate-fade-in space-y-1.5">
-          <h3 className="text-sm font-medium text-muted-foreground">
+          <h2 className="text-sm font-medium text-muted-foreground">
             {format(selectedDate, "EEEE, MMMM d")}
             {dayData.totalCalories > 0 && (
               <span> &middot; {Math.round(dayData.totalCalories)} kcal</span>
             )}
-          </h3>
+          </h2>
           {(dayData.entries as HistoryEntry[]).length > 0 ? (
             (dayData.entries as HistoryEntry[]).map((entry) => (
               <Link key={entry.id} href={`/food/edit/${entry.id}`}>
@@ -205,7 +207,7 @@ export default function HistoryPage() {
 
       {/* Recent weekly sections */}
       <div className="space-y-3">
-        <h3 className="text-sm font-medium text-muted-foreground">Recent weeks</h3>
+        <h2 className="text-sm font-medium text-muted-foreground">Recent weeks</h2>
         {recentWeeks.map((week, i) => (
           <div key={week.endStr} className={i === 0 ? "animate-fade-in-delay-1" : `animate-fade-in-delay-${Math.min(i + 1, 4)}`}>
             <WeekSection start={week.start} end={week.end} endStr={week.endStr} />

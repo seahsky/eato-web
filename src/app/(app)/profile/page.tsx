@@ -94,40 +94,38 @@ export default function ProfilePage() {
 
       {/* Physical Stats */}
       {profile && !editing && (
-        <Card className="mb-4">
-          <CardContent className="space-y-2 py-4">
-            <div className="flex items-center justify-between">
-              <h2 className="font-semibold">Physical Stats</h2>
-              <Button variant="outline" size="sm" onClick={startEditing}>
-                Edit
-              </Button>
+        <div className="border-b border-border/50 pb-4 mb-4">
+          <div className="flex items-center justify-between">
+            <h2 className="font-semibold">Physical Stats</h2>
+            <Button variant="outline" size="sm" onClick={startEditing}>
+              Edit
+            </Button>
+          </div>
+          <div className="mt-2 grid grid-cols-2 gap-2 text-sm">
+            <div>
+              <span className="text-muted-foreground">Gender</span>
+              <p className="font-medium">{profile.gender === "MALE" ? "Male" : "Female"}</p>
             </div>
-            <div className="grid grid-cols-2 gap-2 text-sm">
-              <div>
-                <span className="text-muted-foreground">Gender</span>
-                <p className="font-medium">{profile.gender === "MALE" ? "Male" : "Female"}</p>
-              </div>
-              <div>
-                <span className="text-muted-foreground">Age</span>
-                <p className="font-medium">{profile.age}</p>
-              </div>
-              <div>
-                <span className="text-muted-foreground">Weight</span>
-                <p className="font-medium">{profile.weight} kg</p>
-              </div>
-              <div>
-                <span className="text-muted-foreground">Height</span>
-                <p className="font-medium">{profile.height} cm</p>
-              </div>
-              <div className="col-span-2">
-                <span className="text-muted-foreground">Activity Level</span>
-                <p className="font-medium">
-                  {ACTIVITY_OPTIONS.find((a) => a.value === profile.activityLevel)?.label ?? profile.activityLevel}
-                </p>
-              </div>
+            <div>
+              <span className="text-muted-foreground">Age</span>
+              <p className="font-medium">{profile.age}</p>
             </div>
-          </CardContent>
-        </Card>
+            <div>
+              <span className="text-muted-foreground">Weight</span>
+              <p className="font-medium">{profile.weight} kg</p>
+            </div>
+            <div>
+              <span className="text-muted-foreground">Height</span>
+              <p className="font-medium">{profile.height} cm</p>
+            </div>
+            <div className="col-span-2">
+              <span className="text-muted-foreground">Activity Level</span>
+              <p className="font-medium">
+                {ACTIVITY_OPTIONS.find((a) => a.value === profile.activityLevel)?.label ?? profile.activityLevel}
+              </p>
+            </div>
+          </div>
+        </div>
       )}
 
       {/* Edit Form */}
@@ -200,7 +198,10 @@ export default function ProfilePage() {
                     type="button"
                     role="radio"
                     aria-checked={activityLevel === opt.value}
-                    className={`w-full rounded-2xl border bg-card px-6 py-2 text-left text-card-foreground shadow-warm-sm cursor-pointer transition-all ${activityLevel === opt.value ? "ring-2 ring-primary" : ""}`}
+                    className={cn(
+                      "w-full rounded-2xl border bg-card px-6 py-2 text-left text-card-foreground shadow-warm-sm cursor-pointer transition-colors",
+                      activityLevel === opt.value && "ring-2 ring-primary"
+                    )}
                     onClick={() => setActivityLevel(opt.value)}
                   >
                     <div className="text-sm font-medium">{opt.label}</div>
@@ -227,19 +228,13 @@ export default function ProfilePage() {
 
       {/* BMR / TDEE */}
       {profile && !editing && (
-        <div className="mb-4 flex gap-3">
-          <Card className="flex-1">
-            <CardContent className="py-3 text-center">
-              <div className="text-sm text-muted-foreground">BMR</div>
-              <div className="text-lg font-bold text-primary">{Math.round(bmr)} kcal</div>
-            </CardContent>
-          </Card>
-          <Card className="flex-1">
-            <CardContent className="py-3 text-center">
-              <div className="text-sm text-muted-foreground">TDEE</div>
-              <div className="text-lg font-bold text-primary">{Math.round(tdee)} kcal</div>
-            </CardContent>
-          </Card>
+        <div className="border-b border-border/50 pb-4 mb-4 space-y-1 text-sm text-muted-foreground">
+          <p>
+            Your body burns ~<span className="font-semibold text-foreground">{Math.round(bmr)} kcal/day</span> at rest (BMR)
+          </p>
+          <p>
+            With activity, you use ~<span className="font-semibold text-foreground">{Math.round(tdee)} kcal/day</span> (TDEE)
+          </p>
         </div>
       )}
 
