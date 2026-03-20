@@ -106,7 +106,7 @@ export default function ProfileSetupPage() {
                 role="radio"
                 aria-checked={gender === g}
                 className={cn(
-                  "flex flex-col items-center gap-2 rounded-2xl border bg-card py-6 text-card-foreground shadow-warm-sm cursor-pointer transition-colors",
+                  "flex flex-col items-center gap-2 rounded-2xl border bg-card py-6 text-card-foreground shadow-warm-sm cursor-pointer transition-colors focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-none",
                   gender === g && "bg-primary/10 border-primary"
                 )}
                 onClick={() => setGender(g)}
@@ -138,6 +138,7 @@ export default function ProfileSetupPage() {
                 placeholder="25"
                 min={13}
                 max={120}
+                required
                 value={age}
                 onChange={(e) => setAge(e.target.value ? Number(e.target.value) : "")}
               />
@@ -151,6 +152,7 @@ export default function ProfileSetupPage() {
                 min={30}
                 max={300}
                 step={0.1}
+                required
                 value={weight}
                 onChange={(e) => setWeight(e.target.value ? Number(e.target.value) : "")}
               />
@@ -163,6 +165,7 @@ export default function ProfileSetupPage() {
                 placeholder="170"
                 min={100}
                 max={250}
+                required
                 value={height}
                 onChange={(e) => setHeight(e.target.value ? Number(e.target.value) : "")}
               />
@@ -191,7 +194,7 @@ export default function ProfileSetupPage() {
                 role="radio"
                 aria-checked={activityLevel === opt.value}
                 className={cn(
-                  "w-full rounded-2xl border bg-card px-6 py-3 text-left text-card-foreground shadow-warm-sm cursor-pointer transition-colors",
+                  "w-full rounded-2xl border bg-card px-6 py-3 text-left text-card-foreground shadow-warm-sm cursor-pointer transition-colors focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-none",
                   activityLevel === opt.value && "bg-primary/10 border-primary"
                 )}
                 onClick={() => setActivityLevel(opt.value)}
@@ -253,7 +256,7 @@ export default function ProfileSetupPage() {
                 type="button"
                 aria-pressed={calorieGoal === opt.daily}
                 className={cn(
-                  "inline-flex items-center rounded-full px-3 py-1.5 text-sm font-medium transition-transform active:scale-95",
+                  "inline-flex items-center rounded-full px-3 py-1.5 text-sm font-medium transition-transform active:scale-95 focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-none",
                   calorieGoal === opt.daily
                     ? "bg-primary text-primary-foreground"
                     : "bg-secondary text-secondary-foreground hover:bg-secondary/80"

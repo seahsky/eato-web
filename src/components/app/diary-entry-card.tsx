@@ -42,7 +42,17 @@ export const DiaryEntryCard = memo(function DiaryEntryCard({
         onClick && "cursor-pointer hover:bg-accent hover:shadow-warm-lg hover:-translate-y-0.5"
       )}
       onClick={onClick}
-      {...(onClick ? { role: "button", "aria-label": `${entry.name}, ${Math.round(entry.calories)} calories${entry.mood ? `, mood: ${entry.mood}` : ""}${entry.note ? `, note: ${entry.note}` : ""}` } : {})}
+      {...(onClick ? {
+        role: "button",
+        tabIndex: 0,
+        onKeyDown: (e: React.KeyboardEvent) => {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            onClick();
+          }
+        },
+        "aria-label": `${entry.name}, ${Math.round(entry.calories)} calories${entry.mood ? `, mood: ${entry.mood}` : ""}${entry.note ? `, note: ${entry.note}` : ""}`,
+      } : {})}
     >
       <CardContent className="py-3">
         {/* Photo */}

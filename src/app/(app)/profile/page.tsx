@@ -159,6 +159,7 @@ export default function ProfilePage() {
                   type="number"
                   min={13}
                   max={120}
+                  required
                   value={age}
                   onChange={(e) => setAge(e.target.value ? Number(e.target.value) : "")}
                 />
@@ -173,6 +174,7 @@ export default function ProfilePage() {
                   min={30}
                   max={300}
                   step={0.1}
+                  required
                   value={weight}
                   onChange={(e) => setWeight(e.target.value ? Number(e.target.value) : "")}
                 />
@@ -184,6 +186,7 @@ export default function ProfilePage() {
                   type="number"
                   min={100}
                   max={250}
+                  required
                   value={height}
                   onChange={(e) => setHeight(e.target.value ? Number(e.target.value) : "")}
                 />
@@ -199,7 +202,7 @@ export default function ProfilePage() {
                     role="radio"
                     aria-checked={activityLevel === opt.value}
                     className={cn(
-                      "w-full rounded-2xl border bg-card px-6 py-2 text-left text-card-foreground shadow-warm-sm cursor-pointer transition-colors",
+                      "w-full rounded-2xl border bg-card px-6 py-2 text-left text-card-foreground shadow-warm-sm cursor-pointer transition-colors focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-none",
                       activityLevel === opt.value && "ring-2 ring-primary"
                     )}
                     onClick={() => setActivityLevel(opt.value)}
@@ -255,7 +258,7 @@ export default function ProfilePage() {
                     type="button"
                     aria-pressed={Math.round(profile.calorieGoal) === opt.daily}
                     className={cn(
-                      "inline-flex items-center rounded-full px-3 py-1.5 text-sm font-medium transition-transform active:scale-95",
+                      "inline-flex items-center rounded-full px-3 py-1.5 text-sm font-medium transition-transform active:scale-95 focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-none",
                       Math.round(profile.calorieGoal) === opt.daily
                         ? "bg-primary text-primary-foreground"
                         : "bg-secondary text-secondary-foreground hover:bg-secondary/80"
