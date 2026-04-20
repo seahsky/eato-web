@@ -15,12 +15,16 @@ final class SessionStore {
     private(set) var currentUser: UserDTO?
     private(set) var lastError: APIError?
 
-    private let api: APIClient
+    let api: APIClient
 
     init(
         api: APIClient = APIClient(interceptor: AuthInterceptor(provider: ClerkSession.shared))
     ) {
         self.api = api
+    }
+
+    var profileCompleted: Bool {
+        currentUser?.profileCompleted == true
     }
 
     func bootstrap() async {
