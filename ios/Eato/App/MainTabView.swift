@@ -21,7 +21,7 @@ struct MainTabView: View {
                 .tabItem { Label("Week", systemImage: "calendar") }
                 .tag(MainTab.week)
 
-            NavigationStack { TabPlaceholderView(tab: .partner) }
+            PartnerHomeView()
                 .tabItem { Label("Partner", systemImage: "person.2.fill") }
                 .tag(MainTab.partner)
 
