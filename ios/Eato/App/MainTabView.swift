@@ -13,7 +13,7 @@ struct MainTabView: View {
                 .tabItem { Label("Today", systemImage: "sun.max.fill") }
                 .tag(MainTab.today)
 
-            NavigationStack { TabPlaceholderView(tab: .log) }
+            LogHomeView()
                 .tabItem { Label("Log", systemImage: "plus.circle.fill") }
                 .tag(MainTab.log)
 
