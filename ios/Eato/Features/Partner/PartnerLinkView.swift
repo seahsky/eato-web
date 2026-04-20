@@ -2,6 +2,7 @@ import SwiftUI
 
 struct PartnerLinkView: View {
     @Environment(SessionStore.self) private var session
+    @Environment(DeepLinkRouter.self) private var router
     @State private var viewModel: PartnerLinkViewModel?
 
     var body: some View {
@@ -17,6 +18,10 @@ struct PartnerLinkView: View {
                 viewModel = PartnerLinkViewModel(api: session.api) { [session] in
                     await session.loadMe()
                 }
+            }
+            // Pre-fill code if we arrived via a partner-link deep link.
+            if let code = router.consumePartnerCode() {
+                viewModel?.codeEntry = code
             }
         }
     }

@@ -104,6 +104,8 @@ async function buildAPNProvider(): Promise<APNProvider | null> {
     topic?: string;
     alert?: { title: string; body: string } | string;
     sound?: string;
+    category?: string;
+    threadId?: string;
     payload?: Record<string, unknown>;
   };
   type ApnProviderInstance = {
@@ -140,10 +142,18 @@ async function buildAPNProvider(): Promise<APNProvider | null> {
       note.topic = APN_BUNDLE_ID;
       note.alert = { title: payload.title, body: payload.body };
       note.sound = "default";
+      // Pending-approval notifications get iOS actionable buttons via the
+      // PENDING_APPROVAL category registered on the client. The category
+      // identifier must match `PushNotificationsManager.Categories`.
+      const data = (payload.data ?? {}) as Record<string, unknown>;
+      if (data.type === "pending-approval") {
+        note.category = "PENDING_APPROVAL";
+        note.threadId = "approvals";
+      }
       note.payload = {
         tag: payload.tag,
         url: payload.url,
-        ...(payload.data ?? {}),
+        ...data,
       };
       const response = await p.send(note, token);
       const failure = response.failed[0];

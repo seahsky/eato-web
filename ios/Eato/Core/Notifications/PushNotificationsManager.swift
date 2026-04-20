@@ -18,10 +18,12 @@ final class PushNotificationsManager: NSObject {
     private(set) var status: Status = .notDetermined
 
     private let api: APIClient
+    private let router: DeepLinkRouter
     private let defaults: UserDefaults
 
-    init(api: APIClient, defaults: UserDefaults = .standard) {
+    init(api: APIClient, router: DeepLinkRouter, defaults: UserDefaults = .standard) {
         self.api = api
+        self.router = router
         self.defaults = defaults
         super.init()
     }
@@ -30,6 +32,7 @@ final class PushNotificationsManager: NSObject {
     func bootstrap() async {
         let center = UNUserNotificationCenter.current()
         center.delegate = self
+        center.setNotificationCategories([Categories.pendingApproval])
         let settings = await center.notificationSettings()
         switch settings.authorizationStatus {
         case .authorized, .provisional, .ephemeral:
@@ -40,6 +43,25 @@ final class PushNotificationsManager: NSObject {
         default:
             status = .notDetermined
         }
+    }
+
+    private enum Categories {
+        static let approveAction = UNNotificationAction(
+            identifier: "EATO_APPROVE",
+            title: "Approve",
+            options: [.authenticationRequired]
+        )
+        static let rejectAction = UNNotificationAction(
+            identifier: "EATO_REJECT",
+            title: "Reject",
+            options: [.destructive, .authenticationRequired]
+        )
+        static let pendingApproval = UNNotificationCategory(
+            identifier: "PENDING_APPROVAL",
+            actions: [approveAction, rejectAction],
+            intentIdentifiers: [],
+            options: []
+        )
     }
 
     func requestPermission() async {
@@ -112,5 +134,37 @@ extension PushNotificationsManager: UNUserNotificationCenterDelegate {
         willPresent notification: UNNotification
     ) async -> UNNotificationPresentationOptions {
         [.banner, .badge, .sound]
+    }
+
+    nonisolated func userNotificationCenter(
+        _ center: UNUserNotificationCenter,
+        didReceive response: UNNotificationResponse
+    ) async {
+        let userInfo = response.notification.request.content.userInfo
+        let entryId = userInfo["entryId"] as? String
+        let urlString = userInfo["url"] as? String
+
+        await MainActor.run {
+            switch response.actionIdentifier {
+            case "EATO_APPROVE":
+                if let entryId { Task { await self.approveFromNotification(entryId: entryId) } }
+            case "EATO_REJECT":
+                if let entryId { Task { await self.rejectFromNotification(entryId: entryId) } }
+            default:
+                if let entryId {
+                    self.router.pendingLink = .approve(entryId: entryId)
+                } else if let urlString, let url = URL(string: urlString) {
+                    self.router.handle(url)
+                }
+            }
+        }
+    }
+
+    private func approveFromNotification(entryId: String) async {
+        _ = try? await api.send(PartnerAPI.approve(entryId))
+    }
+
+    private func rejectFromNotification(entryId: String) async {
+        _ = try? await api.send(PartnerAPI.reject(entryId, note: nil))
     }
 }

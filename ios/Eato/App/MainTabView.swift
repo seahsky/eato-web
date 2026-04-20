@@ -5,6 +5,7 @@ enum MainTab: Hashable {
 }
 
 struct MainTabView: View {
+    @Environment(DeepLinkRouter.self) private var router
     @State private var selection: MainTab = .today
 
     var body: some View {
@@ -28,6 +29,13 @@ struct MainTabView: View {
             NavigationStack { ProfileTabView() }
                 .tabItem { Label("Me", systemImage: "person.crop.circle") }
                 .tag(MainTab.me)
+        }
+        .onChange(of: router.pendingLink) { _, link in
+            guard let link else { return }
+            switch link {
+            case .partner, .partnerLink: selection = .partner
+            case .approve: selection = .partner
+            }
         }
     }
 }
