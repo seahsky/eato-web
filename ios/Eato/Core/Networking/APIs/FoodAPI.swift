@@ -31,6 +31,16 @@ enum FoodAPI {
     static func deleteEntry(_ id: String) -> Endpoint<EmptyResponse> {
         .init(method: .delete, path: "food/entries/\(id)")
     }
+
+    static func batchSearch(_ body: BatchSearchRequest) -> Endpoint<[BatchSearchResultItem]> {
+        .post("food/batch-search", body: body)
+    }
+}
+
+enum MealEstimationAPI {
+    static func create(_ body: CreateMealEstimationRequest) -> Endpoint<EmptyResponse> {
+        .post("meal-estimations", body: body)
+    }
 }
 
 struct AnalyzePhotoRequest: Encodable, Sendable {
