@@ -1,16 +1,29 @@
 import { prisma } from "@/lib/prisma";
 import { sendWebPushNotification } from "./web-push";
+import { sendAPNsNotification } from "./apn-push";
 import type { NotificationPayload, SendResult } from "./types";
 
 /**
- * Send notification to all of a user's devices (web push)
- * This is the main entry point for all notification sending
+ * Send notification to all of a user's devices — fans out to Web Push
+ * and APNs in parallel. Either dispatch returning sent:0 is fine (the
+ * user might only have web devices, or APN might be unconfigured).
  */
 export async function sendNotificationToUser(
   userId: string,
   payload: NotificationPayload
 ): Promise<SendResult> {
-  return sendWebPushNotification(userId, payload);
+  const [web, ios] = await Promise.all([
+    sendWebPushNotification(userId, payload),
+    sendAPNsNotification(userId, payload),
+  ]);
+
+  const errors = [...(web.errors ?? []), ...(ios.errors ?? [])];
+  return {
+    success: web.success && ios.success,
+    sent: web.sent + ios.sent,
+    failed: web.failed + ios.failed,
+    errors: errors.length > 0 ? errors : undefined,
+  };
 }
 
 /**
