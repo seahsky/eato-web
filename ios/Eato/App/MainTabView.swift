@@ -71,21 +71,25 @@ private struct ProfileTabView: View {
     @Environment(SessionStore.self) private var session
 
     var body: some View {
-        VStack(spacing: Spacing.lg) {
-            if let user = session.currentUser {
-                Text(user.email).font(Typography.titleSmall)
-                if let profile = user.profile {
-                    Text("Daily goal: \(Int(profile.calorieGoal)) kcal")
-                        .foregroundStyle(EatoColor.textSecondary)
-                        .font(Typography.bodyMedium)
+        List {
+            Section("Account") {
+                if let user = session.currentUser {
+                    LabeledContent("Email", value: user.email)
+                    if let profile = user.profile {
+                        LabeledContent("Daily goal", value: "\(Int(profile.calorieGoal)) kcal")
+                    }
                 }
             }
-            PrimaryButton("Sign out") {
-                Task { await session.signOut() }
+            Section("Gamification") {
+                NavigationLink("Pets") { PetView() }
+                NavigationLink("Rest days") { RestDaysView() }
             }
-            Spacer()
+            Section {
+                Button("Sign out", role: .destructive) {
+                    Task { await session.signOut() }
+                }
+            }
         }
-        .padding(Spacing.lg)
         .navigationTitle("Me")
         .navigationBarTitleDisplayMode(.inline)
     }

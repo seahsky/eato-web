@@ -1,11 +1,28 @@
 import Foundation
 
 enum PetHealthState: String, Decodable, Sendable {
-    case thriving = "THRIVING"
-    case happy = "HAPPY"
-    case neutral = "NEUTRAL"
-    case sad = "SAD"
-    case struggling = "STRUGGLING"
+    case thriving = "thriving"
+    case healthy = "healthy"
+    case okay = "okay"
+    case struggling = "struggling"
+
+    var emoji: String {
+        switch self {
+        case .thriving: "🌟"
+        case .healthy: "😊"
+        case .okay: "😐"
+        case .struggling: "😔"
+        }
+    }
+
+    var label: String {
+        switch self {
+        case .thriving: "Thriving"
+        case .healthy: "Healthy"
+        case .okay: "Okay"
+        case .struggling: "Struggling"
+        }
+    }
 }
 
 struct PetHealthDTO: Decodable, Sendable, Equatable {
