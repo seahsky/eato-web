@@ -1,0 +1,6 @@
+// Release configuration — production backend + production Clerk key.
+
+API_BASE_URL = https:/$()/eato.app/api/rest
+CLERK_PUBLISHABLE_KEY = pk_live_REPLACE_ME
+
+#include? "Local.xcconfig"

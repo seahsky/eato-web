@@ -23,8 +23,10 @@ import {
   getWeekBounds,
   calculateWeeklyBudgetStatus,
   type WeekStartDay,
+  type WeeklyBudgetStatus,
 } from "@/lib/weekly-budget";
 import { getEnergyBalance } from "@/lib/energy-balance";
+import { typedAnyOutput } from "@/lib/openapi-helpers";
 
 // Output schemas for OpenAPI
 const dailySummaryOutputSchema = z.object({
@@ -89,6 +91,23 @@ export const statsRouter = router({
       z.object({
         endDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Date must be in YYYY-MM-DD format").optional(),
       })
+    )
+    .output(
+      typedAnyOutput<{
+        days: Array<{
+          date: Date;
+          totalCalories: number;
+          totalProtein: number;
+          totalCarbs: number;
+          totalFat: number;
+          calorieGoal: number;
+          goalMet: boolean;
+        }>;
+        averageCalories: number;
+        totalCalories: number;
+        daysOnGoal: number;
+        calorieGoal: number;
+      }>()
     )
     .query(async ({ ctx, input }) => {
       // If no date provided, use today's date in a timezone-safe way
@@ -161,6 +180,7 @@ export const statsRouter = router({
         date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Date must be in YYYY-MM-DD format").optional(),
       })
     )
+    .output(typedAnyOutput<WeeklyBudgetStatus>())
     .query(async ({ ctx, input }) => {
       // Parse date or use today
       const targetDateStr = input.date ?? new Date().toISOString().split("T")[0];
@@ -222,6 +242,7 @@ export const statsRouter = router({
         date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Date must be in YYYY-MM-DD format").optional(),
       })
     )
+    .output(z.any())
     .query(async ({ ctx, input }) => {
       // Get current user to find partner
       const user = await ctx.prisma.user.findUnique({
@@ -298,6 +319,7 @@ export const statsRouter = router({
   getPartnerDailySummary: protectedProcedure
     .meta({ openapi: { method: "GET", path: "/stats/partner/daily" } })
     .input(z.object({ date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Date must be in YYYY-MM-DD format") }))
+    .output(z.any())
     .query(async ({ ctx, input }) => {
       // Get current user to find partner
       const user = await ctx.prisma.user.findUnique({
@@ -426,6 +448,7 @@ export const statsRouter = router({
         days: z.number().min(1).max(14).default(7),
       })
     )
+    .output(z.any())
     .query(async ({ ctx, input }) => {
       const user = await ctx.prisma.user.findUnique({
         where: { id: ctx.user.id },
@@ -613,6 +636,7 @@ export const statsRouter = router({
         cursor: z.string().optional(),
       })
     )
+    .output(z.any())
     .query(async ({ ctx, input }) => {
       const user = await ctx.prisma.user.findUnique({
         where: { id: ctx.user.id },
@@ -818,6 +842,7 @@ export const statsRouter = router({
     .input(z.object({
       date: z.string(),
     }))
+    .output(z.any())
     .mutation(async ({ ctx, input }) => {
       const user = await ctx.prisma.user.findUnique({
         where: { id: ctx.user.id },
@@ -902,6 +927,7 @@ export const statsRouter = router({
     .input(z.object({
       date: z.string(),
     }))
+    .output(z.any())
     .mutation(async ({ ctx, input }) => {
       const user = await ctx.prisma.user.findUnique({
         where: { id: ctx.user.id },
@@ -1045,6 +1071,7 @@ export const statsRouter = router({
     .input(z.object({
       targetDate: z.string(),
     }))
+    .output(z.any())
     .mutation(async ({ ctx, input }) => {
       const user = await ctx.prisma.user.findUnique({
         where: { id: ctx.user.id },

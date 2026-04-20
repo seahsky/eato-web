@@ -18,6 +18,7 @@ export const notificationRouter = router({
         userAgent: z.string().optional(),
       })
     )
+    .output(z.any())
     .mutation(async ({ ctx, input }) => {
       // Upsert subscription (update if endpoint exists for this user, create if new)
       // Include userId in update to prevent cross-user endpoint hijacking
@@ -58,6 +59,7 @@ export const notificationRouter = router({
         endpoint: z.string().url(),
       })
     )
+    .output(z.any())
     .mutation(async ({ ctx, input }) => {
       await ctx.prisma.pushSubscription.deleteMany({
         where: {
@@ -138,6 +140,7 @@ export const notificationRouter = router({
         timezone: z.string().optional(),
       })
     )
+    .output(z.any())
     .mutation(async ({ ctx, input }) => {
       const settings = await ctx.prisma.notificationSettings.upsert({
         where: { userId: ctx.user.id },

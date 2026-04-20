@@ -1,0 +1,11 @@
+// Debug configuration — loaded by project.yml.
+// Override locally with `ios/Config/Local.xcconfig` (gitignored) if needed.
+
+// Point the iOS client at the backend. Simulator can reach the host via localhost;
+// real devices need your LAN IP or ngrok URL. Override per-build via CI / Xcode arg.
+API_BASE_URL = http:/$()/localhost:3000/api/rest
+
+// Clerk publishable key for development (DO NOT commit real keys).
+CLERK_PUBLISHABLE_KEY = pk_test_REPLACE_ME
+
+#include? "Local.xcconfig"
