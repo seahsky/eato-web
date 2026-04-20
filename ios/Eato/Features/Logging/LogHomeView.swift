@@ -6,6 +6,7 @@ struct LogHomeView: View {
         case manual
         case barcode
         case photo
+        case recipes
     }
 
     @State private var path: [Route] = []
@@ -33,6 +34,11 @@ struct LogHomeView: View {
                     title: "Manual entry",
                     subtitle: "For custom meals"
                 ) { path.append(.manual) }
+                LogCard(
+                    icon: "book.closed",
+                    title: "Recipes",
+                    subtitle: "Build once, log a portion any time"
+                ) { path.append(.recipes) }
                 Spacer()
             }
             .padding(Spacing.lg)
@@ -43,6 +49,7 @@ struct LogHomeView: View {
                 case .manual: ManualEntryView(onDismiss: { path.removeAll() })
                 case .barcode: BarcodeScanView(onDismiss: { path.removeAll() })
                 case .photo: PhotoAnalyzeView(onDismiss: { path.removeAll() })
+                case .recipes: RecipesListView()
                 }
             }
         }
