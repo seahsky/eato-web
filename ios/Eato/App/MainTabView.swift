@@ -17,7 +17,7 @@ struct MainTabView: View {
                 .tabItem { Label("Log", systemImage: "plus.circle.fill") }
                 .tag(MainTab.log)
 
-            NavigationStack { TabPlaceholderView(tab: .week) }
+            WeekView()
                 .tabItem { Label("Week", systemImage: "calendar") }
                 .tag(MainTab.week)
 
