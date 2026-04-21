@@ -183,14 +183,13 @@ export function PixelPetWander({ userId }: PixelPetWanderProps) {
 
   return (
     <div
-      className="fixed z-40 cursor-grab select-none active:cursor-grabbing"
+      className="fixed left-0 top-0 z-40 cursor-grab select-none active:cursor-grabbing"
       style={{
-        left: position.x,
-        top: position.y,
         width: PET_SIZE,
         height: PET_SIZE,
-        transition: isDragging ? "none" : "left 1.5s ease-in-out, top 1.5s ease-in-out",
-        willChange: "transform, left, top",
+        transform: `translate(${position.x}px, ${position.y}px)`,
+        transition: isDragging ? "none" : "transform 1.5s ease-in-out",
+        willChange: "transform",
       }}
       onPointerDown={handlePointerDown}
       onPointerMove={handlePointerMove}

@@ -50,6 +50,7 @@ export const mealEstimationRouter = router({
   create: protectedProcedure
     .meta({ openapi: { method: "POST", path: "/meal-estimations" } })
     .input(createEstimationSchema)
+    .output(z.any())
     .mutation(async ({ ctx, input }) => {
       const estimation = await ctx.prisma.mealEstimation.create({
         data: {
@@ -108,6 +109,7 @@ export const mealEstimationRouter = router({
         })
         .optional()
     )
+    .output(z.any())
     .query(async ({ ctx, input }) => {
       const limit = input?.limit ?? 20;
 
@@ -151,6 +153,7 @@ export const mealEstimationRouter = router({
   getById: protectedProcedure
     .meta({ openapi: { method: "GET", path: "/meal-estimations/{id}" } })
     .input(z.object({ id: z.string() }))
+    .output(z.any())
     .query(async ({ ctx, input }) => {
       const estimation = await ctx.prisma.mealEstimation.findFirst({
         where: {
@@ -178,6 +181,7 @@ export const mealEstimationRouter = router({
   update: protectedProcedure
     .meta({ openapi: { method: "PUT", path: "/meal-estimations/{id}" } })
     .input(updateEstimationSchema)
+    .output(z.any())
     .mutation(async ({ ctx, input }) => {
       // Verify ownership
       const existing = await ctx.prisma.mealEstimation.findFirst({
@@ -251,6 +255,7 @@ export const mealEstimationRouter = router({
         foodEntryId: z.string(),
       })
     )
+    .output(z.any())
     .mutation(async ({ ctx, input }) => {
       // Verify ownership
       const existing = await ctx.prisma.mealEstimation.findFirst({
@@ -276,6 +281,7 @@ export const mealEstimationRouter = router({
   delete: protectedProcedure
     .meta({ openapi: { method: "DELETE", path: "/meal-estimations/{id}" } })
     .input(z.object({ id: z.string() }))
+    .output(z.any())
     .mutation(async ({ ctx, input }) => {
       // Verify ownership
       const estimation = await ctx.prisma.mealEstimation.findFirst({

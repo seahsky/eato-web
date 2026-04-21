@@ -197,6 +197,7 @@ export const authRouter = router({
         reason: z.enum(["goal_hit", "streak_milestone", "badge_earned", "general"]),
       })
     )
+    .output(z.object({ success: z.boolean(), sent: z.boolean() }))
     .mutation(async ({ ctx, input }) => {
       const user = await ctx.prisma.user.findUnique({
         where: { id: ctx.user.id },
@@ -227,6 +228,7 @@ export const authRouter = router({
         type: z.enum(["log_reminder", "goal_motivation", "general"]).default("general"),
       })
     )
+    .output(z.object({ success: z.boolean(), sent: z.boolean() }))
     .mutation(async ({ ctx, input }) => {
       const user = await ctx.prisma.user.findUnique({
         where: { id: ctx.user.id },

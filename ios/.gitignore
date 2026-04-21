@@ -1,0 +1,21 @@
+## XcodeGen-generated artifacts
+Eato.xcodeproj/
+Eato.xcworkspace/
+*.xcuserdata
+*.xcuserstate
+
+## Build artifacts
+build/
+DerivedData/
+.build/
+.swiftpm/
+
+## Local config (never commit Team IDs, real Clerk keys, etc.)
+Config/Local.xcconfig
+
+## Codegen output
+Eato/Core/Networking/Generated/*.swift
+!Eato/Core/Networking/Generated/.gitkeep
+
+## OS
+.DS_Store

@@ -411,14 +411,14 @@ export default function LogPage() {
                 <button
                   type="button"
                   aria-label="Take photo"
-                  className="absolute bottom-8 left-1/2 flex h-18 w-18 -translate-x-1/2 items-center justify-center rounded-full border-4 border-white bg-white/20 shadow-lg transition-transform active:scale-90"
+                  className="absolute bottom-8 left-1/2 flex h-18 w-18 -translate-x-1/2 items-center justify-center rounded-full border-4 border-white bg-white/20 shadow-lg transition-transform active:scale-90 focus-visible:ring-[3px] focus-visible:ring-white/70 focus-visible:outline-none"
                   onClick={handleShutterPress}
                 >
                   <div className="h-14 w-14 rounded-full bg-white" />
                 </button>
                 <button
                   type="button"
-                  className="absolute bottom-2 left-1/2 -translate-x-1/2 min-h-[44px] px-4 py-3 text-sm text-white/70 underline underline-offset-2 hover:text-white bg-black/30 backdrop-blur-sm rounded-full"
+                  className="absolute bottom-2 left-1/2 -translate-x-1/2 min-h-[44px] px-4 py-3 text-sm text-white/70 underline underline-offset-2 hover:text-white bg-black/30 backdrop-blur-sm rounded-full focus-visible:ring-2 focus-visible:ring-white/50 focus-visible:outline-none"
                   onClick={() => setStage("input")}
                 >
                   Skip, log manually
@@ -443,6 +443,7 @@ export default function LogPage() {
                 accept="image/*"
                 capture="environment"
                 className="hidden"
+                aria-label="Upload meal photo"
                 onChange={handlePhotoCapture}
               />
               <button
@@ -506,7 +507,7 @@ export default function LogPage() {
         <div className="space-y-4 animate-fade-in">
           <textarea
             aria-label="Food items to log"
-            className="w-full rounded-md border border-input bg-background px-3 py-3 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/20 focus-visible:border-primary/50"
+            className="w-full rounded-md border border-input bg-background px-3 py-3 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/20 focus-visible:border-ring/50"
             rows={6}
             placeholder={"200g chicken breast\n100g rice\n2 eggs\n352kj canned salmon"}
             value={text}

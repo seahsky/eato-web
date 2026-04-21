@@ -22,7 +22,7 @@ export async function sendWebPushNotification(
   payload: NotificationPayload
 ): Promise<SendResult> {
   const subscriptions = await prisma.pushSubscription.findMany({
-    where: { userId },
+    where: { userId, platform: "web" },
   });
 
   if (subscriptions.length === 0) {

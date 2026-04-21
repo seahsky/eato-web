@@ -4,7 +4,7 @@ import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { format } from "date-fns";
-import { Plus, Loader2, BookOpen } from "lucide-react";
+import { Plus, BookOpen } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { trpc } from "@/trpc/react";
@@ -85,11 +85,24 @@ export default function DashboardPage() {
         </p>
       )}
 
-      {/* Loading */}
+      {/* Loading skeleton */}
       {isLoading && !data && (
-        <div className="flex flex-col items-center gap-3 py-8" role="status" aria-live="polite">
-          <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" aria-hidden="true" />
-          <p className="text-sm text-muted-foreground">Loading...</p>
+        <div className="space-y-1.5" role="status" aria-live="polite">
+          <span className="sr-only">Loading diary entries...</span>
+          {[0, 1, 2].map((i) => (
+            <Card key={i} className={i < 3 ? `animate-fade-in-delay-${i}` : undefined}>
+              <CardContent className="py-3">
+                <div className="space-y-2">
+                  <div className="h-3 w-16 rounded bg-muted animate-shimmer" />
+                  <div className="flex justify-between">
+                    <div className="h-4 w-32 rounded bg-muted animate-shimmer" />
+                    <div className="h-4 w-16 rounded bg-muted animate-shimmer" />
+                  </div>
+                  <div className="h-3 w-24 rounded bg-muted animate-shimmer" />
+                </div>
+              </CardContent>
+            </Card>
+          ))}
         </div>
       )}
 
@@ -106,7 +119,7 @@ export default function DashboardPage() {
       {data && (
         <>
           {entries.length > 0 && (
-            <div className="space-y-1.5 mb-28">
+            <div className="space-y-1.5 mb-16">
               {grouped.map((group) => {
                 if (group.groupId && group.items.length > 1) {
                   // Meal group — cluster in a shared card
@@ -141,14 +154,14 @@ export default function DashboardPage() {
                   </div>
                 ));
               })}
-            </div>
-          )}
 
-          {/* Daily total */}
-          {entries.length > 0 && data.totalCalories > 0 && (
-            <p className="mt-3 text-center text-sm text-muted-foreground">
-              {COPY.dailyTotal(data.totalCalories)}
-            </p>
+              {/* Daily total */}
+              {data.totalCalories > 0 && (
+                <p className="mt-3 text-center text-sm text-muted-foreground">
+                  {COPY.dailyTotal(data.totalCalories)}
+                </p>
+              )}
+            </div>
           )}
 
           {/* Empty state */}
@@ -170,7 +183,7 @@ export default function DashboardPage() {
       {/* Floating action button - warm pill */}
       <Link
         href="/log"
-        className="fixed bottom-24 right-4 z-40 flex items-center gap-2 rounded-full bg-primary px-4 py-3 text-sm font-medium text-primary-foreground shadow-lg animate-scale-in-delayed transition-[transform] duration-[var(--duration-instant)] hover:scale-105 active:scale-95"
+        className="fixed bottom-[calc(env(safe-area-inset-bottom)+4.5rem)] right-4 z-40 flex items-center gap-2 rounded-full bg-primary px-4 py-3 text-sm font-medium text-primary-foreground shadow-lg animate-scale-in-delayed transition-[transform] duration-[var(--duration-instant)] hover:scale-105 active:scale-95 focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-none"
       >
         <Plus className="h-4 w-4" />
         {COPY.fab}

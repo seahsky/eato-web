@@ -1,0 +1,67 @@
+name: iOS
+
+on:
+  push:
+    paths:
+      - 'ios/**'
+      - 'docs/openapi.json'
+      - '.github/workflows/ios.yml'
+  pull_request:
+    paths:
+      - 'ios/**'
+      - 'docs/openapi.json'
+      - '.github/workflows/ios.yml'
+
+jobs:
+  build-test:
+    runs-on: macos-15
+    defaults:
+      run:
+        working-directory: ios
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Select Xcode
+        run: sudo xcode-select -s /Applications/Xcode_16.app
+
+      - name: Install XcodeGen
+        run: brew install xcodegen
+
+      - name: Provide placeholder local config
+        run: |
+          cat > Config/Local.xcconfig <<'EOF'
+          DEVELOPMENT_TEAM =
+          CLERK_PUBLISHABLE_KEY = pk_test_ci_placeholder
+          EOF
+
+      - name: Generate project
+        run: xcodegen generate
+
+      - name: Resolve SPM dependencies
+        run: |
+          xcodebuild \
+            -resolvePackageDependencies \
+            -project Eato.xcodeproj \
+            -scheme Eato
+
+      - name: Build
+        run: |
+          set -o pipefail
+          xcodebuild \
+            -project Eato.xcodeproj \
+            -scheme Eato \
+            -configuration Debug \
+            -destination 'platform=iOS Simulator,name=iPhone 16,OS=latest' \
+            CODE_SIGNING_ALLOWED=NO \
+            build | xcpretty
+
+      - name: Test
+        run: |
+          set -o pipefail
+          xcodebuild \
+            -project Eato.xcodeproj \
+            -scheme Eato \
+            -configuration Debug \
+            -destination 'platform=iOS Simulator,name=iPhone 16,OS=latest' \
+            CODE_SIGNING_ALLOWED=NO \
+            test | xcpretty
