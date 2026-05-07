@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Caveat:wght@400..700&amp;family=Nunito:ital,wght@0,200..1000;1,200..1000&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "outline": "#87736b",
+                        "primary-container": "#af5f3b",
+                        "inverse-surface": "#32302e",
+                        "secondary-fixed-dim": "#9fd3a8",
+                        "surface-tint": "#934a28",
+                        "surface-container-high": "#ece7e3",
+                        "secondary-fixed": "#baefc2",
+                        "primary": "#904726",
+                        "on-tertiary-container": "#f3fffd",
+                        "tertiary-fixed": "#8bf4ee",
+                        "surface-variant": "#e6e2de",
+                        "primary-fixed-dim": "#ffb597",
+                        "tertiary": "#006764",
+                        "on-primary-container": "#fffbff",
+                        "on-secondary": "#ffffff",
+                        "on-secondary-fixed-variant": "#20502f",
+                        "on-surface": "#1d1b19",
+                        "inverse-primary": "#ffb597",
+                        "surface-container-low": "#f8f3ef",
+                        "on-secondary-container": "#3f6e4b",
+                        "on-error-container": "#93000a",
+                        "primary-fixed": "#ffdbcd",
+                        "tertiary-fixed-dim": "#6ed7d1",
+                        "secondary": "#396845",
+                        "surface-container-lowest": "#ffffff",
+                        "on-error": "#ffffff",
+                        "on-tertiary-fixed-variant": "#00504d",
+                        "on-surface-variant": "#54433c",
+                        "outline-variant": "#dac1b8",
+                        "surface": "#fdf8f4",
+                        "on-tertiary-fixed": "#00201e",
+                        "surface-bright": "#fdf8f4",
+                        "tertiary-container": "#00827e",
+                        "on-primary": "#ffffff",
+                        "inverse-on-surface": "#f5f0ec",
+                        "on-tertiary": "#ffffff",
+                        "on-primary-fixed": "#360f00",
+                        "surface-container": "#f2ede9",
+                        "secondary-container": "#baefc2",
+                        "surface-container-highest": "#e6e2de",
+                        "surface-dim": "#ded9d5",
+                        "on-background": "#1d1b19",
+                        "error": "#ba1a1a",
+                        "error-container": "#ffdad6",
+                        "on-primary-fixed-variant": "#763313",
+                        "on-secondary-fixed": "#00210c",
+                        "background": "#fdf8f4"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "1rem",
+                        "lg": "2rem",
+                        "xl": "3rem",
+                        "full": "9999px"
+                    },
+                    "fontFamily": {
+                        "headline": ["Caveat"],
+                        "body": ["Nunito"],
+                        "label": ["Nunito"]
+                    }
+                },
+            },
+        }
+    </script>
+<style>body {
+    font-family: "Nunito", sans-serif
+    }
+.font-caveat {
+    font-family: "Caveat", cursive
+    }
+.paper-grain {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    opacity: 0.03;
+    background-image: url(https://lh3.googleusercontent.com/aida-public/AB6AXuB_j8T_UShvLPktQrCEw4bq_2JKDyPxS3Tt_MmpGGiTAj-IqjgVhY_gYIyIrhui8-Wcu3fHPJDjvMhSAemlEpID9stthL0nayvHTQlkRh3KzIeb1SnBqPC7T8VCdCIW8-DiXMOx6_5hHghO-5MLdI0NnYMztxH63sz98ZYgNdYxmBCoFbMXspCG90GvFicvjIAOuR-RL1Rbj6oLxe9RqDodcsw3-W-hwoIAXzx2hGulRIrtd0Q1JRdqTIS8Jc1_ejbxf6ZS47qx_nSg);
+    z-index: 9999
+    }</style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-surface text-on-surface min-h-screen pb-24">
+<div class="paper-grain"></div>
+<!-- TopAppBar -->
+<header class="fixed top-0 w-full z-50 bg-[#fdf8f4]/85 dark:bg-[#1a1a1a]/85 backdrop-blur-md flex justify-between items-center px-6 h-16 w-full">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded-full overflow-hidden bg-surface-container-highest">
+<img class="w-full h-full object-cover" data-alt="Profile photo of a young smiling woman in a warm knit sweater, soft indoor lighting, cozy kitchen background" src="https://lh3.googleusercontent.com/aida-public/AB6AXuA3vXvIDQhBb27NKf9U96k-Bgw_XR8VAXGbypOPespaA2BtjdG8A8fbYLLdjG6HDA2dUC5KljaEzU4nwICltNKXGrR6nA7JsYk1q9KEkWQITCrAt_fjAF4gVLA9XqoVUMAk2P_yzDCMGFACiqmYmG9jp7p61N0Q8OXO0M-Bt4QLWBjnUpTzlpuHupeH2sg4MS3jzI1fkOXUY9UFqqr3Nuj_neqN-jDA3F-Q0_qzn3XyqLtciTCbj3MTEL1iekCPMvCaR7eWrRtWcwaG"/>
+</div>
+<span class="font-['Caveat'] text-[#904726] dark:text-[#af5f3b] text-2xl">Our Kitchen Journal</span>
+</div>
+<button class="text-[#904726] dark:text-[#af5f3b] hover:bg-[#f8f3ef] transition-colors p-2 rounded-full active:scale-95 transition-transform duration-200">
+<span class="material-symbols-outlined">settings</span>
+</button>
+</header>
+<main class="pt-20 px-6 max-w-2xl mx-auto">
+<!-- Profile Header Section -->
+<section class="flex flex-col items-center mb-8">
+<h1 class="font-['Caveat'] text-5xl font-bold text-primary mb-6">Profile</h1>
+<div class="relative group">
+<div class="w-32 h-32 rounded-full p-1 bg-gradient-to-tr from-primary to-secondary-container transform -rotate-2">
+<div class="w-full h-full rounded-full overflow-hidden border-4 border-surface shadow-md">
+<img class="w-full h-full object-cover" data-alt="Close up portrait of a young woman with warm lighting, soft smile, natural aesthetic" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCickIzuWl3sOTRGhfWY0J6lHBjIJCqaoaGPrTNpsllcnJJW_eG-YXQi33nJsLc0hAsVRHzuTNTMmzYSOVrIAGTHfs2rn5Sk0B8G5rpm1L-m7WHFRvJU_L0eirmc9gHB3l6JcPHZKeidWgY85z4qdrFA2DWLlhGbyLir80K6PaiOKiQKIvHRmUMal_s3C0SPQgW8N50_uxdsZI9GapXw9hvNreH0-zQoCHimGnWPTE9Tefoc8qUu_qTW7nKh4TjyxbgrqhN6EDxwqnN"/>
+</div>
+</div>
+<div class="absolute bottom-1 right-1 bg-tertiary text-white p-2 rounded-full shadow-lg">
+<span class="material-symbols-outlined text-sm">edit</span>
+</div>
+</div>
+<p class="mt-4 text-xl font-semibold text-on-surface-variant">Elena Miller</p>
+<p class="text-sm opacity-60 font-medium">Joined June 2023</p>
+</section>
+<!-- Stats Bento Grid -->
+<section class="grid grid-cols-2 gap-4 mb-8">
+<div class="col-span-2 bg-surface-container-low p-6 rounded-lg relative overflow-hidden flex flex-col justify-between h-40">
+<div class="z-10">
+<p class="text-sm text-on-surface-variant font-bold">Daily Streak</p>
+<h2 class="font-['Caveat'] text-4xl text-primary mt-1">12 Days Cooking</h2>
+</div>
+<div class="flex gap-2 z-10">
+<div class="w-8 h-2 rounded-full bg-secondary-fixed"></div>
+<div class="w-8 h-2 rounded-full bg-secondary-fixed"></div>
+<div class="w-8 h-2 rounded-full bg-secondary-fixed"></div>
+<div class="w-8 h-2 rounded-full bg-surface-container-highest"></div>
+<div class="w-8 h-2 rounded-full bg-surface-container-highest"></div>
+</div>
+<span class="material-symbols-outlined absolute -right-4 -bottom-4 text-9xl text-secondary opacity-10" style="font-variation-settings: 'FILL' 1;">local_fire_department</span>
+</div>
+<div class="bg-surface-container-highest p-5 rounded-lg transform rotate-1">
+<span class="material-symbols-outlined text-primary mb-2">bolt</span>
+<p class="text-xs font-bold text-on-surface-variant opacity-70">TDEE</p>
+<p class="font-['Caveat'] text-3xl text-primary">2,150 kcal</p>
+</div>
+<div class="bg-surface-container-highest p-5 rounded-lg transform -rotate-1">
+<span class="material-symbols-outlined text-tertiary mb-2">payments</span>
+<p class="text-xs font-bold text-on-surface-variant opacity-70">Daily Budget</p>
+<p class="font-['Caveat'] text-3xl text-tertiary">1,800 kcal</p>
+</div>
+</section>
+<!-- Goal Selector Section -->
+<section class="bg-surface-container-low p-6 rounded-lg mb-8">
+<h3 class="text-lg font-bold text-on-surface-variant mb-4">Current Goal</h3>
+<div class="grid grid-cols-3 gap-2 p-1 bg-surface-container-highest rounded-full">
+<button class="py-2 px-4 rounded-full text-sm font-bold text-on-surface-variant opacity-60 hover:opacity-100 transition-opacity">Lose</button>
+<button class="py-2 px-4 rounded-full text-sm font-bold bg-[#baefc2] text-on-secondary-container shadow-sm">Maintain</button>
+<button class="py-2 px-4 rounded-full text-sm font-bold text-on-surface-variant opacity-60 hover:opacity-100 transition-opacity">Gain</button>
+</div>
+</section>
+<!-- Notifications & Preferences -->
+<section class="space-y-4 mb-8">
+<h3 class="text-lg font-bold text-on-surface-variant px-2">Preferences</h3>
+<div class="bg-surface-container-low px-6 py-4 rounded-lg flex items-center justify-between">
+<div class="flex items-center gap-4">
+<div class="w-10 h-10 rounded-full bg-surface-container-highest flex items-center justify-center">
+<span class="material-symbols-outlined text-primary">notifications</span>
+</div>
+<div>
+<p class="font-bold text-on-surface">Meal Reminders</p>
+<p class="text-xs opacity-60">Gentle nudges for breakfast and dinner</p>
+</div>
+</div>
+<label class="relative inline-flex items-center cursor-pointer">
+<input checked="" class="sr-only peer" type="checkbox"/>
+<div class="w-11 h-6 bg-surface-container-highest peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-secondary"></div>
+</label>
+</div>
+<div class="bg-surface-container-low px-6 py-4 rounded-lg flex items-center justify-between">
+<div class="flex items-center gap-4">
+<div class="w-10 h-10 rounded-full bg-surface-container-highest flex items-center justify-center">
+<span class="material-symbols-outlined text-primary">visibility</span>
+</div>
+<div>
+<p class="font-bold text-on-surface">Private Journal</p>
+<p class="text-xs opacity-60">Hide photos from social feed</p>
+</div>
+</div>
+<label class="relative inline-flex items-center cursor-pointer">
+<input class="sr-only peer" type="checkbox"/>
+<div class="w-11 h-6 bg-surface-container-highest peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-secondary"></div>
+</label>
+</div>
+</section>
+<!-- Account Actions -->
+<section class="space-y-3">
+<button class="w-full py-4 px-6 bg-surface-container-low rounded-lg text-left flex items-center justify-between hover:bg-surface-container-high transition-colors">
+<span class="font-bold text-on-surface">Privacy &amp; Security</span>
+<span class="material-symbols-outlined text-on-surface-variant">chevron_right</span>
+</button>
+<button class="w-full py-4 px-6 bg-surface-container-low rounded-lg text-left flex items-center justify-between hover:bg-surface-container-high transition-colors">
+<span class="font-bold text-on-surface">Help &amp; Support</span>
+<span class="material-symbols-outlined text-on-surface-variant">chevron_right</span>
+</button>
+<button class="w-full py-4 px-6 mt-4 border-2 border-outline-variant/20 rounded-full text-error font-bold active:scale-95 transition-transform duration-200">
+                Log Out
+            </button>
+</section>
+</main>
+<!-- BottomNavBar -->
+<nav class="fixed bottom-0 w-full rounded-t-[24px] z-50 bg-[#fdf8f4] dark:bg-[#1a1a1a] shadow-[0_-4px_32px_rgba(84,67,60,0.06)] flex justify-around items-center h-20 pb-safe w-full px-4">
+<a class="flex flex-col items-center justify-center text-[#54433c] opacity-60 hover:opacity-100 transition-opacity" href="#">
+<span class="material-symbols-outlined">menu_book</span>
+<span class="font-['Nunito'] text-[12px] font-medium">Journal</span>
+</a>
+<a class="flex flex-col items-center justify-center text-[#54433c] opacity-60 hover:opacity-100 transition-opacity" href="#">
+<span class="material-symbols-outlined">donut_large</span>
+<span class="font-['Nunito'] text-[12px] font-medium">Stats</span>
+</a>
+<a class="flex flex-col items-center justify-center text-[#54433c] opacity-60 hover:opacity-100 transition-opacity" href="#">
+<span class="material-symbols-outlined text-3xl">add_circle</span>
+<span class="font-['Nunito'] text-[12px] font-medium">Add</span>
+</a>
+<a class="flex flex-col items-center justify-center text-[#54433c] opacity-60 hover:opacity-100 transition-opacity" href="#">
+<span class="material-symbols-outlined">restaurant_menu</span>
+<span class="font-['Nunito'] text-[12px] font-medium">Recipes</span>
+</a>
+<a class="flex flex-col items-center justify-center bg-[#baefc2] dark:bg-[#006764]/30 text-[#904726] rounded-full px-4 py-1" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">group</span>
+<span class="font-['Nunito'] text-[12px] font-medium">Profile</span>
+</a>
+</nav>
+</body></html>

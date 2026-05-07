@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Our Kitchen Journal - Weekly Overview</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Caveat:wght@400..700&amp;family=Nunito:ital,wght@0,200..1000;1,200..1000&amp;family=Epilogue:wght@100..900&amp;family=Be+Vietnam+Pro:wght@100..900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "outline": "#87736b",
+                    "primary-container": "#af5f3b",
+                    "inverse-surface": "#32302e",
+                    "secondary-fixed-dim": "#9fd3a8",
+                    "surface-tint": "#934a28",
+                    "surface-container-high": "#ece7e3",
+                    "secondary-fixed": "#baefc2",
+                    "primary": "#904726",
+                    "on-tertiary-container": "#f3fffd",
+                    "tertiary-fixed": "#8bf4ee",
+                    "surface-variant": "#e6e2de",
+                    "primary-fixed-dim": "#ffb597",
+                    "tertiary": "#006764",
+                    "on-primary-container": "#fffbff",
+                    "on-secondary": "#ffffff",
+                    "on-secondary-fixed-variant": "#20502f",
+                    "on-surface": "#1d1b19",
+                    "inverse-primary": "#ffb597",
+                    "surface-container-low": "#f8f3ef",
+                    "on-secondary-container": "#3f6e4b",
+                    "on-error-container": "#93000a",
+                    "primary-fixed": "#ffdbcd",
+                    "tertiary-fixed-dim": "#6ed7d1",
+                    "secondary": "#396845",
+                    "surface-container-lowest": "#ffffff",
+                    "on-error": "#ffffff",
+                    "on-tertiary-fixed-variant": "#00504d",
+                    "on-surface-variant": "#54433c",
+                    "outline-variant": "#dac1b8",
+                    "surface": "#fdf8f4",
+                    "on-tertiary-fixed": "#00201e",
+                    "surface-bright": "#fdf8f4",
+                    "tertiary-container": "#00827e",
+                    "on-primary": "#ffffff",
+                    "inverse-on-surface": "#f5f0ec",
+                    "on-tertiary": "#ffffff",
+                    "on-primary-fixed": "#360f00",
+                    "surface-container": "#f2ede9",
+                    "secondary-container": "#baefc2",
+                    "surface-container-highest": "#e6e2de",
+                    "surface-dim": "#ded9d5",
+                    "on-background": "#1d1b19",
+                    "error": "#ba1a1a",
+                    "error-container": "#ffdad6",
+                    "on-primary-fixed-variant": "#763313",
+                    "on-secondary-fixed": "#00210c",
+                    "background": "#fdf8f4"
+            },
+            "borderRadius": {
+                    "DEFAULT": "1rem",
+                    "lg": "2rem",
+                    "xl": "3rem",
+                    "full": "9999px"
+            },
+            "fontFamily": {
+                    "headline": ["Caveat"],
+                    "body": ["Nunito"],
+                    "label": ["Nunito"]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .grain-overlay {
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+            opacity: 0.03;
+            pointer-events: none;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background text-on-surface font-body selection:bg-secondary-fixed">
+<div class="fixed inset-0 grain-overlay z-[100]"></div>
+<!-- TopAppBar Shell -->
+<header class="fixed top-0 w-full z-50 bg-[#fdf8f4]/85 dark:bg-[#1a1a1a]/85 backdrop-blur-md flex justify-between items-center px-6 h-16 w-full">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-full overflow-hidden bg-surface-container-highest flex-shrink-0 border-2 border-primary-container/20">
+<img alt="Couple profile photo" class="w-full h-full object-cover" data-alt="Soft intimate portrait of a happy young couple smiling in a sunlit kitchen environment, warm tones, lifestyle photography" src="https://lh3.googleusercontent.com/aida-public/AB6AXuA2mG_iQc8BNeIrusOeNEMYYdpKioDZXEd3_3mtSenMOcZ0wx1H5Z046SJcW-jApG9s1Cl7N5y1duTSsDx-Cp1-34UfHckMBbkuFXGbcx2ahNQglB6EBcqBBjzijQgQgE7jbBG_ROth1mc5gnqaA4ecdn3QsdETQPbeZWD5DGjEzsRh8ilU98dORnQC13nk-3dn6HIUokwocnssE2jdxODCV_qv0ltCf26xxjE3ilmgqF8JywA2ikEqj9p1VKP1BYS5CcmZ0npDdppn"/>
+</div>
+<h1 class="font-['Caveat'] text-[#904726] dark:text-[#af5f3b] text-2xl font-bold tracking-tight">Our Kitchen Journal</h1>
+</div>
+<button class="w-10 h-10 flex items-center justify-center rounded-full hover:bg-[#f8f3ef] transition-colors active:scale-95 transition-transform duration-200">
+<span class="material-symbols-outlined text-[#904726]">settings</span>
+</button>
+</header>
+<main class="pt-20 pb-28 px-6 max-w-2xl mx-auto space-y-8">
+<!-- Header Section -->
+<section class="space-y-2">
+<h2 class="font-['Caveat'] text-5xl text-primary font-bold">Your Week</h2>
+<p class="text-on-surface-variant italic opacity-80 pl-1">A handwritten record of nourishment and joy.</p>
+</section>
+<!-- 7-Day Strip -->
+<section class="bg-surface-container-low rounded-lg p-6">
+<div class="flex justify-between items-center gap-2">
+<!-- Monday -->
+<div class="flex flex-col items-center gap-2 flex-1">
+<button class="w-10 h-10 flex items-center justify-center rounded-full bg-surface-container-highest text-on-surface-variant font-medium active:scale-90 transition-transform">M</button>
+<div class="w-1.5 h-1.5 rounded-full bg-primary-container"></div>
+</div>
+<!-- Tuesday -->
+<div class="flex flex-col items-center gap-2 flex-1">
+<button class="w-10 h-10 flex items-center justify-center rounded-full bg-surface-container-highest text-on-surface-variant font-medium active:scale-90 transition-transform">T</button>
+<div class="w-1.5 h-1.5 rounded-full bg-primary-container"></div>
+</div>
+<!-- Wednesday (Active/Today) -->
+<div class="flex flex-col items-center gap-2 flex-1">
+<button class="w-11 h-11 flex items-center justify-center rounded-full ring-2 ring-primary bg-surface-container-lowest text-primary font-bold active:scale-90 transition-transform shadow-sm">W</button>
+<div class="w-1.5 h-1.5 rounded-full bg-primary-container"></div>
+</div>
+<!-- Thursday -->
+<div class="flex flex-col items-center gap-2 flex-1">
+<button class="w-10 h-10 flex items-center justify-center rounded-full bg-surface-container-highest text-on-surface-variant font-medium active:scale-90 transition-transform">T</button>
+<div class="w-1.5 h-1.5 rounded-full bg-primary-container"></div>
+</div>
+<!-- Friday -->
+<div class="flex flex-col items-center gap-2 flex-1">
+<button class="w-10 h-10 flex items-center justify-center rounded-full bg-surface-container-highest text-on-surface-variant font-medium active:scale-90 transition-transform">F</button>
+<div class="w-1.5 h-1.5 rounded-full bg-outline-variant/30"></div>
+</div>
+<!-- Saturday -->
+<div class="flex flex-col items-center gap-2 flex-1">
+<button class="w-10 h-10 flex items-center justify-center rounded-full bg-surface-container-highest text-on-surface-variant font-medium active:scale-90 transition-transform">S</button>
+<div class="w-1.5 h-1.5 rounded-full bg-outline-variant/30"></div>
+</div>
+<!-- Sunday -->
+<div class="flex flex-col items-center gap-2 flex-1">
+<button class="w-10 h-10 flex items-center justify-center rounded-full bg-surface-container-highest text-on-surface-variant font-medium active:scale-90 transition-transform">S</button>
+<div class="w-1.5 h-1.5 rounded-full bg-outline-variant/30"></div>
+</div>
+</div>
+</section>
+<!-- Weekly Summary Bento Grid -->
+<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+<!-- Calorie Ring Card -->
+<div class="bg-surface-container-low rounded-lg p-8 flex flex-col items-center justify-center space-y-4 shadow-sm relative overflow-hidden">
+<div class="absolute -top-4 -right-4 w-24 h-24 bg-primary-fixed/30 rounded-full blur-3xl"></div>
+<div class="relative flex items-center justify-center">
+<!-- SVG Ring -->
+<svg class="w-32 h-32 transform -rotate-90">
+<circle class="text-surface-container-highest" cx="64" cy="64" fill="transparent" r="58" stroke="currentColor" stroke-width="8"></circle>
+<circle class="text-primary-container" cx="64" cy="64" fill="transparent" r="58" stroke="currentColor" stroke-dasharray="364.4" stroke-dashoffset="50" stroke-linecap="round" stroke-width="8"></circle>
+</svg>
+<div class="absolute inset-0 flex flex-col items-center justify-center">
+<span class="font-['Caveat'] text-3xl font-bold text-primary">82%</span>
+<span class="text-[10px] uppercase tracking-wider text-on-surface-variant">Daily Avg</span>
+</div>
+</div>
+<div class="text-center">
+<h3 class="font-bold text-lg text-on-surface">Weekly Goal</h3>
+<p class="text-sm text-on-surface-variant">12,450 / 14,000 kcal</p>
+</div>
+</div>
+<!-- Encouraging Message Card -->
+<div class="bg-secondary-container/40 rounded-lg p-6 flex flex-col justify-center space-y-4 border-l-4 border-tertiary relative shadow-[0_-4px_32px_rgba(84,67,60,0.04)]">
+<span class="material-symbols-outlined text-tertiary text-4xl" style="font-variation-settings: 'FILL' 1;">format_quote</span>
+<p class="font-['Caveat'] text-2xl text-on-secondary-container leading-tight">
+                    "A little over this week, and that's okay. Every week is a fresh start."
+                </p>
+<p class="text-xs text-tertiary font-medium uppercase tracking-widest">— Your Journal Body Wisdom</p>
+</div>
+</div>
+<!-- Recipe Spotlight (Scrapbook Style) -->
+<section class="space-y-4 pt-4">
+<h4 class="font-bold text-on-surface-variant px-1">Weekly Favorite</h4>
+<div class="relative bg-surface-container-lowest p-4 rounded-lg shadow-sm rotate-1 flex gap-6 items-center">
+<div class="w-32 h-32 rounded-lg overflow-hidden flex-shrink-0 -rotate-2 shadow-md">
+<img alt="Green salad bowl" class="w-full h-full object-cover" data-alt="Vibrant green harvest salad bowl with roasted sweet potato, kale, and toasted seeds, warm natural morning light, rustic table setting" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAmM4HMmyEso1RCwY2Uk0tNepTjaf0nG8Gf5ZnroSiD1JiN-GpnCqgHgg9JzfL8Qsnsvs573Sdkcv5G5HLco4S-H4dgMoKWBAHGMj68u5_QL_m5CWKwi6-qSEXmsbxQUkqpja52xy1MBCWMYkcL8-lPnpOwcgfJfR4hH2FJitTIGzuKnbYuCUWrIYpoPLw01iCimOHeK4xaO__D_9qcl_dfVYxm05tLVHU-51C_Peh4CLjP1hdINdV-PnAm4ksqU48JOOfauHp06vIr"/>
+</div>
+<div class="space-y-2">
+<span class="text-[10px] bg-secondary-fixed text-on-secondary-fixed-variant px-2 py-0.5 rounded-full font-bold">RECIPE</span>
+<h5 class="text-xl font-bold text-primary leading-tight">Harvest Quinoa Bowl</h5>
+<p class="text-sm text-on-surface-variant line-clamp-2">The lemon-tahini dressing made this meal unforgettable. Definitely adding this to the rotation.</p>
+</div>
+<!-- Tape effect decoration -->
+<div class="absolute -top-3 left-1/2 -translate-x-1/2 w-16 h-6 bg-primary-fixed/20 backdrop-blur-sm -rotate-2"></div>
+</div>
+</section>
+</main>
+<!-- BottomNavBar Shell -->
+<nav class="fixed bottom-0 w-full rounded-t-[24px] z-50 bg-[#fdf8f4] dark:bg-[#1a1a1a] shadow-[0_-4px_32px_rgba(84,67,60,0.06)] h-20 pb-safe w-full px-4 flex justify-around items-center">
+<button class="flex flex-col items-center justify-center text-[#54433c] opacity-60 hover:opacity-100 transition-opacity active:scale-90 transition-transform duration-200">
+<span class="material-symbols-outlined" data-icon="menu_book">menu_book</span>
+<span class="font-['Nunito'] text-[12px] font-medium">Journal</span>
+</button>
+<button class="flex flex-col items-center justify-center bg-[#baefc2] dark:bg-[#006764]/30 text-[#904726] rounded-full px-4 py-1 hover:opacity-100 transition-opacity active:scale-90 transition-transform duration-200">
+<span class="material-symbols-outlined" data-icon="donut_large" style="font-variation-settings: 'FILL' 1;">donut_large</span>
+<span class="font-['Nunito'] text-[12px] font-medium">Stats</span>
+</button>
+<button class="flex flex-col items-center justify-center text-[#904726] active:scale-90 transition-transform duration-200 -mt-8">
+<span class="material-symbols-outlined text-5xl" data-icon="add_circle" style="font-variation-settings: 'FILL' 1;">add_circle</span>
+</button>
+<button class="flex flex-col items-center justify-center text-[#54433c] opacity-60 hover:opacity-100 transition-opacity active:scale-90 transition-transform duration-200">
+<span class="material-symbols-outlined" data-icon="restaurant_menu">restaurant_menu</span>
+<span class="font-['Nunito'] text-[12px] font-medium">Recipes</span>
+</button>
+<button class="flex flex-col items-center justify-center text-[#54433c] opacity-60 hover:opacity-100 transition-opacity active:scale-90 transition-transform duration-200">
+<span class="material-symbols-outlined" data-icon="group">group</span>
+<span class="font-['Nunito'] text-[12px] font-medium">Profile</span>
+</button>
+</nav>
+</body></html>

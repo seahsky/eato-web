@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Our Kitchen Journal - Onboarding</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Caveat:wght@400;700&amp;family=Nunito:wght@300;400;500;600;700&amp;family=Epilogue:wght@400;600;800&amp;family=Be+Vietnam+Pro:wght@300;400;500;700&amp;family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "outline": "#87736b",
+                        "primary-container": "#af5f3b",
+                        "inverse-surface": "#32302e",
+                        "secondary-fixed-dim": "#9fd3a8",
+                        "surface-tint": "#934a28",
+                        "surface-container-high": "#ece7e3",
+                        "secondary-fixed": "#baefc2",
+                        "primary": "#904726",
+                        "on-tertiary-container": "#f3fffd",
+                        "tertiary-fixed": "#8bf4ee",
+                        "surface-variant": "#e6e2de",
+                        "primary-fixed-dim": "#ffb597",
+                        "tertiary": "#006764",
+                        "on-primary-container": "#fffbff",
+                        "on-secondary": "#ffffff",
+                        "on-secondary-fixed-variant": "#20502f",
+                        "on-surface": "#1d1b19",
+                        "inverse-primary": "#ffb597",
+                        "surface-container-low": "#f8f3ef",
+                        "on-secondary-container": "#3f6e4b",
+                        "on-error-container": "#93000a",
+                        "primary-fixed": "#ffdbcd",
+                        "tertiary-fixed-dim": "#6ed7d1",
+                        "secondary": "#396845",
+                        "surface-container-lowest": "#ffffff",
+                        "on-error": "#ffffff",
+                        "on-tertiary-fixed-variant": "#00504d",
+                        "on-surface-variant": "#54433c",
+                        "outline-variant": "#dac1b8",
+                        "surface": "#fdf8f4",
+                        "on-tertiary-fixed": "#00201e",
+                        "surface-bright": "#fdf8f4",
+                        "tertiary-container": "#00827e",
+                        "on-primary": "#ffffff",
+                        "inverse-on-surface": "#f5f0ec",
+                        "on-tertiary": "#ffffff",
+                        "on-primary-fixed": "#360f00",
+                        "surface-container": "#f2ede9",
+                        "secondary-container": "#baefc2",
+                        "surface-container-highest": "#e6e2de",
+                        "surface-dim": "#ded9d5",
+                        "on-background": "#1d1b19",
+                        "error": "#ba1a1a",
+                        "error-container": "#ffdad6",
+                        "on-primary-fixed-variant": "#763313",
+                        "on-secondary-fixed": "#00210c",
+                        "background": "#fdf8f4"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "1rem",
+                        "lg": "2rem",
+                        "xl": "3rem",
+                        "full": "9999px"
+                    },
+                    "fontFamily": {
+                        "headline": ["Epilogue", "sans-serif"],
+                        "body": ["Be Vietnam Pro", "sans-serif"],
+                        "label": ["Be Vietnam Pro", "sans-serif"],
+                        "caveat": ["Caveat", "cursive"],
+                        "nunito": ["Nunito", "sans-serif"]
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .paper-grain {
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+            opacity: 0.03;
+            pointer-events: none;
+        }
+        .asymmetric-card {
+            transform: rotate(-0.5deg);
+        }
+        .asymmetric-card:nth-child(even) {
+            transform: rotate(0.8deg);
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-surface text-on-surface font-body selection:bg-primary-fixed min-h-screen relative overflow-x-hidden">
+<!-- Grain Overlay -->
+<div class="fixed inset-0 paper-grain z-[100]"></div>
+<!-- Main Content Canvas -->
+<main class="max-w-md mx-auto px-6 pt-12 pb-24 relative z-10">
+<!-- Welcome Header -->
+<header class="mb-12 text-center">
+<h1 class="font-caveat text-5xl font-bold text-primary tracking-tight mb-2">Let's get to know you</h1>
+<p class="font-nunito text-on-surface-variant italic">Every journey begins with a first note.</p>
+</header>
+<!-- Progress Indicator -->
+<div class="flex justify-center gap-2 mb-10">
+<div class="h-1.5 w-8 rounded-full bg-primary"></div>
+<div class="h-1.5 w-8 rounded-full bg-outline-variant"></div>
+<div class="h-1.5 w-8 rounded-full bg-outline-variant"></div>
+<div class="h-1.5 w-8 rounded-full bg-outline-variant"></div>
+</div>
+<!-- Onboarding Step: Personal Details -->
+<section class="space-y-8">
+<!-- Gender Selection (Asymmetric Grid) -->
+<div class="space-y-3">
+<label class="font-nunito text-lg font-semibold ml-2">I identify as...</label>
+<div class="grid grid-cols-2 gap-4">
+<button class="asymmetric-card bg-surface-container-highest p-6 rounded-lg text-center active:scale-95 transition-all border-none focus:ring-2 focus:ring-primary-container group">
+<span class="material-symbols-outlined text-4xl text-primary mb-2 block" data-icon="female">female</span>
+<span class="font-nunito font-medium block">Woman</span>
+</button>
+<button class="asymmetric-card bg-surface-container-low p-6 rounded-lg text-center active:scale-95 transition-all border-none focus:ring-2 focus:ring-primary-container group">
+<span class="material-symbols-outlined text-4xl text-on-surface-variant mb-2 block" data-icon="male">male</span>
+<span class="font-nunito font-medium block">Man</span>
+</button>
+</div>
+</div>
+<!-- Measurements Bento Card -->
+<div class="bg-surface-container-low rounded-lg p-8 space-y-6 shadow-sm border-none">
+<div class="grid grid-cols-2 gap-8">
+<!-- Age -->
+<div class="space-y-2">
+<label class="font-nunito text-sm font-medium text-on-surface-variant uppercase tracking-wider block">Age</label>
+<input class="w-full bg-surface-container-highest border-none rounded-full px-6 py-3 font-nunito text-xl focus:ring-2 focus:ring-primary-container" placeholder="28" type="number"/>
+</div>
+<!-- Weight -->
+<div class="space-y-2">
+<label class="font-nunito text-sm font-medium text-on-surface-variant uppercase tracking-wider block">Weight (kg)</label>
+<input class="w-full bg-surface-container-highest border-none rounded-full px-6 py-3 font-nunito text-xl focus:ring-2 focus:ring-primary-container" placeholder="65" type="number"/>
+</div>
+</div>
+<!-- Height Slider Style Input -->
+<div class="space-y-2">
+<div class="flex justify-between items-end mb-1">
+<label class="font-nunito text-sm font-medium text-on-surface-variant uppercase tracking-wider">Height</label>
+<span class="font-caveat text-2xl text-primary">172 cm</span>
+</div>
+<div class="relative h-12 bg-surface-container-highest rounded-full flex items-center px-2">
+<div class="h-8 w-1/2 bg-primary rounded-full flex items-center justify-end px-4">
+<div class="h-2 w-2 bg-white rounded-full"></div>
+</div>
+</div>
+</div>
+</div>
+<!-- Activity Level (Journal Note Style) -->
+<div class="space-y-4">
+<label class="font-nunito text-lg font-semibold ml-2">My daily movement is...</label>
+<div class="space-y-3">
+<button class="w-full bg-surface-container-highest rounded-lg p-4 text-left flex items-center gap-4 transition-transform active:scale-[0.98]">
+<div class="bg-secondary-container p-3 rounded-full">
+<span class="material-symbols-outlined text-on-secondary-container" data-icon="airline_seat_recline_extra">airline_seat_recline_extra</span>
+</div>
+<div>
+<p class="font-nunito font-bold text-on-surface">Sedentary</p>
+<p class="text-xs text-on-surface-variant">Office work, light walking</p>
+</div>
+</button>
+<button class="w-full bg-white rounded-lg p-4 text-left flex items-center gap-4 border-2 border-primary-container shadow-md relative overflow-hidden">
+<div class="absolute top-0 right-0 p-2">
+<span class="material-symbols-outlined text-primary text-sm" data-icon="star" data-weight="fill">star</span>
+</div>
+<div class="bg-primary-container p-3 rounded-full">
+<span class="material-symbols-outlined text-white" data-icon="directions_walk">directions_walk</span>
+</div>
+<div>
+<p class="font-nunito font-bold text-on-surface">Moderately Active</p>
+<p class="text-xs text-on-surface-variant">3-5 days of exercise/week</p>
+</div>
+</button>
+<button class="w-full bg-surface-container-highest rounded-lg p-4 text-left flex items-center gap-4 transition-transform active:scale-[0.98]">
+<div class="bg-tertiary-container p-3 rounded-full">
+<span class="material-symbols-outlined text-on-tertiary-container" data-icon="fitness_center">fitness_center</span>
+</div>
+<div>
+<p class="font-nunito font-bold text-on-surface">Very Active</p>
+<p class="text-xs text-on-surface-variant">Physical job or heavy training</p>
+</div>
+</button>
+</div>
+</div>
+<!-- Encouraging Note -->
+<div class="bg-surface-container-lowest border-l-4 border-tertiary p-6 rounded-r-lg asymmetric-card shadow-sm">
+<p class="font-caveat text-xl text-on-surface leading-snug">
+                    "Don't worry about being perfect. This journal is for you to learn what fuels your unique body best."
+                </p>
+</div>
+<!-- Action Button -->
+<div class="pt-4">
+<button class="w-full bg-primary text-white font-nunito font-bold text-lg py-5 rounded-full shadow-lg active:scale-95 transition-transform flex items-center justify-center gap-2 group">
+                    Calculate My Plan
+                    <span class="material-symbols-outlined group-hover:translate-x-1 transition-transform" data-icon="arrow_forward">arrow_forward</span>
+</button>
+</div>
+</section>
+<!-- Hidden Summary State (Illustrative for "Final Screen" requirement) -->
+<!-- In a real app, this would be a separate route or state -->
+<section class="hidden mt-16 space-y-8 animate-fade-in">
+<div class="text-center">
+<h2 class="font-caveat text-4xl font-bold text-primary mb-2">Your Kitchen Blueprint</h2>
+<p class="font-nunito text-on-surface-variant">Based on your shared notes, here is your path.</p>
+</div>
+<div class="grid grid-cols-2 gap-4">
+<div class="bg-surface-container-low p-6 rounded-lg text-center space-y-1">
+<span class="font-nunito text-xs text-on-surface-variant uppercase tracking-widest block">BMR</span>
+<span class="font-caveat text-3xl font-bold text-primary">1,450</span>
+<span class="font-nunito text-xs block opacity-60">kcal/day</span>
+</div>
+<div class="bg-secondary-container p-6 rounded-lg text-center space-y-1">
+<span class="font-nunito text-xs text-on-secondary-container uppercase tracking-widest block">TDEE</span>
+<span class="font-caveat text-3xl font-bold text-on-secondary-container">2,100</span>
+<span class="font-nunito text-xs block opacity-60">kcal/day</span>
+</div>
+</div>
+<!-- Main Budget Card -->
+<div class="relative">
+<img class="w-full h-48 object-cover rounded-lg" data-alt="Close-up of a beautifully plated healthy Mediterranean salad with fresh ingredients and warm afternoon sunlight" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDIKp9vr1rOBA73Yf6yPireH8slZnQIfWpnsAElABATrDGfqW7xNDKqN-qqD91ppjYcC4q9zDCSmdceli7HaMBIImpaBVF9BJTqiUGqut-ZDvZenO8ytJkJkE0zTQp3peToeasxBpwcmGas0OX08QXs4d6hn4jM7LrylJJXJKX8XvvM57kjs0QDcMQumN_IeFc1qHZX1c8MvMFa3x_zZQAy4SL3yTC6Q4vKuUQflIjz6ZgEzgDd_pMPbb9ybtqM9akuRkGZMrvsdRol"/>
+<div class="absolute inset-0 bg-gradient-to-t from-primary/80 to-transparent rounded-lg flex flex-col justify-end p-6">
+<h3 class="text-white font-nunito font-bold text-sm uppercase tracking-widest">Daily Fuel Budget</h3>
+<div class="flex items-baseline gap-2">
+<span class="text-white font-caveat text-6xl">1,850</span>
+<span class="text-white/80 font-nunito font-medium">Calories</span>
+</div>
+</div>
+</div>
+<button class="w-full bg-primary text-white font-nunito font-bold text-lg py-5 rounded-full shadow-lg active:scale-95 transition-transform">
+                Start My Journal
+            </button>
+</section>
+</main>
+<!-- Visual Accents (Scrapbook feel) -->
+<div class="fixed top-20 -left-12 w-32 h-32 bg-primary/5 rounded-full blur-3xl pointer-events-none"></div>
+<div class="fixed bottom-40 -right-20 w-64 h-64 bg-tertiary/5 rounded-full blur-3xl pointer-events-none"></div>
+<!-- Navigation Shell Placeholder (TopAppBar only as per destination rules) -->
+<nav class="fixed top-0 w-full z-50 bg-[#fdf8f4]/85 backdrop-blur-md flex justify-between items-center px-6 h-16 w-full">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded-full overflow-hidden bg-primary-fixed flex items-center justify-center">
+<img class="w-full h-full object-cover" data-alt="Portrait of a smiling couple in a rustic kitchen setting, warm soft lighting" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDz6mp5GPVXw32w5ovuy_BNR2aaD8RuiBX4mrxUyYgKZbEE5fpQ9r3-fFQM1H2hhJ9nwv8pbDwJPMPaaIT5QMyjVnsE7Vkkqm97YsrZM2WtgHQ5_fgiAH_nz7TjeUkizzqH4BqJjST52O59v77eTT1pYQBgZ9UYCoEq2CWRbUaKTuEG5JA8tJ_63pu_kAXzwT9G549Nvb8GZvlFqHQztpMGsLxU1JuJsIxByCM2vQK3CpWwwDSqplMLtlIJhdnFREQJjO9Bs65qwLCz"/>
+</div>
+<span class="font-['Caveat'] text-[#904726] text-2xl font-bold tracking-tight">Our Kitchen Journal</span>
+</div>
+<button class="w-10 h-10 rounded-full flex items-center justify-center hover:bg-[#f8f3ef] transition-colors active:scale-95 transition-transform duration-200">
+<span class="material-symbols-outlined text-[#904726]" data-icon="help_outline">help_outline</span>
+</button>
+</nav>
+</body></html>

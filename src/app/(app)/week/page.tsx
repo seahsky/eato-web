@@ -1,192 +1,109 @@
 "use client";
 
-import { useState, useMemo } from "react";
-import Link from "next/link";
-import { format, addDays, isToday, startOfWeek } from "date-fns";
-import { ChevronLeft, ChevronRight, Loader2 } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { useMemo } from "react";
+import { addDays, endOfWeek, format, isSameDay, startOfWeek } from "date-fns";
 import { trpc } from "@/trpc/react";
-import { CalorieRing } from "@/components/app/calorie-ring";
-import { DiaryEntryCard } from "@/components/app/diary-entry-card";
-import { COPY } from "@/lib/copy";
+import { DiaryCard } from "@/components/diary/diary-card";
+import { Eyebrow } from "@/components/diary/eyebrow";
 import { cn } from "@/lib/utils";
 
-type DayEntry = {
-  id: string;
-  name: string;
-  brand?: string | null;
-  calories: number;
-  servingSize: number;
-  servingUnit: string;
-  loggedAt?: string | Date;
-  consumedAt?: string | Date;
-  mood?: string | null;
-  note?: string | null;
-};
-
 export default function WeekPage() {
-  const [weekOffset, setWeekOffset] = useState(0);
-  const [expandedDay, setExpandedDay] = useState<number | null>(null);
-
-  // Calculate week start based on offset
-  const weekStart = useMemo(() => {
-    const now = new Date();
-    const start = startOfWeek(now, { weekStartsOn: 0 });
-    return addDays(start, weekOffset * 7);
-  }, [weekOffset]);
-
-  const weekEnd = addDays(weekStart, 6);
-  const weekLabel = `${format(weekStart, "MMM d")} \u2013 ${format(weekEnd, "MMM d")}`;
-
-  // Use the end-of-week date for API call (it expects the last day of the 7-day window)
+  const today = new Date();
+  const weekStart = startOfWeek(today, { weekStartsOn: 0 });
+  const weekEnd = endOfWeek(today, { weekStartsOn: 0 });
   const endDateStr = format(weekEnd, "yyyy-MM-dd");
 
-  const { data: budgetData, isLoading: budgetLoading } =
-    trpc.stats.getWeeklyBudgetStatus.useQuery(
-      { date: format(weekStart, "yyyy-MM-dd") },
-      { refetchOnWindowFocus: true }
-    );
-
-  const { data: weeklyData, isLoading: weeklyLoading } =
-    trpc.stats.getWeeklySummary.useQuery(
-      { endDate: endDateStr },
-      { refetchOnWindowFocus: true }
-    );
-
-  // Fetch entries for expanded day
-  const expandedDateStr = expandedDay !== null
-    ? format(addDays(weekStart, expandedDay), "yyyy-MM-dd")
-    : "";
-  const { data: dayData } = trpc.stats.getDailySummary.useQuery(
-    { date: expandedDateStr },
-    { enabled: expandedDay !== null && expandedDateStr !== "" }
+  const { data, isLoading } = trpc.stats.getWeeklySummary.useQuery(
+    { endDate: endDateStr },
+    { refetchOnWindowFocus: true }
   );
 
-  const isOver = budgetData ? budgetData.weeklyConsumed > budgetData.weeklyBudget : false;
-  const weeklyRemaining = budgetData ? Math.max(0, budgetData.weeklyBudget - budgetData.weeklyConsumed) : 0;
-  const isCurrentWeek = weekOffset === 0;
+  const days = useMemo(
+    () => Array.from({ length: 7 }, (_, i) => addDays(weekStart, i)),
+    [weekStart]
+  );
+
+  const values = useMemo(() => {
+    return days.map((d, i) => {
+      const summaryDay = data?.days[i];
+      const total = summaryDay ? Math.round(summaryDay.totalCalories) : 0;
+      const goalMet = summaryDay?.goalMet ?? false;
+      return { date: d, total, goalMet, letter: format(d, "EEEEE") };
+    });
+  }, [data, days]);
+
+  const weekTotal = values.reduce((s, v) => s + v.total, 0);
+  const daysLogged = values.filter((v) => v.total > 0).length;
+  const maxDay = Math.max(1, ...values.map((v) => v.total));
+  const avg = daysLogged > 0 ? Math.round(weekTotal / daysLogged) : 0;
+  const metCount = values.filter((v) => v.goalMet && v.total > 0).length;
+
+  const dateRange = `${format(weekStart, "MMM d")} – ${format(weekEnd, "d")} · This week`;
 
   return (
-    <div className="mx-auto max-w-lg px-4 animate-fade-in" aria-busy={budgetLoading && !budgetData}>
-      {/* Header with navigation */}
-      <div className="flex items-center justify-between py-3">
-        <Button variant="ghost" size="icon" aria-label="Previous week" onClick={() => setWeekOffset((o) => o - 1)}>
-          <ChevronLeft className="h-5 w-5" />
-        </Button>
-        <div className="text-center">
-          <h1 className="font-caveat text-xl text-foreground">{COPY.weekHeading}</h1>
-          <p className="text-xs text-muted-foreground">{weekLabel}</p>
-        </div>
-        <Button
-          variant="ghost"
-          size="icon"
-          aria-label="Next week"
-          disabled={isCurrentWeek}
-          onClick={() => setWeekOffset((o) => o + 1)}
-        >
-          <ChevronRight className="h-5 w-5" />
-        </Button>
+    <div className="mx-auto max-w-lg pb-24 animate-fade-in" aria-busy={isLoading && !data}>
+      {/* Header */}
+      <div className="px-[22px] pt-3 flex flex-col gap-1.5">
+        <Eyebrow>{dateRange}</Eyebrow>
+        <h1 className="text-[28px] font-bold text-[var(--text)] leading-none tracking-[-0.01em]">
+          Your week
+        </h1>
+        <p className="text-[15px] text-[var(--text-soft)]">
+          {daysLogged} {daysLogged === 1 ? "day" : "days"} logged · {weekTotal.toLocaleString()} kcal total
+        </p>
       </div>
 
-      {/* Budget ring */}
-      {budgetLoading && !budgetData && (
-        <div className="flex justify-center py-8" role="status" aria-live="polite">
-          <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" aria-hidden="true" />
-          <span className="sr-only">Loading weekly budget...</span>
-        </div>
-      )}
-
-      {budgetData && (
-        <div className="animate-fade-in">
-          <CalorieRing
-            consumed={budgetData.weeklyConsumed}
-            budget={budgetData.weeklyBudget}
-            weekLabel={weekLabel}
-          />
-          {!isOver && weeklyRemaining > 0 && (
-            <p className="mt-1 text-center text-xs text-muted-foreground">
-              {COPY.weekRemainingLabel(weeklyRemaining)}
-            </p>
-          )}
-          {isOver && (
-            <p className="mt-2 text-center text-xs text-muted-foreground italic">
-              {COPY.weekOverBudget}
-            </p>
-          )}
-        </div>
-      )}
-
-      {/* 7-day strip */}
-      {weeklyData && (
-        <div className="mt-6 grid grid-cols-7 gap-1">
-          {weeklyData.days.map((day, i) => {
-            const dayDate = addDays(weekStart, i);
-            const hasData = day.totalCalories > 0;
-            const isTodayDay = isToday(dayDate);
-            const isExpanded = expandedDay === i;
-
-            return (
-              <button
-                key={i}
-                aria-label={`${format(dayDate, "EEEE, MMMM d")}${hasData ? `, ${Math.round(day.totalCalories)} calories` : ", no entries"}`}
-                className={cn(
-                  "flex flex-col items-center gap-1 rounded-lg min-h-[44px] py-2.5 text-xs shadow-warm-sm transition-[color,background-color,transform] duration-[var(--duration-fast)] active:scale-[0.97]",
-                  isExpanded && "bg-accent",
-                  isTodayDay && !isExpanded && "ring-1 ring-primary/40",
-                  !hasData && "opacity-50"
-                )}
-                onClick={() => setExpandedDay(isExpanded ? null : i)}
-              >
-                <span className="font-medium text-muted-foreground">
-                  {format(dayDate, "EEE")}
-                </span>
-                <span className={cn("font-semibold", hasData ? "text-foreground" : "text-muted-foreground")}>
-                  {hasData ? Math.round(day.totalCalories) : "\u2014"}
-                </span>
-                {hasData && (
-                  <span className="h-1.5 w-1.5 rounded-full bg-primary" aria-hidden="true" />
-                )}
-              </button>
-            );
-          })}
-        </div>
-      )}
-
-      {/* Expanded day entries */}
-      <div
-        className="grid transition-[grid-template-rows] duration-[var(--duration-normal)] ease-[var(--ease-out-expo)]"
-        style={{ gridTemplateRows: expandedDay !== null && dayData ? '1fr' : '0fr' }}
-      >
-        <div className="overflow-hidden">
-          {expandedDay !== null && dayData && (
-            <div className="mt-4 animate-fade-in space-y-1.5">
-              <h2 className="text-sm font-medium text-muted-foreground">
-                {format(addDays(weekStart, expandedDay), "EEEE, MMM d")}
-              </h2>
-              {(dayData.entries as DayEntry[]).length > 0 ? (
-                (dayData.entries as DayEntry[]).map((entry, i) => (
-                  <div key={entry.id} className={i < 5 ? `animate-fade-in-delay-${i}` : "animate-fade-in-delay-4"}>
-                    <Link href={`/food/edit/${entry.id}`}>
-                      <DiaryEntryCard entry={entry} />
-                    </Link>
-                  </div>
-                ))
-              ) : (
-                <p className="py-4 text-center text-sm text-muted-foreground">
-                  {COPY.noEntriesDay}
-                </p>
-              )}
-            </div>
-          )}
-        </div>
+      {/* Bar chart */}
+      <div className="px-5 pt-5">
+        <DiaryCard className="p-4">
+          <div className="flex h-[160px] items-end gap-2">
+            {values.map((v) => {
+              const isToday = isSameDay(v.date, today);
+              const heightPx = v.total > 0 ? Math.max(4, (v.total / maxDay) * 140) : 2;
+              return (
+                <div key={v.letter + format(v.date, "yyyy-MM-dd")} className="flex flex-1 flex-col items-center gap-1.5 justify-end">
+                  <div
+                    className={cn(
+                      "w-full rounded-[8px] transition-[height] duration-[var(--duration-slow)] ease-[var(--ease-out-expo)]",
+                      isToday
+                        ? "bg-[var(--primary)]"
+                        : "bg-[color-mix(in_oklab,var(--primary)_35%,transparent)]"
+                    )}
+                    style={{ height: heightPx }}
+                    aria-label={`${format(v.date, "EEEE")}: ${v.total.toLocaleString()} kcal`}
+                  />
+                  <span
+                    className={cn(
+                      "font-mono text-[9px] font-bold",
+                      isToday ? "text-[var(--primary)]" : "text-[var(--text-mute)]"
+                    )}
+                  >
+                    {v.letter}
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+        </DiaryCard>
       </div>
 
-      {weeklyLoading && !weeklyData && (
-        <div className="flex justify-center py-8" role="status" aria-live="polite">
-          <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" aria-hidden="true" />
-          <span className="sr-only">Loading weekly data...</span>
-        </div>
-      )}
+      {/* Stat tiles */}
+      <div className="px-5 pt-3 grid grid-cols-2 gap-2.5">
+        <StatTile label="Daily avg" value={avg.toLocaleString()} sub="kcal per day" />
+        <StatTile label="Goal met" value={`${metCount}/7`} sub="days on target" />
+      </div>
     </div>
+  );
+}
+
+function StatTile({ label, value, sub }: { label: string; value: string; sub: string }) {
+  return (
+    <DiaryCard className="p-3.5">
+      <div className="flex flex-col gap-0.5">
+        <Eyebrow>{label}</Eyebrow>
+        <span className="text-[24px] font-bold leading-tight text-[var(--text)]">{value}</span>
+        <span className="text-[12px] text-[var(--text-soft)]">{sub}</span>
+      </div>
+    </DiaryCard>
   );
 }

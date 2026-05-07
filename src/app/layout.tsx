@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Nunito, Caveat } from "next/font/google";
+import { Nunito, Caveat, JetBrains_Mono } from "next/font/google";
 import { ClerkProvider } from "@clerk/nextjs";
 import { ThemeProvider } from "next-themes";
 import { TRPCProvider } from "@/trpc/react";
@@ -15,6 +15,12 @@ const nunito = Nunito({
 const caveat = Caveat({
   subsets: ["latin"],
   variable: "--font-caveat",
+  display: "swap",
+});
+
+const jetbrainsMono = JetBrains_Mono({
+  subsets: ["latin"],
+  variable: "--font-jetbrains-mono",
   display: "swap",
 });
 
@@ -36,8 +42,8 @@ export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
   themeColor: [
-    { media: '(prefers-color-scheme: light)', color: '#C4704B' },
-    { media: '(prefers-color-scheme: dark)', color: '#2A1F16' },
+    { media: '(prefers-color-scheme: light)', color: '#FDF8F4' },
+    { media: '(prefers-color-scheme: dark)', color: '#1F1815' },
   ],
 };
 
@@ -49,7 +55,7 @@ export default function RootLayout({
   return (
     <ClerkProvider>
       <html lang="en" suppressHydrationWarning>
-        <body className={`${nunito.variable} ${caveat.variable} font-nunito min-h-dvh antialiased`}>
+        <body className={`${nunito.variable} ${caveat.variable} ${jetbrainsMono.variable} font-nunito min-h-dvh antialiased`}>
           <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
             <TRPCProvider>
               {children}

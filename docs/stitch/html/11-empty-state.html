@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<link href="https://fonts.googleapis.com/css2?family=Caveat:wght@400;700&amp;family=Nunito:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "outline": "#87736b",
+                    "primary-container": "#af5f3b",
+                    "inverse-surface": "#32302e",
+                    "secondary-fixed-dim": "#9fd3a8",
+                    "surface-tint": "#934a28",
+                    "surface-container-high": "#ece7e3",
+                    "secondary-fixed": "#baefc2",
+                    "primary": "#904726",
+                    "on-tertiary-container": "#f3fffd",
+                    "tertiary-fixed": "#8bf4ee",
+                    "surface-variant": "#e6e2de",
+                    "primary-fixed-dim": "#ffb597",
+                    "tertiary": "#006764",
+                    "on-primary-container": "#fffbff",
+                    "on-secondary": "#ffffff",
+                    "on-secondary-fixed-variant": "#20502f",
+                    "on-surface": "#1d1b19",
+                    "inverse-primary": "#ffb597",
+                    "surface-container-low": "#f8f3ef",
+                    "on-secondary-container": "#3f6e4b",
+                    "on-error-container": "#93000a",
+                    "primary-fixed": "#ffdbcd",
+                    "tertiary-fixed-dim": "#6ed7d1",
+                    "secondary": "#396845",
+                    "surface-container-lowest": "#ffffff",
+                    "on-error": "#ffffff",
+                    "on-tertiary-fixed-variant": "#00504d",
+                    "on-surface-variant": "#54433c",
+                    "outline-variant": "#dac1b8",
+                    "surface": "#fdf8f4",
+                    "on-tertiary-fixed": "#00201e",
+                    "surface-bright": "#fdf8f4",
+                    "tertiary-container": "#00827e",
+                    "on-primary": "#ffffff",
+                    "inverse-on-surface": "#f5f0ec",
+                    "on-tertiary": "#ffffff",
+                    "on-primary-fixed": "#360f00",
+                    "surface-container": "#f2ede9",
+                    "secondary-container": "#baefc2",
+                    "surface-container-highest": "#e6e2de",
+                    "surface-dim": "#ded9d5",
+                    "on-background": "#1d1b19",
+                    "error": "#ba1a1a",
+                    "error-container": "#ffdad6",
+                    "on-primary-fixed-variant": "#763313",
+                    "on-secondary-fixed": "#00210c",
+                    "background": "#fdf8f4"
+            },
+            "borderRadius": {
+                    "DEFAULT": "1rem",
+                    "lg": "2rem",
+                    "xl": "3rem",
+                    "full": "9999px"
+            },
+            "fontFamily": {
+                    "headline": ["Caveat"],
+                    "body": ["Nunito"],
+                    "label": ["Nunito"]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .paper-grain {
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+            opacity: 0.03;
+            pointer-events: none;
+        }
+        .handwritten { font-family: 'Caveat', cursive; }
+        .recipe-font { font-family: 'Nunito', sans-serif; }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-surface text-on-surface min-h-screen selection:bg-secondary-fixed">
+<div class="fixed inset-0 paper-grain z-50"></div>
+<!-- TopAppBar -->
+<header class="fixed top-0 w-full z-50 bg-[#fdf8f4]/85 dark:bg-[#1a1a1a]/85 backdrop-blur-md flex justify-between items-center px-6 h-16 w-full">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-full overflow-hidden border-2 border-primary-fixed">
+<img alt="Couple profile photo" class="w-full h-full object-cover" data-alt="warm close-up of a happy couple smiling at each other in a rustic kitchen setting with soft afternoon lighting" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBjrcYlfWEeuo_xzlyUMJf3yhpdK8Qvge3ffXGm_AsVOyyrIqSgP3Mv6ZV57zxKGd3YOLYPGtYE-i33a5_X9Ai5TOeWEK0z9oyNGqfIXEWsmU3uSdLnHHLX3_uHIUXVUVKdm6b-a81sMwax8WPj-pEPiXzKuDKCDnLhD-tuzfiGbLS-BvrOyVuj4pY-orMaFQQrle6SIfDlp6ZY9KnqNPpC7K1J1QlvZJUDAoxQa4R009OLJMRmgHfdBiiC66YaVtNWuSk46FM8TheJ"/>
+</div>
+<h1 class="text-[#904726] dark:text-[#af5f3b] font-['Caveat'] text-3xl font-bold tracking-tight">Our Kitchen Journal</h1>
+</div>
+<button class="text-[#54433c] hover:bg-[#f8f3ef] transition-colors p-2 rounded-full active:scale-95 transition-transform duration-200">
+<span class="material-symbols-outlined" data-icon="settings">settings</span>
+</button>
+</header>
+<main class="pt-24 pb-32 px-6 flex flex-col items-center justify-center min-h-[calc(100vh-80px)]">
+<!-- Empty State Container -->
+<div class="max-w-md w-full text-center space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-1000">
+<!-- Bento-style Asymmetric Illustration Area -->
+<div class="relative flex justify-center mb-12">
+<!-- Decorative element 1: Hand-drawn style circle -->
+<div class="absolute -top-4 -left-4 w-24 h-24 bg-secondary-fixed/20 rounded-full blur-2xl"></div>
+<!-- Main Illustration Card -->
+<div class="relative bg-surface-container-low p-12 rounded-xl rotate-1 shadow-sm border border-outline-variant/10">
+<div class="bg-surface-container-highest w-32 h-32 rounded-full flex items-center justify-center mb-4 mx-auto -rotate-3">
+<span class="material-symbols-outlined text-primary text-6xl opacity-40" data-icon="auto_stories">auto_stories</span>
+</div>
+<!-- Decorative "Taped" Accent -->
+<div class="absolute -top-2 left-1/2 -translate-x-1/2 w-16 h-6 bg-primary/5 rotate-2 backdrop-blur-sm"></div>
+</div>
+<!-- Decorative element 2: Floating leaf -->
+<div class="absolute -bottom-6 -right-2 bg-tertiary-fixed/30 p-3 rounded-lg -rotate-12">
+<span class="material-symbols-outlined text-tertiary" data-icon="eco">eco</span>
+</div>
+</div>
+<!-- Typography Content -->
+<div class="space-y-4">
+<h2 class="handwritten text-4xl md:text-5xl text-on-surface-variant font-bold leading-tight">
+                    Your diary is empty today
+                </h2>
+<p class="recipe-font text-on-surface-variant/70 text-lg max-w-[280px] mx-auto leading-relaxed">
+                    Every meal has a story. What's cooking in your heart right now?
+                </p>
+</div>
+<!-- CTA Button -->
+<div class="pt-6">
+<button class="bg-primary text-on-primary recipe-font font-bold px-10 py-4 rounded-full shadow-lg shadow-primary/10 hover:bg-primary-container active:scale-95 transition-all duration-200 flex items-center gap-3 mx-auto">
+<span class="material-symbols-outlined" data-icon="edit_note">edit_note</span>
+<span>Write it down.</span>
+</button>
+</div>
+<!-- Subtle Suggestion -->
+<div class="mt-12 flex gap-4 overflow-x-auto pb-4 px-2 no-scrollbar">
+<div class="flex-shrink-0 bg-surface-container p-4 rounded-lg rotate-1 flex items-center gap-3">
+<span class="material-symbols-outlined text-secondary" data-icon="coffee">coffee</span>
+<span class="recipe-font text-sm font-medium text-on-surface-variant">Log breakfast</span>
+</div>
+<div class="flex-shrink-0 bg-surface-container p-4 rounded-lg -rotate-1 flex items-center gap-3">
+<span class="material-symbols-outlined text-tertiary" data-icon="restaurant">restaurant</span>
+<span class="recipe-font text-sm font-medium text-on-surface-variant">New recipe</span>
+</div>
+<div class="flex-shrink-0 bg-surface-container p-4 rounded-lg rotate-2 flex items-center gap-3">
+<span class="material-symbols-outlined text-primary" data-icon="history">history</span>
+<span class="recipe-font text-sm font-medium text-on-surface-variant">Quick repeat</span>
+</div>
+</div>
+</div>
+</main>
+<!-- BottomNavBar -->
+<nav class="fixed bottom-0 w-full rounded-t-[24px] z-50 bg-[#fdf8f4] dark:bg-[#1a1a1a] shadow-[0_-4px_32px_rgba(84,67,60,0.06)] flex justify-around items-center h-20 pb-safe w-full px-4">
+<!-- Journal (Active) -->
+<a class="flex flex-col items-center justify-center bg-[#baefc2] dark:bg-[#006764]/30 text-[#904726] rounded-full px-4 py-1 active:scale-90 transition-transform duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="menu_book">menu_book</span>
+<span class="font-['Nunito'] text-[12px] font-medium">Journal</span>
+</a>
+<!-- Stats -->
+<a class="flex flex-col items-center justify-center text-[#54433c] opacity-60 hover:opacity-100 transition-opacity active:scale-90 transition-transform duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="donut_large">donut_large</span>
+<span class="font-['Nunito'] text-[12px] font-medium">Stats</span>
+</a>
+<!-- Add FAB Anchor (Visual highlight) -->
+<a class="flex flex-col items-center justify-center text-[#904726] active:scale-90 transition-transform duration-200 -mt-8" href="#">
+<div class="bg-primary p-3 rounded-full shadow-xl shadow-primary/20 text-on-primary">
+<span class="material-symbols-outlined !text-3xl" data-icon="add">add</span>
+</div>
+<span class="font-['Nunito'] text-[12px] font-medium mt-1 text-on-surface-variant">Add</span>
+</a>
+<!-- Recipes -->
+<a class="flex flex-col items-center justify-center text-[#54433c] opacity-60 hover:opacity-100 transition-opacity active:scale-90 transition-transform duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="restaurant_menu">restaurant_menu</span>
+<span class="font-['Nunito'] text-[12px] font-medium">Recipes</span>
+</a>
+<!-- Profile -->
+<a class="flex flex-col items-center justify-center text-[#54433c] opacity-60 hover:opacity-100 transition-opacity active:scale-90 transition-transform duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="group">group</span>
+<span class="font-['Nunito'] text-[12px] font-medium">Profile</span>
+</a>
+</nav>
+</body></html>

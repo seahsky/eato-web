@@ -1,38 +1,61 @@
 @import "tailwindcss";
 
 @theme {
-  --color-background: oklch(0.98 0.008 70.0);
-  --color-foreground: oklch(0.296 0.048 55.0);
-  --color-card: oklch(0.975 0.01 68.0);
-  --color-card-foreground: oklch(0.296 0.048 55.0);
-  --color-popover: oklch(0.975 0.01 68.0);
-  --color-popover-foreground: oklch(0.296 0.048 55.0);
-  --color-primary: oklch(0.588 0.114 46.0);
-  --color-primary-foreground: oklch(0.98 0.008 70.0);
-  --color-secondary: oklch(0.697 0.06 148.0);
-  --color-secondary-foreground: oklch(0.25 0.04 148.0);
-  --color-muted: oklch(0.95 0.012 65.0);
-  --color-muted-foreground: oklch(0.48 0.04 65.0);
-  --color-accent: oklch(0.93 0.018 70.0);
-  --color-accent-foreground: oklch(0.296 0.048 55.0);
-  --color-destructive: oklch(0.577 0.245 27.325);
-  --color-destructive-foreground: oklch(0.98 0.008 70.0);
-  --color-border: oklch(0.88 0.025 65.0);
-  --color-input: oklch(0.88 0.025 65.0);
-  --color-ring: oklch(0.588 0.114 46.0);
-  --color-chart-1: oklch(0.588 0.114 46.0);
-  --color-chart-2: oklch(0.697 0.06 148.0);
-  --color-chart-3: oklch(0.45 0.08 55.0);
-  --color-chart-4: oklch(0.75 0.10 80.0);
-  --color-chart-5: oklch(0.65 0.08 30.0);
-  --color-warning: oklch(0.666 0.16 65.0);
+  /* ── Warm-diary palette (handoff source of truth) ────────────── */
+  --bg: #FDF8F4;
+  --bg-elev-1: #F5EBE0;
+  --bg-elev-2: #EDE0D0;
+  --primary: #C4704B;
+  --primary-deep: #A85A38;
+  --butter: #E8B598;
+  --sage: #6A9D72;
+  --text: #3D2A1F;
+  --text-soft: #6E5A4C;
+  --text-mute: #9B8676;
+  --divider: #EDE4D9;
+
+  /* ── Tailwind/shadcn aliases mapped to the warm-diary palette ─ */
+  --color-background: #FDF8F4;
+  --color-foreground: #3D2A1F;
+  --color-card: #FFFFFF;
+  --color-card-foreground: #3D2A1F;
+  --color-popover: #FFFFFF;
+  --color-popover-foreground: #3D2A1F;
+  --color-primary: #C4704B;
+  --color-primary-foreground: #FFFFFF;
+  --color-secondary: #6A9D72;
+  --color-secondary-foreground: #FFFFFF;
+  --color-muted: #F5EBE0;
+  --color-muted-foreground: #6E5A4C;
+  --color-accent: #EDE0D0;
+  --color-accent-foreground: #3D2A1F;
+  --color-destructive: #B23A3A;
+  --color-destructive-foreground: #FFFFFF;
+  --color-border: #E0D2C3;
+  --color-input: #E0D2C3;
+  --color-ring: #C4704B;
+  --color-chart-1: #C4704B;
+  --color-chart-2: #6A9D72;
+  --color-chart-3: #E8B598;
+  --color-chart-4: #9B8676;
+  --color-chart-5: #A85A38;
+  --color-warning: #E8B598;
+
+  /* ── Radii ───────────────────────────────────────────────────── */
+  --radius-card: 18px;
+  --radius-tile: 14px;
+  --radius-chip: 12px;
   --radius-sm: 0.5rem;
   --radius-md: 0.625rem;
   --radius-lg: 1rem;
   --radius-xl: 1.5rem;
+
+  /* ── Fonts ───────────────────────────────────────────────────── */
   --font-nunito: var(--font-nunito), system-ui, sans-serif;
   --font-caveat: var(--font-caveat), cursive;
+  --font-mono: var(--font-jetbrains-mono), ui-monospace, "JetBrains Mono", "SFMono-Regular", Menlo, monospace;
 
+  /* ── Motion ──────────────────────────────────────────────────── */
   --duration-instant: 100ms;
   --duration-fast: 150ms;
   --duration-normal: 250ms;
@@ -54,35 +77,41 @@
     -moz-osx-font-smoothing: grayscale;
   }
 
+  /* Dark mode — handoff has no dark theme. We keep a muted dark-brown
+     reading of the same palette so dark users don't break. */
   .dark {
-    --color-background: oklch(0.16 0.02 55);
-    --color-foreground: oklch(0.90 0.015 65);
-    --color-card: oklch(0.20 0.025 55);
-    --color-card-foreground: oklch(0.90 0.015 65);
-    --color-popover: oklch(0.20 0.025 55);
-    --color-popover-foreground: oklch(0.90 0.015 65);
-    --color-primary: oklch(0.65 0.10 46);
-    --color-primary-foreground: oklch(0.16 0.02 55);
-    --color-secondary: oklch(0.50 0.05 148);
-    --color-secondary-foreground: oklch(0.90 0.015 65);
-    --color-muted: oklch(0.22 0.015 55);
-    --color-muted-foreground: oklch(0.65 0.03 60);
-    --color-accent: oklch(0.25 0.02 55);
-    --color-accent-foreground: oklch(0.90 0.015 65);
-    --color-destructive: oklch(0.50 0.15 27);
-    --color-destructive-foreground: oklch(0.90 0.015 65);
-    --color-border: oklch(0.28 0.02 55);
-    --color-input: oklch(0.28 0.02 55);
-    --color-ring: oklch(0.65 0.10 46);
-    --color-chart-1: oklch(0.65 0.10 46);
-    --color-chart-2: oklch(0.55 0.05 148);
-    --color-chart-3: oklch(0.55 0.06 55);
-    --color-chart-4: oklch(0.65 0.08 80);
-    --color-chart-5: oklch(0.55 0.06 30);
-    --color-warning: oklch(0.72 0.12 65);
+    --bg: #1F1815;
+    --bg-elev-1: #2A201B;
+    --bg-elev-2: #332821;
+    --text: #F1E8DD;
+    --text-soft: #C9B9AA;
+    --text-mute: #8B7B6E;
+    --divider: #332821;
+
+    --color-background: #1F1815;
+    --color-foreground: #F1E8DD;
+    --color-card: #261C17;
+    --color-card-foreground: #F1E8DD;
+    --color-popover: #261C17;
+    --color-popover-foreground: #F1E8DD;
+    --color-primary: #C4704B;
+    --color-primary-foreground: #FFFFFF;
+    --color-secondary: #6A9D72;
+    --color-secondary-foreground: #FFFFFF;
+    --color-muted: #2A201B;
+    --color-muted-foreground: #C9B9AA;
+    --color-accent: #332821;
+    --color-accent-foreground: #F1E8DD;
+    --color-destructive: #C25151;
+    --color-destructive-foreground: #FFFFFF;
+    --color-border: #3D2F26;
+    --color-input: #3D2F26;
+    --color-ring: #C4704B;
+    --color-warning: #E8B598;
   }
 }
 
+/* Subtle warm-paper noise overlay */
 body::after {
   content: '';
   position: fixed;
@@ -99,14 +128,20 @@ body::after {
   opacity: 0.03;
 }
 
+/* ── Utilities ────────────────────────────────────────────────── */
 @utility shadow-warm-sm {
-  box-shadow: 0 1px 4px -1px oklch(0.5 0.03 60 / 0.06),
-              0 1px 2px -1px oklch(0.5 0.03 60 / 0.04);
+  box-shadow: 0 1px 4px -1px rgba(74, 40, 20, 0.06),
+              0 1px 2px -1px rgba(74, 40, 20, 0.04);
 }
 
 @utility shadow-warm-lg {
-  box-shadow: 0 4px 16px -4px oklch(0.5 0.03 60 / 0.10),
-              0 2px 4px -2px oklch(0.5 0.03 60 / 0.05);
+  box-shadow: 0 4px 16px -4px rgba(74, 40, 20, 0.10),
+              0 2px 4px -2px rgba(74, 40, 20, 0.05);
+}
+
+/* The "soft shadow" from the handoff: rgba(74,40,20,0.06) 0 4px 10px */
+@utility shadow-diary {
+  box-shadow: 0 4px 10px rgba(74, 40, 20, 0.06);
 }
 
 /* Pixel Pet Animations */

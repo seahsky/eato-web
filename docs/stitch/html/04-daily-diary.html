@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<link href="https://fonts.googleapis.com/css2?family=Caveat:wght@400;700&amp;family=Nunito:wght@400;500;600;700&amp;family=Epilogue:wght@700&amp;family=Be+Vietnam+Pro:wght@400;500;600&amp;family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "outline": "#87736b",
+                    "primary-container": "#af5f3b",
+                    "inverse-surface": "#32302e",
+                    "secondary-fixed-dim": "#9fd3a8",
+                    "surface-tint": "#934a28",
+                    "surface-container-high": "#ece7e3",
+                    "secondary-fixed": "#baefc2",
+                    "primary": "#904726",
+                    "on-tertiary-container": "#f3fffd",
+                    "tertiary-fixed": "#8bf4ee",
+                    "surface-variant": "#e6e2de",
+                    "primary-fixed-dim": "#ffb597",
+                    "tertiary": "#006764",
+                    "on-primary-container": "#fffbff",
+                    "on-secondary": "#ffffff",
+                    "on-secondary-fixed-variant": "#20502f",
+                    "on-surface": "#1d1b19",
+                    "inverse-primary": "#ffb597",
+                    "surface-container-low": "#f8f3ef",
+                    "on-secondary-container": "#3f6e4b",
+                    "on-error-container": "#93000a",
+                    "primary-fixed": "#ffdbcd",
+                    "tertiary-fixed-dim": "#6ed7d1",
+                    "secondary": "#396845",
+                    "surface-container-lowest": "#ffffff",
+                    "on-error": "#ffffff",
+                    "on-tertiary-fixed-variant": "#00504d",
+                    "on-surface-variant": "#54433c",
+                    "outline-variant": "#dac1b8",
+                    "surface": "#fdf8f4",
+                    "on-tertiary-fixed": "#00201e",
+                    "surface-bright": "#fdf8f4",
+                    "tertiary-container": "#00827e",
+                    "on-primary": "#ffffff",
+                    "inverse-on-surface": "#f5f0ec",
+                    "on-tertiary": "#ffffff",
+                    "on-primary-fixed": "#360f00",
+                    "surface-container": "#f2ede9",
+                    "secondary-container": "#baefc2",
+                    "surface-container-highest": "#e6e2de",
+                    "surface-dim": "#ded9d5",
+                    "on-background": "#1d1b19",
+                    "error": "#ba1a1a",
+                    "error-container": "#ffdad6",
+                    "on-primary-fixed-variant": "#763313",
+                    "on-secondary-fixed": "#00210c",
+                    "background": "#fdf8f4"
+            },
+            "borderRadius": {
+                    "DEFAULT": "1rem",
+                    "lg": "2rem",
+                    "xl": "3rem",
+                    "full": "9999px"
+            },
+            "fontFamily": {
+                    "headline": ["Caveat"],
+                    "body": ["Nunito"],
+                    "label": ["Nunito"]
+            }
+          },
+        },
+      }
+    </script>
+<style>.paper-texture {
+    background-image: url(https://lh3.googleusercontent.com/aida-public/AB6AXuDzE1119JdWxNvCui3-auK2DHOTWXp8G7rOoDxabhyRzJIL0pF9ttAEbKJGOj5b-o-ITX-p9hFqHvpBjSHCuwTRpXn5a8Z6hdLmwM7cM9jo6cM5qQY9d2siUfobGqwIJ_b2yN5XFuYzIf9pki-MnbDtwyFw7_DlaqTFbOwFnCIFCTtrLgUHo2zAN4PGztqGv0xuwvTiyj6TbMObU8fODipDrAh-wnbu6IaL7M7Ns8z6STbRnRuSUE2ZxEbysZUx5rq8Ix_ZIdBi9V-G);
+    background-repeat: repeat
+    }
+.material-symbols-outlined {
+    font-variation-settings: "FILL" 0, "wght" 400, "GRAD" 0, "opsz" 24
+    }
+.circular-progress {
+    background: conic-gradient(#904726 calc(1240 / 2100 * 360deg), #f2ede9 0deg)
+    }</style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-surface text-on-surface font-body selection:bg-primary-fixed selection:text-on-primary-fixed min-h-screen paper-texture">
+<!-- TopAppBar -->
+<header class="fixed top-0 w-full z-50 bg-[#fdf8f4]/85 dark:bg-[#1a1a1a]/85 backdrop-blur-md flex justify-between items-center px-6 h-16 w-full">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded-full overflow-hidden border-2 border-primary-fixed">
+<img alt="Profile" class="w-full h-full object-cover" data-alt="Close-up portrait of a smiling woman with warm lighting in a cozy home environment, soft focus background." src="https://lh3.googleusercontent.com/aida-public/AB6AXuC2FD6uO7RURkoulMzn5-MmJ38nGZbTPLpEXAsn_njWjaHsPboG8PG5etRTPKwkjkkPJQGwqI7KkXi8IWTgJvzmb7NH_dhs-xkDNMzYYW5BIRoUiF-tPV7d0eBjKw3NjMzONx7txwJ_erEXcwP-wX6KDk7QNQozd3VNcfNFRymc_LbCM-PnMBzywLPWcUIf6mk6zv1AaydVMlJXKxib7EVXYh9z0mKIjdWI-xSAh0C1uG1YZrugNE0EdcxNVi7Xaf9BaLOxE94x05DW"/>
+</div>
+<span class="font-['Caveat'] text-[#904726] dark:text-[#af5f3b] text-2xl font-bold tracking-tight">Our Kitchen Journal</span>
+</div>
+<button class="text-[#904726] hover:bg-[#f8f3ef] transition-colors p-2 rounded-full active:scale-95 transition-transform duration-200">
+<span class="material-symbols-outlined">settings</span>
+</button>
+</header>
+<main class="pt-24 pb-32 px-6 max-w-2xl mx-auto">
+<!-- Calorie Ring Hero Section -->
+<section class="flex flex-col items-center mb-12">
+<div class="relative w-64 h-64 flex items-center justify-center rounded-full shadow-[0_12px_40px_-12px_rgba(144,71,38,0.15)] bg-surface-container-lowest">
+<!-- Outer Progress Circle -->
+<div class="absolute inset-0 rounded-full border-[12px] border-surface-container shadow-inner"></div>
+<svg class="w-full h-full -rotate-90 transform">
+<circle cx="128" cy="128" fill="transparent" r="116" stroke="url(#gradient)" stroke-dasharray="728" stroke-dashoffset="291" stroke-linecap="round" stroke-width="12"></circle>
+<defs>
+<lineargradient id="gradient" x1="0%" x2="100%" y1="0%" y2="0%">
+<stop offset="0%" stop-color="#fdf8f4"></stop>
+<stop offset="100%" stop-color="#904726"></stop>
+</lineargradient>
+</defs>
+</svg>
+<div class="absolute flex flex-col items-center text-center">
+<span class="font-headline text-5xl font-bold text-primary">1,240</span>
+<span class="font-label text-on-surface-variant text-sm tracking-wide">of 2,100 kcal</span>
+</div>
+</div>
+<div class="mt-8 text-center bg-surface-container-low px-6 py-3 rounded-full border border-outline-variant/10">
+<p class="text-on-surface-variant font-medium text-sm">
+                    Day 4 — <span class="text-primary font-bold">6,800 of 14,000 kcal</span> this week.
+                </p>
+</div>
+</section>
+<!-- Journal Entries -->
+<section class="space-y-6">
+<h2 class="font-headline text-3xl text-primary ml-2 mb-4 italic">Today's Entries</h2>
+<!-- Breakfast Entry -->
+<div class="group bg-surface-container-lowest rounded-lg p-4 flex gap-5 items-center transition-all duration-300 hover:translate-y-[-2px] border-l-4 border-secondary-fixed shadow-[0_4px_20px_-4px_rgba(84,67,60,0.05)]">
+<div class="relative w-20 h-20 shrink-0 rotate-[-1deg] group-hover:rotate-0 transition-transform">
+<img class="w-full h-full object-cover rounded-lg shadow-sm" data-alt="Artisanal French toast with fresh berries and maple syrup on a rustic ceramic plate, soft morning light." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCQMhiopRvbUG--OsbVk_tRm-hKo10Vyrg9TKUaJQwv1bkp9xAVGE3ukuK-H7_cjKEVHm4SmTUsD0ieomzBQlR1HmqJQUNBbRhcN74eMomGXPY1u3UFFoaKZ4I-8f6FfqY4fjCJrncsJ0V-7IiTTl7xoZUcf5B082paanojjoYxVYgQCMXmaIwFY0pVjO5SnhV0xW9BX7f3hVZV5vZ3-ChRrdnux2SpFsKhl-3veGvtXV7aOdRmdgaw4mktO58MDdfwG84_U1mUB2z4"/>
+</div>
+<div class="flex-1">
+<div class="flex justify-between items-start">
+<div>
+<h3 class="font-bold text-lg text-on-surface">Artisan French Toast</h3>
+<p class="text-on-surface-variant text-sm">1 slice (120g)</p>
+</div>
+<span class="text-2xl">🍯</span>
+</div>
+<div class="mt-2 flex items-center gap-2">
+<span class="text-primary font-bold">420 kcal</span>
+<span class="w-1 h-1 rounded-full bg-outline-variant"></span>
+<span class="text-on-surface-variant text-xs italic font-['Caveat'] text-lg">Feeling energetic</span>
+</div>
+</div>
+</div>
+<!-- Lunch Entry -->
+<div class="group bg-surface-container-low rounded-lg p-4 flex gap-5 items-center transition-all duration-300 hover:translate-y-[-2px] border-l-4 border-tertiary shadow-[0_4px_20px_-4px_rgba(84,67,60,0.05)]">
+<div class="relative w-20 h-20 shrink-0 rotate-[2deg] group-hover:rotate-0 transition-transform">
+<img class="w-full h-full object-cover rounded-lg shadow-sm" data-alt="Large Mediterranean salad bowl with chickpeas, feta, and olives on a wooden table with overhead light." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBS4jF2Nw1Pp9Apibo9oGA3RHjbRQdk4IKxpddGqyxDA3CJ8obSCXtVgQwFWy5ysBRY_zSc9G2AF48sOTaWsai6vDXyxtvYSExEpb0CdfDEjwJpRwxfpKEWpAodnhMk_ogoBsyw3K9aVQmhX97X1bk5X-Onfl9Vn8UOlO61vbAXhvm3ca6aU2c8NlLlt2qHpVlAW_oRaJv1GTdEcrBWkL2aeiTFweVgRSa3MsfqVN8uQUqg0xvycETyHiZnomoAMBj4-RN7Kyd0gIJm"/>
+</div>
+<div class="flex-1">
+<div class="flex justify-between items-start">
+<div>
+<h3 class="font-bold text-lg text-on-surface">Quinoa &amp; Feta Salad</h3>
+<p class="text-on-surface-variant text-sm">Large Bowl</p>
+</div>
+<span class="text-2xl">🥗</span>
+</div>
+<div class="mt-2 flex items-center gap-2">
+<span class="text-primary font-bold">580 kcal</span>
+<span class="w-1 h-1 rounded-full bg-outline-variant"></span>
+<span class="text-on-surface-variant text-xs italic font-['Caveat'] text-lg">Clean and fresh</span>
+</div>
+</div>
+</div>
+<!-- Snack Entry -->
+<div class="group bg-surface-container-highest rounded-lg p-4 flex gap-5 items-center transition-all duration-300 hover:translate-y-[-2px] border-l-4 border-primary shadow-[0_4px_20px_-4px_rgba(84,67,60,0.05)]">
+<div class="relative w-20 h-20 shrink-0 rotate-[-2deg] group-hover:rotate-0 transition-transform">
+<img class="w-full h-full object-cover rounded-lg shadow-sm" data-alt="Glass of creamy Greek yogurt with honey and almond slivers, bright and airy background." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBR2HKxrmD9fgC2dcY-lOe1lpr2p9Ni9NLrkHVkdDVdY-rUN4CWcfgND29aTMJYJo5Qn_g9zhGHjcacQO6_T_CJ_52QkQGOwu8CpLSZCdHx64ZGfonxbMxzN6pIG4b7SoDvDBcod_iBQ2GV0nnXwLtynHbdiaBMffxjnkhCGzrFWb0c5w948_9BKAFPmNJHxUfuaWmgFGYUQ4p0POBqsbbbu7U9Lllwyaoed0t-2E2okTRzMDjdKCB2FGLajvrQhqvK2wdudLI77bq6"/>
+</div>
+<div class="flex-1">
+<div class="flex justify-between items-start">
+<div>
+<h3 class="font-bold text-lg text-on-surface">Greek Yogurt &amp; Honey</h3>
+<p class="text-on-surface-variant text-sm">150g</p>
+</div>
+<span class="text-2xl">🥄</span>
+</div>
+<div class="mt-2 flex items-center gap-2">
+<span class="text-primary font-bold">240 kcal</span>
+<span class="w-1 h-1 rounded-full bg-outline-variant"></span>
+<span class="text-on-surface-variant text-xs italic font-['Caveat'] text-lg">Just a quick bite</span>
+</div>
+</div>
+</div>
+</section>
+<!-- Daily Note -->
+<div class="mt-12 p-6 bg-surface-container-lowest border-l-4 border-tertiary rounded-r-lg shadow-sm">
+<h4 class="font-headline text-xl text-tertiary mb-2">Chef's Note</h4>
+<p class="font-headline text-lg text-on-surface-variant leading-relaxed">
+                "Today felt balanced. The salad was surprisingly filling. Need to remember to drink more water before dinner."
+            </p>
+</div>
+</main>
+<!-- FAB -->
+<button class="fixed bottom-24 right-6 bg-primary text-white flex items-center gap-2 px-6 py-4 rounded-full shadow-[0_12px_24px_rgba(144,71,38,0.3)] hover:scale-105 active:scale-95 transition-all duration-200 z-40 group">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">add_circle</span>
+<span class="font-bold text-sm tracking-wide">What did you eat?</span>
+</button>
+<!-- BottomNavBar -->
+<nav class="fixed bottom-0 w-full rounded-t-[24px] z-50 bg-[#fdf8f4] dark:bg-[#1a1a1a] shadow-[0_-4px_32px_rgba(84,67,60,0.06)] flex justify-around items-center h-20 pb-safe w-full px-4">
+<div class="flex flex-col items-center justify-center bg-[#baefc2] dark:bg-[#006764]/30 text-[#904726] rounded-full px-4 py-1 transition-opacity">
+<span class="material-symbols-outlined">menu_book</span>
+<span class="font-['Nunito'] text-[12px] font-medium">Journal</span>
+</div>
+<div class="flex flex-col items-center justify-center text-[#54433c] opacity-60 hover:opacity-100 transition-opacity">
+<span class="material-symbols-outlined">donut_large</span>
+<span class="font-['Nunito'] text-[12px] font-medium">Stats</span>
+</div>
+<div class="flex flex-col items-center justify-center text-[#54433c] opacity-60 hover:opacity-100 transition-opacity">
+<span class="material-symbols-outlined">add_circle</span>
+<span class="font-['Nunito'] text-[12px] font-medium">Add</span>
+</div>
+<div class="flex flex-col items-center justify-center text-[#54433c] opacity-60 hover:opacity-100 transition-opacity">
+<span class="material-symbols-outlined">restaurant_menu</span>
+<span class="font-['Nunito'] text-[12px] font-medium">Recipes</span>
+</div>
+<div class="flex flex-col items-center justify-center text-[#54433c] opacity-60 hover:opacity-100 transition-opacity">
+<span class="material-symbols-outlined">group</span>
+<span class="font-['Nunito'] text-[12px] font-medium">Profile</span>
+</div>
+</nav>
+<!-- Global Paper Overlay -->
+<div class="fixed inset-0 pointer-events-none opacity-[0.03] paper-texture z-[100]"></div>
+</body></html>

@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Our Kitchen Journal - Add Entry</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Caveat:wght@400..700&amp;family=Nunito:ital,wght@0,200..1000;1,200..1000&amp;family=Epilogue:wght@100..900&amp;family=Be+Vietnam+Pro:wght@100..900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "outline": "#87736b",
+                        "primary-container": "#af5f3b",
+                        "inverse-surface": "#32302e",
+                        "secondary-fixed-dim": "#9fd3a8",
+                        "surface-tint": "#934a28",
+                        "surface-container-high": "#ece7e3",
+                        "secondary-fixed": "#baefc2",
+                        "primary": "#904726",
+                        "on-tertiary-container": "#f3fffd",
+                        "tertiary-fixed": "#8bf4ee",
+                        "surface-variant": "#e6e2de",
+                        "primary-fixed-dim": "#ffb597",
+                        "tertiary": "#006764",
+                        "on-primary-container": "#fffbff",
+                        "on-secondary": "#ffffff",
+                        "on-secondary-fixed-variant": "#20502f",
+                        "on-surface": "#1d1b19",
+                        "inverse-primary": "#ffb597",
+                        "surface-container-low": "#f8f3ef",
+                        "on-secondary-container": "#3f6e4b",
+                        "on-error-container": "#93000a",
+                        "primary-fixed": "#ffdbcd",
+                        "tertiary-fixed-dim": "#6ed7d1",
+                        "secondary": "#396845",
+                        "surface-container-lowest": "#ffffff",
+                        "on-error": "#ffffff",
+                        "on-tertiary-fixed-variant": "#00504d",
+                        "on-surface-variant": "#54433c",
+                        "outline-variant": "#dac1b8",
+                        "surface": "#fdf8f4",
+                        "on-tertiary-fixed": "#00201e",
+                        "surface-bright": "#fdf8f4",
+                        "tertiary-container": "#00827e",
+                        "on-primary": "#ffffff",
+                        "inverse-on-surface": "#f5f0ec",
+                        "on-tertiary": "#ffffff",
+                        "on-primary-fixed": "#360f00",
+                        "surface-container": "#f2ede9",
+                        "secondary-container": "#baefc2",
+                        "surface-container-highest": "#e6e2de",
+                        "surface-dim": "#ded9d5",
+                        "on-background": "#1d1b19",
+                        "error": "#ba1a1a",
+                        "error-container": "#ffdad6",
+                        "on-primary-fixed-variant": "#763313",
+                        "on-secondary-fixed": "#00210c",
+                        "background": "#fdf8f4"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "1rem",
+                        "lg": "2rem",
+                        "xl": "3rem",
+                        "full": "9999px"
+                    },
+                    "fontFamily": {
+                        "headline": ["Epilogue"],
+                        "body": ["Be Vietnam Pro"],
+                        "label": ["Be Vietnam Pro"],
+                        "handwritten": ["Caveat"],
+                        "editorial": ["Nunito"]
+                    }
+                },
+            },
+        }
+    </script>
+<style>.material-symbols-outlined {
+    font-variation-settings: "FILL" 0, "wght" 400, "GRAD" 0, "opsz" 24;
+    vertical-align: middle
+    }
+body {
+    background-image: radial-gradient(#dac1b8 0.5px, transparent 0.5px);
+    background-size: 24px 24px;
+    background-color: #fdf8f4
+    }
+.paper-texture {
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    opacity: 0.03;
+    background-image: url(https://lh3.googleusercontent.com/aida-public/AB6AXuB5UpnAGGg4JLvXq_1hzFcBEP2Pd6sHS39NXKDC54y5zCvrrle8KCuJVmPVZFlTetmPMkEPBkDz1a0c_152CMM-bs0do5OGUhVBI9R_CDvHnFkreIBPhkgu-Ql5e-SIL9isRKILm-9BrsJghfJy6PyBZi3gGEl1VCPHRVo3StiMQ9XYTLTUdshh3yFWJidNQ0CnKp2v1y69rcPUAGfvAUV87r97sW87vPVqxl4GtFh3SeLvDSFpfSyvM0TPAtCabUnx0A4hw25Kp75p);
+    z-index: 100
+    }</style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="text-on-surface min-h-screen pb-32">
+<div class="paper-texture"></div>
+<!-- Top Navigation suppressed for focus journey (Search Screen) -->
+<main class="max-w-md mx-auto px-6 pt-12">
+<!-- Close/Back Action -->
+<div class="flex justify-end mb-8">
+<button class="w-10 h-10 rounded-full bg-surface-container-high flex items-center justify-center text-on-surface-variant hover:bg-surface-container-highest transition-colors active:scale-95">
+<span class="material-symbols-outlined">close</span>
+</button>
+</div>
+<!-- Heading Section -->
+<header class="mb-10">
+<h1 class="font-handwritten text-5xl text-primary font-bold mb-2">Write an entry</h1>
+<p class="font-editorial text-on-surface-variant opacity-80 italic">What did you nourish yourself with today?</p>
+</header>
+<!-- Large Rounded Search Input -->
+<section class="mb-8">
+<div class="relative group">
+<div class="absolute inset-y-0 left-5 flex items-center pointer-events-none text-primary">
+<span class="material-symbols-outlined">search</span>
+</div>
+<input class="w-full h-16 pl-14 pr-6 bg-surface-container-highest border-none rounded-full font-editorial text-lg text-on-surface placeholder:text-on-surface-variant/50 focus:ring-2 focus:ring-primary-container/30 transition-all shadow-sm" placeholder="Search for a food..." type="text"/>
+</div>
+</section>
+<!-- Search Results List -->
+<section class="space-y-4">
+<h2 class="font-editorial text-sm font-bold uppercase tracking-widest text-on-surface-variant px-2 mb-4">Recent &amp; Popular</h2>
+<!-- Result Item 1 -->
+<div class="bg-surface-container-low p-5 rounded-lg flex items-center justify-between group active:scale-[0.98] transition-transform cursor-pointer">
+<div class="flex items-center gap-4">
+<div class="w-12 h-12 rounded-2xl overflow-hidden -rotate-2 group-hover:rotate-0 transition-transform">
+<img class="w-full h-full object-cover" data-alt="Close-up of a colorful buddha bowl with quinoa, avocado, and radishes with soft natural light" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBliz0jm7MIr8RAsERiURN6w4svXIwHjpsgyriF-O40jzW35XzMhVKePvjpePUNMhovO25-camYA4Q4lrtBAqlRBqmtiATbq_bCRuxYjJKbMmIlZFOmLuZcgAbmOYu3q5SkwA9HvsSAWNpa4n6TYSbzyONc7Pk82dVS9ATFVTx7BloBczr-GVLSDN1cWGZiTv4lF6t2yy9wiVS8jHGQA1jbj2MY3B8hKg8ghl3G6SXUMwF8ctEOHV-MJRyOK_j_jjUR2N-Oo4R_pIjv"/>
+</div>
+<div>
+<p class="font-editorial font-bold text-on-surface">Avocado Sourdough Toast</p>
+<p class="font-editorial text-xs text-on-surface-variant">1 slice (120g)</p>
+</div>
+</div>
+<div class="text-right">
+<p class="font-handwritten text-2xl font-bold text-primary">285 <span class="text-sm font-editorial font-normal text-on-surface-variant">kcal</span></p>
+</div>
+</div>
+<!-- Result Item 2 -->
+<div class="bg-surface-container-low p-5 rounded-lg flex items-center justify-between group active:scale-[0.98] transition-transform cursor-pointer">
+<div class="flex items-center gap-4">
+<div class="w-12 h-12 rounded-2xl overflow-hidden rotate-1 group-hover:rotate-0 transition-transform">
+<img class="w-full h-full object-cover" data-alt="A warm bowl of creamy tomato basil soup with a drizzle of olive oil and fresh herbs" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCPqkHPFG_K9YXtJDvBE10JwYw2Wcyli1WAoNS9G69J_GsfUHy_gsA2BEpUJK1YiexZG5RQN_Bxv5k8br9UvVGiU3f93Ml2A37KTIOJKa-mpimDXI-uuIdCGKxIeikAtD_YqWz40JY1U9Z8bgT4pFo54TFskhIa_Ni8RldWoFd7milIt-y1H_hW5EDwGEWX5mHYxK-43og81CrZ87-10KuSeq2W3rUwD-63YvUUpfjVvxDRo8uzaUt5gD5zPvI94eaB0lAIodNpOXVQ"/>
+</div>
+<div>
+<p class="font-editorial font-bold text-on-surface">Tomato Basil Soup</p>
+<p class="font-editorial text-xs text-on-surface-variant">1 bowl (250ml)</p>
+</div>
+</div>
+<div class="text-right">
+<p class="font-handwritten text-2xl font-bold text-primary">165 <span class="text-sm font-editorial font-normal text-on-surface-variant">kcal</span></p>
+</div>
+</div>
+<!-- Result Item 3 -->
+<div class="bg-surface-container-low p-5 rounded-lg flex items-center justify-between group active:scale-[0.98] transition-transform cursor-pointer">
+<div class="flex items-center gap-4">
+<div class="w-12 h-12 rounded-2xl overflow-hidden -rotate-1 group-hover:rotate-0 transition-transform">
+<img class="w-full h-full object-cover" data-alt="Vibrant Greek salad with feta cheese, olives, and crisp cucumbers in a rustic bowl" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCMguz7Ef9YiL_F-0wtdxWVg3z-pctfQAYR4SjSjfuJb7sL6HrpT6bLa7ClcvuYycY-pAFLBI_fBh1yxsbDJkX9xoFOsUwecYISPDy1er0Pc44PfoFTSQmk7VkELmg-7dFQ_4WQO2JB1YJn5wkifnUEAiyhk7g44hSQAn0MczAL4iX4qtUxQGcizfoo1lmH7FhoDcnjo8JVdXI1IBL16G0FC2xSqLYug8GvzlQdbNRnvw5dhwojZcrxEV-WCDFh9pgqGXQhb2UOWodi"/>
+</div>
+<div>
+<p class="font-editorial font-bold text-on-surface">Greek Salad</p>
+<p class="font-editorial text-xs text-on-surface-variant">Medium Bowl (200g)</p>
+</div>
+</div>
+<div class="text-right">
+<p class="font-handwritten text-2xl font-bold text-primary">190 <span class="text-sm font-editorial font-normal text-on-surface-variant">kcal</span></p>
+</div>
+</div>
+</section>
+<!-- Describe it yourself link -->
+<footer class="mt-12 text-center">
+<button class="inline-flex flex-col items-center gap-1 group">
+<span class="font-editorial text-on-surface-variant border-b border-outline-variant group-hover:text-primary transition-colors pb-0.5">Not seeing your meal?</span>
+<span class="font-handwritten text-xl text-primary font-bold">Describe it yourself</span>
+</button>
+</footer>
+</main>
+<!-- Confirmation Toast Message -->
+<div class="fixed bottom-24 left-1/2 -translate-x-1/2 w-[calc(100%-3rem)] max-w-sm z-[60]">
+<div class="bg-secondary-container text-on-secondary-container px-6 py-4 rounded-lg shadow-[0_-4px_32px_rgba(84,67,60,0.1)] flex items-center justify-between gap-4 border-l-4 border-tertiary">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-tertiary" data-icon="check_circle" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+<p class="font-editorial text-sm font-medium">Got it! That's about ~450 kcal.</p>
+</div>
+<button class="text-on-secondary-container/60 hover:text-on-secondary-container">
+<span class="material-symbols-outlined text-[18px]">close</span>
+</button>
+</div>
+</div>
+<!-- Bottom Navigation Shell -->
+<nav class="fixed bottom-0 w-full rounded-t-[24px] z-50 bg-[#fdf8f4] shadow-[0_-4px_32px_rgba(84,67,60,0.06)] flex justify-around items-center h-20 pb-safe px-4 md:hidden">
+<a class="flex flex-col items-center justify-center text-[#54433c] opacity-60 hover:opacity-100 transition-opacity active:scale-90 transition-transform duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="menu_book">menu_book</span>
+<span class="font-['Nunito'] text-[12px] font-medium">Journal</span>
+</a>
+<a class="flex flex-col items-center justify-center text-[#54433c] opacity-60 hover:opacity-100 transition-opacity active:scale-90 transition-transform duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="donut_large">donut_large</span>
+<span class="font-['Nunito'] text-[12px] font-medium">Stats</span>
+</a>
+<a class="flex flex-col items-center justify-center bg-[#baefc2] text-[#904726] rounded-full px-4 py-1 active:scale-90 transition-transform duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="add_circle" style="font-variation-settings: 'FILL' 1;">add_circle</span>
+<span class="font-['Nunito'] text-[12px] font-medium">Add</span>
+</a>
+<a class="flex flex-col items-center justify-center text-[#54433c] opacity-60 hover:opacity-100 transition-opacity active:scale-90 transition-transform duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="restaurant_menu">restaurant_menu</span>
+<span class="font-['Nunito'] text-[12px] font-medium">Recipes</span>
+</a>
+<a class="flex flex-col items-center justify-center text-[#54433c] opacity-60 hover:opacity-100 transition-opacity active:scale-90 transition-transform duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="group">group</span>
+<span class="font-['Nunito'] text-[12px] font-medium">Profile</span>
+</a>
+</nav>
+</body></html>

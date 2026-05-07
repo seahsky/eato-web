@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Kitchen Journal - Streaks &amp; Achievements</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Caveat:wght@400;700&amp;family=Nunito:ital,wght@0,200..1000;1,200..1000&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "outline": "#87736b",
+                    "primary-container": "#af5f3b",
+                    "inverse-surface": "#32302e",
+                    "secondary-fixed-dim": "#9fd3a8",
+                    "surface-tint": "#934a28",
+                    "surface-container-high": "#ece7e3",
+                    "secondary-fixed": "#baefc2",
+                    "primary": "#904726",
+                    "on-tertiary-container": "#f3fffd",
+                    "tertiary-fixed": "#8bf4ee",
+                    "surface-variant": "#e6e2de",
+                    "primary-fixed-dim": "#ffb597",
+                    "tertiary": "#006764",
+                    "on-primary-container": "#fffbff",
+                    "on-secondary": "#ffffff",
+                    "on-secondary-fixed-variant": "#20502f",
+                    "on-surface": "#1d1b19",
+                    "inverse-primary": "#ffb597",
+                    "surface-container-low": "#f8f3ef",
+                    "on-secondary-container": "#3f6e4b",
+                    "on-error-container": "#93000a",
+                    "primary-fixed": "#ffdbcd",
+                    "tertiary-fixed-dim": "#6ed7d1",
+                    "secondary": "#396845",
+                    "surface-container-lowest": "#ffffff",
+                    "on-error": "#ffffff",
+                    "on-tertiary-fixed-variant": "#00504d",
+                    "on-surface-variant": "#54433c",
+                    "outline-variant": "#dac1b8",
+                    "surface": "#fdf8f4",
+                    "on-tertiary-fixed": "#00201e",
+                    "surface-bright": "#fdf8f4",
+                    "tertiary-container": "#00827e",
+                    "on-primary": "#ffffff",
+                    "inverse-on-surface": "#f5f0ec",
+                    "on-tertiary": "#ffffff",
+                    "on-primary-fixed": "#360f00",
+                    "surface-container": "#f2ede9",
+                    "secondary-container": "#baefc2",
+                    "surface-container-highest": "#e6e2de",
+                    "surface-dim": "#ded9d5",
+                    "on-background": "#1d1b19",
+                    "error": "#ba1a1a",
+                    "error-container": "#ffdad6",
+                    "on-primary-fixed-variant": "#763313",
+                    "on-secondary-fixed": "#00210c",
+                    "background": "#fdf8f4"
+            },
+            "borderRadius": {
+                    "DEFAULT": "1rem",
+                    "lg": "2rem",
+                    "xl": "3rem",
+                    "full": "9999px"
+            },
+            "fontFamily": {
+                    "headline": ["Caveat"],
+                    "body": ["Nunito"],
+                    "label": ["Nunito"]
+            }
+          },
+        },
+      }
+    </script>
+<style>body {
+    font-family: "Nunito", sans-serif
+    }
+.handwritten {
+    font-family: "Caveat", cursive
+    }
+.paper-grain {
+    background-image: url(https://lh3.googleusercontent.com/aida-public/AB6AXuCoEQvfNSltePIylNbRl38IK7_GHtk5f-X6QpO5vS-1Ve-D0pUEeuONiLHRDqbMRqpwqA-HuMGY9LBZvPToJuIdCIZ9GOR5FwG8TA5ZRZUq_VxHgkh4P8aqVXNPJNoClVQgUeAFlEazTaFByUjWnfbnNgQotvq-IacZeT1Ui_g1e7FmsH8-y-YM1I6hGYiTCU3YB8CEKLqCgwY94YChT2rXi4q6Cs6NTaf5WjPcJqmBJxaUnVzGCLDxsirTOf9DPxQ1Wg7WVLhMkBkX);
+    opacity: 0.04;
+    pointer-events: none
+    }</style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-surface text-on-surface min-h-screen pb-24">
+<div class="fixed inset-0 paper-grain z-[60]"></div>
+<!-- TopAppBar -->
+<header class="bg-[#fdf8f4]/85 backdrop-blur-md text-[#904726] font-['Caveat'] text-3xl font-bold tracking-tight fixed top-0 w-full z-50 flex justify-between items-center px-6 h-16 w-full">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded-full overflow-hidden bg-primary-fixed">
+<img alt="Couple profile photo" class="w-full h-full object-cover" data-alt="Close-up portrait of a happy couple smiling warmly, soft natural outdoor lighting, shallow depth of field" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCdsVTUsZFmgLDT_gwknWfLHh-ra6w8TKLP1ng_2COhCQucQP6KdZMTG0tcame6pFbHShaljSk5ESgTTLNRZt4tRCdvxqInByLtq2CGqEmKL5nwyRU7cZMn7GjrKt8JA7HN1rmmtNHuk9szeszxkd0DL16WddozaP1WYcVeVJpTnrCLAGoITThfQXmRa1l7Uw2L9PY5TVT0jug-5pTMh-fNbbvItsJ_mab3DywVgrxZDi_vKbYt31_gqQrl5RSV7f13gj6ZwkJ__vPG"/>
+</div>
+<span class="text-[#904726] text-2xl">Our Kitchen Journal</span>
+</div>
+<div class="flex items-center gap-4">
+<button class="material-symbols-outlined hover:bg-[#f8f3ef] transition-colors p-2 rounded-full active:scale-95 duration-200">settings</button>
+</div>
+</header>
+<main class="pt-24 px-6 max-w-4xl mx-auto">
+<!-- Hero Streak Section -->
+<section class="mb-12 relative overflow-hidden bg-surface-container-low rounded-xl p-8 flex flex-col md:flex-row items-center justify-between gap-8">
+<div class="flex-1 space-y-4">
+<h2 class="handwritten text-5xl text-primary font-bold">14 Day Streak!</h2>
+<p class="text-on-surface-variant text-lg leading-relaxed max-w-md">You've been nourishing your soul and body consistently. That's two full weeks of mindful eating!</p>
+<div class="flex gap-2">
+<span class="bg-secondary-container text-on-secondary-container px-4 py-2 rounded-full text-sm font-bold">Daily Goal Met</span>
+<span class="bg-primary-fixed text-on-primary-fixed-variant px-4 py-2 rounded-full text-sm font-bold">+500 XP</span>
+</div>
+</div>
+<div class="relative">
+<!-- Flame Container -->
+<div class="w-48 h-48 bg-gradient-to-br from-primary to-primary-container rounded-full flex items-center justify-center shadow-[0_-4px_32px_rgba(144,71,38,0.2)]">
+<span class="material-symbols-outlined text-[100px] text-white" style="font-variation-settings: 'FILL' 1;">local_fire_department</span>
+</div>
+<!-- Floaties -->
+<div class="absolute -top-4 -right-4 w-12 h-12 bg-secondary-fixed rounded-full flex items-center justify-center -rotate-12 shadow-sm">
+<span class="material-symbols-outlined text-on-secondary-fixed">star</span>
+</div>
+</div>
+</section>
+<!-- Stats Overview Bento -->
+<div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-12">
+<div class="bg-surface-container-highest p-6 rounded-lg rotate-1 shadow-sm">
+<h3 class="handwritten text-2xl text-primary">Total Entries</h3>
+<p class="text-4xl font-black text-on-surface mt-2">142</p>
+<p class="text-xs text-on-surface-variant opacity-70 mt-1 uppercase tracking-wider">Kitchen Notes Made</p>
+</div>
+<div class="bg-secondary-container p-6 rounded-lg -rotate-1 shadow-sm">
+<h3 class="handwritten text-2xl text-on-secondary-container">Best Streak</h3>
+<p class="text-4xl font-black text-on-secondary-container mt-2">28</p>
+<p class="text-xs text-on-secondary-container opacity-70 mt-1 uppercase tracking-wider">Days in a row</p>
+</div>
+<div class="bg-tertiary p-6 rounded-lg rotate-1 shadow-sm">
+<h3 class="handwritten text-2xl text-on-tertiary">Achievements</h3>
+<p class="text-4xl font-black text-on-tertiary mt-2">12/40</p>
+<p class="text-xs text-on-tertiary opacity-70 mt-1 uppercase tracking-wider">Badges Collected</p>
+</div>
+</div>
+<!-- Achievements Grid Section -->
+<section class="mb-12">
+<div class="flex items-end justify-between mb-8">
+<div>
+<h2 class="handwritten text-4xl text-primary">Your Culinary Badges</h2>
+<p class="text-on-surface-variant italic">Every meal is a milestone.</p>
+</div>
+<div class="hidden md:flex gap-4 text-xs font-bold uppercase tracking-widest text-on-surface-variant opacity-60">
+<span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-outline-variant"></span> Common</span>
+<span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-tertiary"></span> Rare</span>
+<span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-primary"></span> Legendary</span>
+</div>
+</div>
+<div class="grid grid-cols-4 sm:grid-cols-5 md:grid-cols-8 gap-4">
+<!-- Achievement Badges (40 slots) -->
+<!-- Legendary -->
+<div class="aspect-square bg-primary-fixed rounded-xl flex flex-col items-center justify-center p-2 group cursor-pointer hover:bg-primary transition-all duration-300">
+<span class="material-symbols-outlined text-primary group-hover:text-white text-3xl" style="font-variation-settings: 'FILL' 1;">restaurant</span>
+<span class="text-[10px] mt-1 text-on-primary-fixed-variant group-hover:text-white font-bold text-center leading-tight">Master Chef</span>
+</div>
+<!-- Rare -->
+<div class="aspect-square bg-tertiary-fixed rounded-xl flex flex-col items-center justify-center p-2 group cursor-pointer hover:bg-tertiary transition-all duration-300">
+<span class="material-symbols-outlined text-tertiary group-hover:text-white text-3xl" style="font-variation-settings: 'FILL' 1;">eco</span>
+<span class="text-[10px] mt-1 text-on-tertiary-fixed-variant group-hover:text-white font-bold text-center leading-tight">Green Eater</span>
+</div>
+<!-- Common -->
+<div class="aspect-square bg-surface-container-highest rounded-xl flex flex-col items-center justify-center p-2 group cursor-pointer hover:bg-outline transition-all duration-300">
+<span class="material-symbols-outlined text-on-surface-variant group-hover:text-white text-3xl" style="font-variation-settings: 'FILL' 1;">bakery_dining</span>
+<span class="text-[10px] mt-1 text-on-surface-variant group-hover:text-white font-bold text-center leading-tight">First Loaf</span>
+</div>
+<!-- Locked Placeholders (37 more slots) -->
+<div class="aspect-square bg-surface-container rounded-xl flex items-center justify-center opacity-40 border-2 border-dashed border-outline-variant">
+<span class="material-symbols-outlined text-outline-variant text-2xl">lock</span>
+</div>
+<div class="aspect-square bg-surface-container rounded-xl flex items-center justify-center opacity-40 border-2 border-dashed border-outline-variant">
+<span class="material-symbols-outlined text-outline-variant text-2xl">lock</span>
+</div>
+<div class="aspect-square bg-surface-container rounded-xl flex items-center justify-center opacity-40 border-2 border-dashed border-outline-variant">
+<span class="material-symbols-outlined text-outline-variant text-2xl">lock</span>
+</div>
+<div class="aspect-square bg-surface-container rounded-xl flex items-center justify-center opacity-40 border-2 border-dashed border-outline-variant">
+<span class="material-symbols-outlined text-outline-variant text-2xl">lock</span>
+</div>
+<div class="aspect-square bg-surface-container rounded-xl flex items-center justify-center opacity-40 border-2 border-dashed border-outline-variant">
+<span class="material-symbols-outlined text-outline-variant text-2xl">lock</span>
+</div>
+<!-- Repeat locked placeholders to fill the grid -->
+<div class="aspect-square bg-surface-container rounded-xl flex items-center justify-center opacity-40 border-2 border-dashed border-outline-variant"></div>
+<div class="aspect-square bg-surface-container rounded-xl flex items-center justify-center opacity-40 border-2 border-dashed border-outline-variant"></div>
+<div class="aspect-square bg-surface-container rounded-xl flex items-center justify-center opacity-40 border-2 border-dashed border-outline-variant"></div>
+<div class="aspect-square bg-surface-container rounded-xl flex items-center justify-center opacity-40 border-2 border-dashed border-outline-variant"></div>
+<div class="aspect-square bg-surface-container rounded-xl flex items-center justify-center opacity-40 border-2 border-dashed border-outline-variant"></div>
+<div class="aspect-square bg-surface-container rounded-xl flex items-center justify-center opacity-40 border-2 border-dashed border-outline-variant"></div>
+<div class="aspect-square bg-surface-container rounded-xl flex items-center justify-center opacity-40 border-2 border-dashed border-outline-variant"></div>
+<div class="aspect-square bg-surface-container rounded-xl flex items-center justify-center opacity-40 border-2 border-dashed border-outline-variant"></div>
+<div class="aspect-square bg-surface-container rounded-xl flex items-center justify-center opacity-40 border-2 border-dashed border-outline-variant"></div>
+<div class="aspect-square bg-surface-container rounded-xl flex items-center justify-center opacity-40 border-2 border-dashed border-outline-variant"></div>
+<div class="aspect-square bg-surface-container rounded-xl flex items-center justify-center opacity-40 border-2 border-dashed border-outline-variant"></div>
+<div class="aspect-square bg-surface-container rounded-xl flex items-center justify-center opacity-40 border-2 border-dashed border-outline-variant"></div>
+<div class="aspect-square bg-surface-container rounded-xl flex items-center justify-center opacity-40 border-2 border-dashed border-outline-variant"></div>
+<div class="aspect-square bg-surface-container rounded-xl flex items-center justify-center opacity-40 border-2 border-dashed border-outline-variant"></div>
+<div class="aspect-square bg-surface-container rounded-xl flex items-center justify-center opacity-40 border-2 border-dashed border-outline-variant"></div>
+<div class="aspect-square bg-surface-container rounded-xl flex items-center justify-center opacity-40 border-2 border-dashed border-outline-variant"></div>
+<div class="aspect-square bg-surface-container rounded-xl flex items-center justify-center opacity-40 border-2 border-dashed border-outline-variant"></div>
+<div class="aspect-square bg-surface-container rounded-xl flex items-center justify-center opacity-40 border-2 border-dashed border-outline-variant"></div>
+<div class="aspect-square bg-surface-container rounded-xl flex items-center justify-center opacity-40 border-2 border-dashed border-outline-variant"></div>
+<div class="aspect-square bg-surface-container rounded-xl flex items-center justify-center opacity-40 border-2 border-dashed border-outline-variant"></div>
+<div class="aspect-square bg-surface-container rounded-xl flex items-center justify-center opacity-40 border-2 border-dashed border-outline-variant"></div>
+<div class="aspect-square bg-surface-container rounded-xl flex items-center justify-center opacity-40 border-2 border-dashed border-outline-variant"></div>
+<div class="aspect-square bg-surface-container rounded-xl flex items-center justify-center opacity-40 border-2 border-dashed border-outline-variant"></div>
+<div class="aspect-square bg-surface-container rounded-xl flex items-center justify-center opacity-40 border-2 border-dashed border-outline-variant"></div>
+<div class="aspect-square bg-surface-container rounded-xl flex items-center justify-center opacity-40 border-2 border-dashed border-outline-variant"></div>
+<div class="aspect-square bg-surface-container rounded-xl flex items-center justify-center opacity-40 border-2 border-dashed border-outline-variant"></div>
+<div class="aspect-square bg-surface-container rounded-xl flex items-center justify-center opacity-40 border-2 border-dashed border-outline-variant"></div>
+</div>
+</section>
+<!-- Journal Note Component -->
+<div class="bg-surface-container-lowest border-l-4 border-tertiary p-6 rounded-r-xl shadow-sm mb-12">
+<h4 class="handwritten text-2xl text-tertiary mb-2">Today's Wisdom</h4>
+<p class="handwritten text-xl text-on-surface-variant leading-snug">"The secret of a long life is to eat half, walk double, laugh triple and love without measure." Keep that streak alive!</p>
+</div>
+</main>
+<!-- BottomNavBar -->
+<nav class="bg-[#fdf8f4] fixed bottom-0 w-full rounded-t-[24px] z-50 shadow-[0_-4px_32px_rgba(84,67,60,0.06)] h-20 pb-safe px-4 flex justify-around items-center">
+<button class="flex flex-col items-center justify-center text-[#54433c] opacity-60 hover:opacity-100 transition-opacity active:scale-90 duration-200">
+<span class="material-symbols-outlined">menu_book</span>
+<span class="font-['Nunito'] text-[12px] font-medium">Journal</span>
+</button>
+<button class="flex flex-col items-center justify-center bg-[#baefc2] text-[#904726] rounded-full px-4 py-1 hover:opacity-100 transition-opacity active:scale-90 duration-200">
+<span class="material-symbols-outlined">donut_large</span>
+<span class="font-['Nunito'] text-[12px] font-medium">Stats</span>
+</button>
+<button class="flex flex-col items-center justify-center text-[#54433c] opacity-60 hover:opacity-100 transition-opacity active:scale-90 duration-200">
+<span class="material-symbols-outlined">add_circle</span>
+<span class="font-['Nunito'] text-[12px] font-medium">Add</span>
+</button>
+<button class="flex flex-col items-center justify-center text-[#54433c] opacity-60 hover:opacity-100 transition-opacity active:scale-90 duration-200">
+<span class="material-symbols-outlined">restaurant_menu</span>
+<span class="font-['Nunito'] text-[12px] font-medium">Recipes</span>
+</button>
+<button class="flex flex-col items-center justify-center text-[#54433c] opacity-60 hover:opacity-100 transition-opacity active:scale-90 duration-200">
+<span class="material-symbols-outlined">group</span>
+<span class="font-['Nunito'] text-[12px] font-medium">Profile</span>
+</button>
+</nav>
+</body></html>

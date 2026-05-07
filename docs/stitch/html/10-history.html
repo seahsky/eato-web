@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<link href="https://fonts.googleapis.com/css2?family=Caveat:wght@400;700&amp;family=Nunito:wght@400;500;600;700&amp;family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "outline": "#87736b",
+                        "primary-container": "#af5f3b",
+                        "inverse-surface": "#32302e",
+                        "secondary-fixed-dim": "#9fd3a8",
+                        "surface-tint": "#934a28",
+                        "surface-container-high": "#ece7e3",
+                        "secondary-fixed": "#baefc2",
+                        "primary": "#904726",
+                        "on-tertiary-container": "#f3fffd",
+                        "tertiary-fixed": "#8bf4ee",
+                        "surface-variant": "#e6e2de",
+                        "primary-fixed-dim": "#ffb597",
+                        "tertiary": "#006764",
+                        "on-primary-container": "#fffbff",
+                        "on-secondary": "#ffffff",
+                        "on-secondary-fixed-variant": "#20502f",
+                        "on-surface": "#1d1b19",
+                        "inverse-primary": "#ffb597",
+                        "surface-container-low": "#f8f3ef",
+                        "on-secondary-container": "#3f6e4b",
+                        "on-error-container": "#93000a",
+                        "primary-fixed": "#ffdbcd",
+                        "tertiary-fixed-dim": "#6ed7d1",
+                        "secondary": "#396845",
+                        "surface-container-lowest": "#ffffff",
+                        "on-error": "#ffffff",
+                        "on-tertiary-fixed-variant": "#00504d",
+                        "on-surface-variant": "#54433c",
+                        "outline-variant": "#dac1b8",
+                        "surface": "#fdf8f4",
+                        "on-tertiary-fixed": "#00201e",
+                        "surface-bright": "#fdf8f4",
+                        "tertiary-container": "#00827e",
+                        "on-primary": "#ffffff",
+                        "inverse-on-surface": "#f5f0ec",
+                        "on-tertiary": "#ffffff",
+                        "on-primary-fixed": "#360f00",
+                        "surface-container": "#f2ede9",
+                        "secondary-container": "#baefc2",
+                        "surface-container-highest": "#e6e2de",
+                        "surface-dim": "#ded9d5",
+                        "on-background": "#1d1b19",
+                        "error": "#ba1a1a",
+                        "error-container": "#ffdad6",
+                        "on-primary-fixed-variant": "#763313",
+                        "on-secondary-fixed": "#00210c",
+                        "background": "#fdf8f4"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "1rem",
+                        "lg": "2rem",
+                        "xl": "3rem",
+                        "full": "9999px"
+                    },
+                    "fontFamily": {
+                        "headline": ["Caveat"],
+                        "body": ["Nunito"],
+                        "label": ["Nunito"]
+                    }
+                },
+            },
+        }
+    </script>
+<style>.material-symbols-outlined {
+    font-variation-settings: "FILL" 0, "wght" 400, "GRAD" 0, "opsz" 24
+    }
+.grain-overlay {
+    background-image: url(https://lh3.googleusercontent.com/aida-public/AB6AXuAkGnDXPPVf5qvSTe0DCmuRsHP1FafFtq7xZ-QUPUxJhGnL9TeXn_J2yV_iHw7pVV8pPCQ2pSj64BNzer3Dussw4Af_SeSmn_KopmQTkk-YxYlOYiPr3bjdB88f23Gq1WEDh6l-VFPFPzMAehVKjY8Y4AUtMh6qcLGxuuGZC-SQC0UyyYHyKRUA1Y087MtM347VlscDxF4axRc83L0PJ4KYdX0y895rMqtI17TRrgxLHJ-jGRJ_WA1kcTGeXzgA65JfonTz36bpnQN4);
+    opacity: 0.03;
+    pointer-events: none
+    }</style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-surface text-on-surface font-body selection:bg-secondary-fixed selection:text-on-secondary-fixed min-h-screen">
+<div class="fixed inset-0 grain-overlay z-[60]"></div>
+<!-- TopAppBar -->
+<header class="fixed top-0 w-full z-50 bg-[#fdf8f4]/85 dark:bg-[#1a1a1a]/85 backdrop-blur-md flex justify-between items-center px-6 h-16 w-full">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-full overflow-hidden bg-surface-container-highest border-2 border-primary-container/20">
+<img alt="Couple profile photo" class="w-full h-full object-cover" data-alt="close-up of a smiling young couple in a warm kitchen setting, soft natural lighting, lifestyle photography" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCUNE9RlzY-xMVcitvJ3lH3yuSvboBxe48M3w2oHzi8fEaap6LkKk-dvvptvYGeIjiRqZdYLPP_KkDeu0Dx1O2BNkGwG-2E8A45eu5OPtTqnXqYq_YqpNw9ymAVQX0qrVlIsO0NsLqDOq3s3EFs3YuSXepD0SMy1IIff_HoY3sNzsCNNpn5cO2FguNEeK5OOX8mZeWFuYTXhEnHy0MPim73n2qvxqO12ip8JH3hkLQqEaIT_70Y4KR47suvkyDy6wIoW07z3yl2_7l_"/>
+</div>
+<span class="font-['Caveat'] text-[#904726] dark:text-[#af5f3b] text-2xl font-bold tracking-tight">Our Kitchen Journal</span>
+</div>
+<button class="w-10 h-10 flex items-center justify-center rounded-full text-[#54433c] hover:bg-[#f8f3ef] transition-colors active:scale-95 transition-transform duration-200">
+<span class="material-symbols-outlined" data-icon="settings">settings</span>
+</button>
+</header>
+<main class="pt-24 pb-32 px-6 max-w-2xl mx-auto">
+<!-- History Heading -->
+<div class="mb-8">
+<h1 class="font-headline text-5xl text-primary mb-2">History</h1>
+<p class="text-on-surface-variant font-medium opacity-80">Reflecting on our culinary path, one day at a time.</p>
+</div>
+<!-- Weekly Summary Bento -->
+<div class="grid grid-cols-2 gap-4 mb-10">
+<div class="bg-secondary-container p-6 rounded-lg flex flex-col justify-between aspect-square">
+<div class="flex justify-between items-start">
+<span class="material-symbols-outlined text-secondary text-3xl" data-icon="auto_awesome">auto_awesome</span>
+<span class="bg-white/40 px-2 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider text-secondary">Streak</span>
+</div>
+<div>
+<div class="font-headline text-4xl text-secondary">12 Days</div>
+<div class="text-secondary/80 text-sm">Consistent logging</div>
+</div>
+</div>
+<div class="bg-surface-container-high p-6 rounded-lg flex flex-col justify-between aspect-square">
+<div class="flex justify-between items-start">
+<span class="material-symbols-outlined text-primary text-3xl" data-icon="restaurant">restaurant</span>
+</div>
+<div>
+<div class="font-headline text-4xl text-primary">84 Meals</div>
+<div class="text-on-surface-variant/80 text-sm">This month's journal</div>
+</div>
+</div>
+</div>
+<!-- History Journal List -->
+<section class="space-y-6">
+<!-- Day Entry 1: Expanded -->
+<div class="relative group">
+<div class="bg-surface-container-low rounded-lg p-6 transition-all duration-300">
+<div class="flex justify-between items-center mb-6">
+<div class="flex items-center gap-3">
+<div class="w-12 h-12 bg-secondary-fixed rounded-full flex items-center justify-center text-on-secondary-container">
+<span class="material-symbols-outlined" data-icon="check_circle" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+</div>
+<div>
+<h3 class="font-bold text-lg">Thursday, Oct 24</h3>
+<p class="text-sm text-on-surface-variant">Yesterday</p>
+</div>
+</div>
+<div class="text-right">
+<span class="font-headline text-2xl text-primary">1,850 kcal</span>
+<div class="text-[10px] uppercase font-bold text-secondary tracking-widest flex items-center justify-end gap-1">
+<span class="w-1.5 h-1.5 rounded-full bg-secondary"></span> Goal Met
+                            </div>
+</div>
+</div>
+<!-- Entries within the day -->
+<div class="space-y-4">
+<div class="bg-surface-container-lowest p-4 rounded-lg flex items-center gap-4 -rotate-1 shadow-sm">
+<img alt="Avocado toast" class="w-16 h-16 rounded-md object-cover" data-alt="close-up of avocado toast with chili flakes and poached egg on a rustic wooden plate, soft morning light" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBDPWjG8NCIM5LnWWkvJ7N0NrqbhSw5aMDfyfYrYz9fFVtgCDZnaW_qnlyACTYEHQwla86tHogHUkku3hABm_WnPY4a6HCoO96jtLevpgLtdo7npE_XUjMwdx45OfBIoC2M4NKn6oXgG81GrNPJGSce6uCOUCZo5nWhJS94vWALt-Qrpn76xaoR3ms08Hnr3NIR_csYtycn-G38ah_IvcxbTtPtCvtJF3dJx7V9c39dOqtIXLcRlEvs6ypbOruRAPxlJhgHoyftbq02"/>
+<div class="flex-1">
+<p class="font-bold text-sm">Sunrise Avocado Toast</p>
+<p class="text-xs text-on-surface-variant italic">Breakfast • 8:30 AM</p>
+</div>
+<span class="text-sm font-bold text-primary">420</span>
+</div>
+<div class="bg-surface-container-lowest p-4 rounded-lg flex items-center gap-4 rotate-1 shadow-sm border-l-4 border-tertiary">
+<div class="flex-1">
+<p class="font-headline text-lg text-tertiary">Note: Feeling great after the light breakfast!</p>
+<p class="text-xs text-on-surface-variant italic">Journal Reflection</p>
+</div>
+</div>
+<div class="bg-surface-container-lowest p-4 rounded-lg flex items-center gap-4 -rotate-1 shadow-sm">
+<img alt="Quinoa Salad" class="w-16 h-16 rounded-md object-cover" data-alt="vibrant quinoa salad with chickpeas and fresh herbs in a ceramic bowl, bright daylight" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAMC4xli1hDntWK_v3D79qNUjpeceZinfgEh588epIfujzy5BPUXp3wszauTvM46mTrYprjBv_z9LAWbo8Bo09fnEay-btpEhfQdfaRxeGqTEBiLlO8hS1wNdbs4mSBzXs6jrw8YsMKdR6T4q7CBu5IuiHuXWbXKx3wQ2D3wXEvAYXPgiva6SOyPTz72BEOgHtjki4LmQQvnBYykWEWGPVbIq6gwx-QiSQhh_zkNAxM-PfOjDsXtCNMhfY2OVn_e4Q1oLCGFdEQEsAZ"/>
+<div class="flex-1">
+<p class="font-bold text-sm">Market Quinoa Bowl</p>
+<p class="text-xs text-on-surface-variant italic">Lunch • 1:15 PM</p>
+</div>
+<span class="text-sm font-bold text-primary">680</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Day Entry 2: Collapsed -->
+<div class="bg-surface-container-high rounded-lg p-6 hover:bg-surface-container-highest transition-colors cursor-pointer group">
+<div class="flex justify-between items-center">
+<div class="flex items-center gap-3">
+<div class="w-12 h-12 bg-surface-container-highest rounded-full flex items-center justify-center text-on-surface-variant/40 group-hover:bg-secondary-fixed transition-colors">
+<span class="material-symbols-outlined" data-icon="calendar_today">calendar_today</span>
+</div>
+<div>
+<h3 class="font-bold text-lg">Wednesday, Oct 23</h3>
+<p class="text-sm text-on-surface-variant">2 days ago</p>
+</div>
+</div>
+<div class="flex items-center gap-4">
+<div class="text-right">
+<span class="font-headline text-2xl text-on-surface-variant opacity-60">2,100 kcal</span>
+<div class="text-[10px] uppercase font-bold text-on-surface-variant/40 tracking-widest text-right">
+                                Balanced
+                            </div>
+</div>
+<span class="material-symbols-outlined text-on-surface-variant/30" data-icon="expand_more">expand_more</span>
+</div>
+</div>
+</div>
+<!-- Day Entry 3: Goal Met -->
+<div class="bg-surface-container-low rounded-lg p-6 hover:bg-surface-container-highest transition-colors cursor-pointer group">
+<div class="flex justify-between items-center">
+<div class="flex items-center gap-3">
+<div class="w-12 h-12 bg-secondary-fixed rounded-full flex items-center justify-center text-on-secondary-container">
+<span class="material-symbols-outlined" data-icon="check_circle" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+</div>
+<div>
+<h3 class="font-bold text-lg">Tuesday, Oct 22</h3>
+<p class="text-sm text-on-surface-variant">3 days ago</p>
+</div>
+</div>
+<div class="flex items-center gap-4">
+<div class="text-right">
+<span class="font-headline text-2xl text-primary">1,780 kcal</span>
+<div class="text-[10px] uppercase font-bold text-secondary tracking-widest text-right flex items-center justify-end gap-1">
+<span class="w-1.5 h-1.5 rounded-full bg-secondary"></span> Goal Met
+                            </div>
+</div>
+<span class="material-symbols-outlined text-on-surface-variant/30" data-icon="expand_more">expand_more</span>
+</div>
+</div>
+</div>
+<!-- Day Entry 4 -->
+<div class="bg-surface-container-high rounded-lg p-6 hover:bg-surface-container-highest transition-colors cursor-pointer group">
+<div class="flex justify-between items-center">
+<div class="flex items-center gap-3">
+<div class="w-12 h-12 bg-surface-container-highest rounded-full flex items-center justify-center text-on-surface-variant/40">
+<span class="material-symbols-outlined" data-icon="calendar_today">calendar_today</span>
+</div>
+<div>
+<h3 class="font-bold text-lg">Monday, Oct 21</h3>
+<p class="text-sm text-on-surface-variant">Last week</p>
+</div>
+</div>
+<div class="flex items-center gap-4">
+<div class="text-right">
+<span class="font-headline text-2xl text-on-surface-variant opacity-60">1,940 kcal</span>
+<div class="text-[10px] uppercase font-bold text-on-surface-variant/40 tracking-widest text-right">
+                                Balanced
+                            </div>
+</div>
+<span class="material-symbols-outlined text-on-surface-variant/30" data-icon="expand_more">expand_more</span>
+</div>
+</div>
+</div>
+</section>
+<!-- Monthly Perspective -->
+<div class="mt-12 p-8 bg-surface-container-lowest rounded-xl shadow-sm border-l-4 border-primary/20">
+<h4 class="font-headline text-2xl text-primary mb-2">October Reflection</h4>
+<p class="text-on-surface-variant leading-relaxed">
+                You've favored <span class="text-primary font-bold">home-cooked meals</span> 80% of the time this month. Your protein intake is up by 15% compared to September. Keep up the organic momentum!
+            </p>
+</div>
+</main>
+<!-- BottomNavBar -->
+<nav class="fixed bottom-0 w-full rounded-t-[24px] z-50 bg-[#fdf8f4] dark:bg-[#1a1a1a] shadow-[0_-4px_32px_rgba(84,67,60,0.06)] flex justify-around items-center h-20 pb-safe w-full px-4">
+<a class="flex flex-col items-center justify-center bg-[#baefc2] dark:bg-[#006764]/30 text-[#904726] rounded-full px-4 py-1 active:scale-90 transition-transform duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="menu_book">menu_book</span>
+<span class="font-['Nunito'] text-[12px] font-medium">Journal</span>
+</a>
+<a class="flex flex-col items-center justify-center text-[#54433c] opacity-60 hover:opacity-100 transition-opacity active:scale-90 transition-transform duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="donut_large">donut_large</span>
+<span class="font-['Nunito'] text-[12px] font-medium">Stats</span>
+</a>
+<button class="flex flex-col items-center justify-center text-[#904726] active:scale-90 transition-transform duration-200 -mt-8">
+<span class="material-symbols-outlined text-5xl" data-icon="add_circle" style="font-variation-settings: 'FILL' 1;">add_circle</span>
+</button>
+<a class="flex flex-col items-center justify-center text-[#54433c] opacity-60 hover:opacity-100 transition-opacity active:scale-90 transition-transform duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="restaurant_menu">restaurant_menu</span>
+<span class="font-['Nunito'] text-[12px] font-medium">Recipes</span>
+</a>
+<a class="flex flex-col items-center justify-center text-[#54433c] opacity-60 hover:opacity-100 transition-opacity active:scale-90 transition-transform duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="group">group</span>
+<span class="font-['Nunito'] text-[12px] font-medium">Profile</span>
+</a>
+</nav>
+</body></html>

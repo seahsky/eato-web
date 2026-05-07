@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Our Kitchen Journal - Partner View</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Caveat:wght@400;700&amp;family=Nunito:wght@400;500;600;700&amp;family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "outline": "#87736b",
+                        "primary-container": "#af5f3b",
+                        "inverse-surface": "#32302e",
+                        "secondary-fixed-dim": "#9fd3a8",
+                        "surface-tint": "#934a28",
+                        "surface-container-high": "#ece7e3",
+                        "secondary-fixed": "#baefc2",
+                        "primary": "#904726",
+                        "on-tertiary-container": "#f3fffd",
+                        "tertiary-fixed": "#8bf4ee",
+                        "surface-variant": "#e6e2de",
+                        "primary-fixed-dim": "#ffb597",
+                        "tertiary": "#006764",
+                        "on-primary-container": "#fffbff",
+                        "on-secondary": "#ffffff",
+                        "on-secondary-fixed-variant": "#20502f",
+                        "on-surface": "#1d1b19",
+                        "inverse-primary": "#ffb597",
+                        "surface-container-low": "#f8f3ef",
+                        "on-secondary-container": "#3f6e4b",
+                        "on-error-container": "#93000a",
+                        "primary-fixed": "#ffdbcd",
+                        "tertiary-fixed-dim": "#6ed7d1",
+                        "secondary": "#396845",
+                        "surface-container-lowest": "#ffffff",
+                        "on-error": "#ffffff",
+                        "on-tertiary-fixed-variant": "#00504d",
+                        "on-surface-variant": "#54433c",
+                        "outline-variant": "#dac1b8",
+                        "surface": "#fdf8f4",
+                        "on-tertiary-fixed": "#00201e",
+                        "surface-bright": "#fdf8f4",
+                        "tertiary-container": "#00827e",
+                        "on-primary": "#ffffff",
+                        "inverse-on-surface": "#f5f0ec",
+                        "on-tertiary": "#ffffff",
+                        "on-primary-fixed": "#360f00",
+                        "surface-container": "#f2ede9",
+                        "secondary-container": "#baefc2",
+                        "surface-container-highest": "#e6e2de",
+                        "surface-dim": "#ded9d5",
+                        "on-background": "#1d1b19",
+                        "error": "#ba1a1a",
+                        "error-container": "#ffdad6",
+                        "on-primary-fixed-variant": "#763313",
+                        "on-secondary-fixed": "#00210c",
+                        "background": "#fdf8f4"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "1rem",
+                        "lg": "2rem",
+                        "xl": "3rem",
+                        "full": "9999px"
+                    },
+                    "fontFamily": {
+                        "headline": ["Caveat"],
+                        "body": ["Nunito"],
+                        "label": ["Nunito"]
+                    }
+                },
+            },
+        }
+    </script>
+<style>.material-symbols-outlined {
+    font-variation-settings: "FILL" 0, "wght" 400, "GRAD" 0, "opsz" 24
+    }
+.paper-texture {
+    background-image: url(https://lh3.googleusercontent.com/aida-public/AB6AXuCkzH86cOA1xd4ZQXGGwnpe0QK2O1R7-06t7WBCPkZMqaxKhB3HKNn6CLJelaplmStd4wzfGKQlPM2SEE3gmVifgdfCsNfbZ-CQNuDuy24QhzuhdlIT9wXNmtInaqfkjTLjknGrZ-_RCa6ft3NCfulLv6a8xvuPzWjLNVukZBUm1T5E1_6gmYl7Let4o9LhagqdQ2EMo70uTVRwWmUzSM2WdaBXleKxibIpQq7G4YS4es1E8v9T-whaaEY7q5V056HcchnvfsvfrzEW);
+    background-repeat: repeat;
+    opacity: 0.04;
+    pointer-events: none
+    }
+.scrapbook-rotate-1 {
+    transform: rotate(1deg)
+    }
+.scrapbook-rotate-2 {
+    transform: rotate(-1.5deg)
+    }</style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-surface font-body text-on-surface min-h-screen pb-24">
+<div class="fixed inset-0 paper-texture z-[60]"></div>
+<!-- TopAppBar -->
+<header class="fixed top-0 w-full z-50 bg-[#fdf8f4]/85 backdrop-blur-md flex justify-between items-center px-6 h-16">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-full overflow-hidden bg-surface-container-highest ring-2 ring-primary-container/20">
+<img class="w-full h-full object-cover" data-alt="close up profile photo of a happy smiling young couple in a warm sunlit kitchen setting" src="https://lh3.googleusercontent.com/aida-public/AB6AXuADOBNhev3gfRjH6q5yTGG3OLS0nhGJYA0lb9wxtKQCBGJ-q8eocOcSYtF7_jPYcLLs1q1VQhVN-_loOtcKi0-sG1VOg5pmW9LHfSY3kDJIgHCK_zCIjkSnSZErdVhAVlFwixvIGi2zTyqrKo-ilOsRhkI__coQWchxbofM-m1HavuoyKF3Z6r18psIrYQ_nmMQbeIfPK78UWg114i8HLcq_k1dI6vOXZFwHpuUWEaVCiwdrw2J3g8LZQY3gapKAh0CBSAsE-0ckpmA"/>
+</div>
+<span class="font-['Caveat'] text-[#904726] text-2xl font-bold tracking-tight">Our Kitchen Journal</span>
+</div>
+<div class="flex items-center gap-4">
+<button class="material-symbols-outlined text-[#904726] hover:bg-[#f8f3ef] transition-colors p-2 rounded-full">settings</button>
+</div>
+</header>
+<main class="pt-20 px-6 max-w-2xl mx-auto">
+<!-- LINKED STATE -->
+<section class="mb-12">
+<div class="flex justify-between items-end mb-6">
+<div>
+<p class="text-on-surface-variant text-sm font-medium">Cooking with</p>
+<h1 class="font-['Caveat'] text-4xl text-primary font-bold">Jamie's Kitchen</h1>
+</div>
+<button class="px-4 py-1.5 rounded-full border border-outline-variant text-on-surface-variant text-xs font-semibold hover:bg-surface-container transition-colors active:scale-95">
+                    Unlink
+                </button>
+</div>
+<!-- Bento Grid of Partner's Recent Meals -->
+<div class="grid grid-cols-2 gap-4">
+<div class="col-span-2 relative bg-surface-container-low p-4 rounded-lg scrapbook-rotate-1 shadow-sm">
+<div class="absolute -top-2 left-1/2 -translate-x-1/2 w-16 h-6 bg-primary-fixed/30 backdrop-blur-sm -rotate-2"></div>
+<div class="aspect-video rounded-lg overflow-hidden mb-3">
+<img class="w-full h-full object-cover" data-alt="vibrant healthy salad bowl with roasted vegetables and chickpeas on a rustic wooden table" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAdY2fQNYYvwz4YvtCnjPgkuzQKr1ipGBRVfztK1tS2kDeW_IpkyC8Rcnx1Gv90fwDDBUD68dI3pU1o23B6u_0cyZ_fo8ZkNtfnu0OluLME4amjkNnfUMekcpqU28HFikSQMwOBgWZ2WrhHU9kNcEQR4ua47PhVLchPzHt2TFPhg3bzmDEcbmZ8II6_hLTDX0p-asVEXeVaCCq-1HCBM8a8ybJMzDYNnHIgwBaAkAFM4GzSDEwDcBBMZEoDYSg5W7uU_AV6qW3k3mGx"/>
+</div>
+<div class="flex justify-between items-center">
+<h3 class="font-['Caveat'] text-2xl text-primary">Late lunch salad</h3>
+<span class="text-tertiary font-bold">420 kcal</span>
+</div>
+</div>
+<div class="bg-surface-container-highest p-3 rounded-lg scrapbook-rotate-2 shadow-sm">
+<div class="aspect-square rounded-lg overflow-hidden mb-2">
+<img class="w-full h-full object-cover" data-alt="refreshing iced fruit smoothie in a tall glass with natural morning sunlight" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAunfb8_-iArBL9lz3W9pkt2LkaIf2NniPpZEJsu8922Ty_3J6X_nBmLlrNKdPrwQQgmxR3LpRiXYyZGli6JaiBJRyg4vj0qNOJ2QiRybwGLNjcjlqcCIQjt9cQrLsbyELlH0HS-QuudB624uF-nEOre5CxhFqKTitd_-EhmeANinlkf88wCsw3YIXo6hsFa7iJ18efCNWBCdE5_Cr_daQoPt_PcJ1---R4QzChgYEsddCuf9rYUCys-r5xk-Yl0GDvE5MKJsLraXT-"/>
+</div>
+<p class="font-['Caveat'] text-xl text-on-surface-variant">Berry Blast</p>
+<p class="text-xs font-semibold text-primary">180 kcal</p>
+</div>
+<div class="bg-surface-container-low p-3 rounded-lg scrapbook-rotate-1 shadow-sm">
+<div class="aspect-square rounded-lg overflow-hidden mb-2">
+<img class="w-full h-full object-cover" data-alt="artisan sourdough toast with avocado and poached egg on a soft textured linen cloth" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDSP7zJpP218WCkefu1jcCu4Sokb04HS25BDgZnVmaEXKUuxrJY8HcQk-V7xwO7Zt39Cg0oF4cOzV9mkx2Tfa1txEWDdYkc55cQZH7unb1nUwyxHpGD9RAUNZ5WA22VRJz5W1HbfK4f75wWvxNnyVRA3A2aR8oOxcKEGwB2VhxX8eCeeL6C6W21NS5K8xVyQAD3aM4UYIGTMB2ZeeBiuC2JmHe8gEqw7VX2foNgWgy3Ggg4Vr45NEB5jn5_dExrsfOzPs_18qAER2Rb"/>
+</div>
+<p class="font-['Caveat'] text-xl text-on-surface-variant">Morning Toast</p>
+<p class="text-xs font-semibold text-primary">310 kcal</p>
+</div>
+</div>
+</section>
+<!-- UNLINKED STATE / SHARE SECTION -->
+<section class="mt-16 space-y-6">
+<div class="bg-surface-container-low rounded-lg p-8 border-l-4 border-tertiary">
+<h2 class="font-['Caveat'] text-3xl text-primary mb-2">Invite a Partner</h2>
+<p class="text-on-surface-variant text-sm mb-6 leading-relaxed">Sharing your journal makes tracking a journey, not a task. Send this code to see each other's progress.</p>
+<div class="bg-surface-container-highest rounded-xl p-6 flex flex-col items-center gap-4 border border-outline-variant/20">
+<span class="text-xs font-bold uppercase tracking-widest text-on-surface-variant opacity-60">Your Secret Code</span>
+<span class="font-mono text-4xl font-bold tracking-[0.5em] text-primary">XJ92KP</span>
+<button class="bg-primary text-on-primary px-6 py-2 rounded-full text-sm font-bold flex items-center gap-2 active:scale-95 transition-transform">
+<span class="material-symbols-outlined text-sm">content_copy</span>
+                        Share your link
+                    </button>
+</div>
+</div>
+<div class="bg-surface-container-low rounded-lg p-8">
+<h2 class="font-['Caveat'] text-3xl text-primary mb-4">Got a code?</h2>
+<div class="flex gap-3">
+<input class="flex-1 bg-surface-container-highest border-none rounded-full px-6 py-3 text-on-surface focus:ring-2 focus:ring-primary-container/30 transition-all placeholder:text-on-surface-variant/40" placeholder="Enter partner code" type="text"/>
+<button class="bg-secondary-container text-on-secondary-container px-8 py-3 rounded-full font-bold active:scale-95 transition-transform">
+                        Connect
+                    </button>
+</div>
+<p class="mt-4 text-xs text-on-surface-variant italic">Connecting will allow you both to view today's meal cards.</p>
+</div>
+</section>
+<!-- Custom Component: The Daily Note -->
+<div class="mt-12 bg-white/50 p-6 rounded-lg border-l-4 border-tertiary scrapbook-rotate-1 shadow-sm">
+<p class="font-['Caveat'] text-2xl text-on-surface-variant leading-tight">
+                "Cooking is like love. It should be entered into with abandonment or not at all."
+            </p>
+<p class="text-xs font-bold text-tertiary mt-2">— Hand-written today at 8:15 AM</p>
+</div>
+</main>
+<!-- BottomNavBar -->
+<nav class="fixed bottom-0 w-full h-20 bg-[#fdf8f4] rounded-t-[24px] shadow-[0_-4px_32px_rgba(84,67,60,0.06)] flex justify-around items-center px-4 pb-safe z-50">
+<button class="flex flex-col items-center justify-center text-[#54433c] opacity-60 hover:opacity-100 transition-opacity active:scale-90 duration-200">
+<span class="material-symbols-outlined" data-icon="menu_book">menu_book</span>
+<span class="font-['Nunito'] text-[12px] font-medium">Journal</span>
+</button>
+<button class="flex flex-col items-center justify-center text-[#54433c] opacity-60 hover:opacity-100 transition-opacity active:scale-90 duration-200">
+<span class="material-symbols-outlined" data-icon="donut_large">donut_large</span>
+<span class="font-['Nunito'] text-[12px] font-medium">Stats</span>
+</button>
+<button class="flex flex-col items-center justify-center text-[#54433c] opacity-60 hover:opacity-100 transition-opacity active:scale-90 duration-200">
+<span class="material-symbols-outlined text-4xl text-primary" data-icon="add_circle" data-weight="fill" style="font-variation-settings: 'FILL' 1;">add_circle</span>
+<span class="font-['Nunito'] text-[12px] font-medium">Add</span>
+</button>
+<button class="flex flex-col items-center justify-center text-[#54433c] opacity-60 hover:opacity-100 transition-opacity active:scale-90 duration-200">
+<span class="material-symbols-outlined" data-icon="restaurant_menu">restaurant_menu</span>
+<span class="font-['Nunito'] text-[12px] font-medium">Recipes</span>
+</button>
+<!-- Active Tab: Profile (Closest match to Partner/Account view) -->
+<button class="flex flex-col items-center justify-center bg-[#baefc2] text-[#904726] rounded-full px-4 py-1 active:scale-90 duration-200">
+<span class="material-symbols-outlined" data-icon="group">group</span>
+<span class="font-['Nunito'] text-[12px] font-medium">Profile</span>
+</button>
+</nav>
+</body></html>

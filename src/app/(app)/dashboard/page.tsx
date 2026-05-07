@@ -1,17 +1,17 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { format } from "date-fns";
-import { Plus, BookOpen } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
+import { addDays, endOfWeek, format, isSameDay, isToday, startOfWeek } from "date-fns";
+import { Plus } from "lucide-react";
 import { trpc } from "@/trpc/react";
-import { DateNavigator } from "@/components/app/date-navigator";
-import { DiaryEntryCard } from "@/components/app/diary-entry-card";
-import { EmptyState } from "@/components/app/empty-state";
-import { COPY } from "@/lib/copy";
+import { DiaryCard } from "@/components/diary/diary-card";
+import { Eyebrow } from "@/components/diary/eyebrow";
+import { DiaryAvatar } from "@/components/diary/avatar";
+import { CalorieRing } from "@/components/diary/calorie-ring";
+import { WeekStrip } from "@/components/diary/week-strip";
+import { cn } from "@/lib/utils";
 
 type EntryData = {
   id: string;
@@ -20,174 +20,203 @@ type EntryData = {
   calories: number;
   servingSize: number;
   servingUnit: string;
-  mealGroupId?: string | null;
   loggedAt?: string | Date;
   consumedAt?: string | Date;
-  mood?: string | null;
-  note?: string | null;
   imageUrl?: string | null;
 };
 
-/** Group entries by mealGroupId, preserving chronological order */
-function groupEntries(entries: EntryData[]): { groupId: string | null; items: EntryData[] }[] {
-  const groups: { groupId: string | null; items: EntryData[] }[] = [];
-  const seenGroups = new Map<string, number>();
-
-  for (const entry of entries) {
-    const gid = entry.mealGroupId ?? null;
-    if (gid && seenGroups.has(gid)) {
-      groups[seenGroups.get(gid)!].items.push(entry);
-    } else {
-      const idx = groups.length;
-      groups.push({ groupId: gid, items: [entry] });
-      if (gid) seenGroups.set(gid, idx);
-    }
-  }
-  return groups;
+function avatarInitial(me: { name?: string | null; email?: string | null } | null | undefined) {
+  const source = me?.name?.trim() || me?.email || "?";
+  return source.charAt(0).toUpperCase();
 }
 
 export default function DashboardPage() {
   const [selectedDate, setSelectedDate] = useState(new Date());
   const dateStr = format(selectedDate, "yyyy-MM-dd");
+  const today = new Date();
+  const isViewingToday = isSameDay(selectedDate, today);
 
-  const { data, isLoading, error } = trpc.stats.getDailySummary.useQuery(
+  // Compute the week strip — Sunday-start week containing today
+  const weekStart = startOfWeek(today, { weekStartsOn: 0 });
+  const weekEnd = endOfWeek(today, { weekStartsOn: 0 });
+  const weekDays = useMemo(
+    () => Array.from({ length: 7 }, (_, i) => addDays(weekStart, i)),
+    [weekStart]
+  );
+  const weekEndStr = format(weekEnd, "yyyy-MM-dd");
+
+  const { data: me } = trpc.auth.getMe.useQuery();
+  const { data: dailyData, isLoading } = trpc.stats.getDailySummary.useQuery(
     { date: dateStr },
     { refetchOnWindowFocus: true }
   );
-
-  const { data: weeklyBudget } = trpc.stats.getWeeklyBudgetStatus.useQuery(
-    { date: dateStr },
+  const { data: weekly } = trpc.stats.getWeeklySummary.useQuery(
+    { endDate: weekEndStr },
     { refetchOnWindowFocus: true }
   );
 
-  const entries = (data?.entries ?? []) as EntryData[];
-  const grouped = groupEntries(entries);
+  const daysWithEntries = useMemo(() => {
+    const set = new Set<string>();
+    weekly?.days.forEach((d) => {
+      if (d.totalCalories > 0) {
+        set.add(format(new Date(d.date), "yyyy-MM-dd"));
+      }
+    });
+    return set;
+  }, [weekly]);
+
+  const entries = ((dailyData?.entries ?? []) as EntryData[]).slice().sort((a, b) => {
+    const ta = new Date(a.consumedAt ?? a.loggedAt ?? 0).getTime();
+    const tb = new Date(b.consumedAt ?? b.loggedAt ?? 0).getTime();
+    return tb - ta; // newest first
+  });
+
+  const totalCalories = Math.round(dailyData?.totalCalories ?? 0);
+  const goal = Math.round(dailyData?.calorieGoal ?? 2000);
+  const remaining = goal - totalCalories;
+
+  const subtitle =
+    isLoading && !dailyData
+      ? "Loading…"
+      : entries.length === 0
+        ? "Nothing logged."
+        : `${entries.length} ${entries.length === 1 ? "moment" : "moments"} · ${totalCalories.toLocaleString()} kcal`;
+
+  const dateLine = isViewingToday
+    ? format(selectedDate, "EEE, MMM d")
+    : `${format(selectedDate, "EEE, MMM d")} · Past`;
+
+  const titleLine = isToday(selectedDate) ? "Today" : format(selectedDate, "EEEE");
 
   return (
-    <div className="mx-auto max-w-lg px-4 animate-fade-in" aria-busy={isLoading && !data}>
-      {/* Date header */}
-      <div className="pt-4 pb-1">
-        <h1 className="font-caveat text-2xl text-foreground">
-          {format(selectedDate, "EEEE, d MMMM")}
-        </h1>
+    <div className="mx-auto max-w-lg pb-24 animate-fade-in" aria-busy={isLoading && !dailyData}>
+      {/* Header */}
+      <div className="px-[22px] pt-3 flex items-start justify-between gap-4">
+        <div className="flex flex-col gap-1.5 min-w-0">
+          <Eyebrow>{dateLine}</Eyebrow>
+          <h1 className="text-[42px] font-black text-[var(--text)] leading-none tracking-[-0.02em]">
+            {titleLine}
+          </h1>
+          <p className="text-[15px] text-[var(--text-soft)] leading-snug">{subtitle}</p>
+        </div>
+        <DiaryAvatar initial={avatarInitial(me)} size={40} />
       </div>
 
-      <DateNavigator date={selectedDate} onDateChange={setSelectedDate} />
+      {/* Week strip */}
+      <div className="px-[18px] pt-4">
+        <WeekStrip
+          days={weekDays}
+          selectedDate={selectedDate}
+          onSelect={setSelectedDate}
+          daysWithEntries={daysWithEntries}
+        />
+      </div>
 
-      {/* Weekly context line */}
-      {weeklyBudget && (
-        <p className="mt-1 mb-3 text-sm text-muted-foreground">
-          {COPY.weeklyContext(
-            weeklyBudget.daysInWeek - weeklyBudget.daysRemaining,
-            weeklyBudget.weeklyConsumed,
-            weeklyBudget.weeklyBudget
-          )}
-        </p>
-      )}
-
-      {/* Loading skeleton */}
-      {isLoading && !data && (
-        <div className="space-y-1.5" role="status" aria-live="polite">
-          <span className="sr-only">Loading diary entries...</span>
-          {[0, 1, 2].map((i) => (
-            <Card key={i} className={i < 3 ? `animate-fade-in-delay-${i}` : undefined}>
-              <CardContent className="py-3">
-                <div className="space-y-2">
-                  <div className="h-3 w-16 rounded bg-muted animate-shimmer" />
-                  <div className="flex justify-between">
-                    <div className="h-4 w-32 rounded bg-muted animate-shimmer" />
-                    <div className="h-4 w-16 rounded bg-muted animate-shimmer" />
-                  </div>
-                  <div className="h-3 w-24 rounded bg-muted animate-shimmer" />
-                </div>
-              </CardContent>
-            </Card>
+      {/* Photo grid */}
+      <div className="px-[18px] pt-5">
+        <div className="grid grid-cols-3 gap-2">
+          {isViewingToday && <AddCard />}
+          {entries.map((entry) => (
+            <EntryCard key={entry.id} entry={entry} />
           ))}
+        </div>
+      </div>
+
+      {/* Day summary */}
+      {entries.length > 0 && (
+        <div className="px-5 pt-6">
+          <DiaryCard className="flex items-center gap-3.5">
+            <CalorieRing consumed={totalCalories} budget={goal} size={60} stroke={6} />
+            <div className="flex flex-col gap-0.5 min-w-0">
+              <Eyebrow>Day total</Eyebrow>
+              <div className="leading-none">
+                <span className="text-[22px] font-bold text-[var(--text)]">
+                  {totalCalories.toLocaleString()}
+                </span>{" "}
+                <span className="text-[14px] font-semibold text-[var(--text-mute)]">
+                  / {goal.toLocaleString()}
+                </span>
+              </div>
+              <p className="text-[12px] text-[var(--text-soft)]">
+                {remaining >= 0
+                  ? `${remaining.toLocaleString()} kcal left`
+                  : `over by ${Math.abs(remaining).toLocaleString()} kcal`}
+              </p>
+            </div>
+          </DiaryCard>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function AddCard() {
+  return (
+    <Link
+      href="/add"
+      aria-label="Add a food entry"
+      className="relative block aspect-[0.72] overflow-hidden rounded-[14px] border border-dashed border-[color-mix(in_oklab,var(--primary)_45%,transparent)] bg-[color-mix(in_oklab,var(--primary)_8%,transparent)] -rotate-[0.4deg] transition-transform active:scale-[0.97]"
+    >
+      <div className="absolute inset-0 flex items-center justify-center">
+        <span
+          className="flex h-[52px] w-[52px] items-center justify-center rounded-full bg-[var(--primary)] text-white"
+          style={{ boxShadow: "0 6px 14px color-mix(in oklab, var(--primary) 40%, transparent)" }}
+        >
+          <Plus className="h-[22px] w-[22px]" strokeWidth={2.6} />
+        </span>
+      </div>
+    </Link>
+  );
+}
+
+function EntryCard({ entry }: { entry: EntryData }) {
+  const ts = entry.consumedAt ?? entry.loggedAt;
+  const time = ts ? format(new Date(ts), "HH:mm") : "";
+  const kcal = Math.round(entry.calories);
+
+  return (
+    <Link
+      href={`/food/edit/${entry.id}`}
+      className="relative block aspect-[0.72] overflow-hidden rounded-[14px] shadow-diary border border-[var(--color-border)] bg-[color-mix(in_oklab,var(--primary)_6%,transparent)] transition-transform active:scale-[0.97]"
+    >
+      {entry.imageUrl ? (
+        <Image
+          src={entry.imageUrl}
+          alt={entry.name}
+          fill
+          sizes="(max-width: 512px) 33vw, 170px"
+          className="object-cover"
+        />
+      ) : (
+        <div className="absolute inset-0 flex items-center justify-center p-2 text-center">
+          <span
+            className={cn(
+              "text-[12px] font-semibold leading-tight text-[var(--text)]",
+              "line-clamp-3"
+            )}
+          >
+            {entry.name}
+          </span>
         </div>
       )}
 
-      {/* Error */}
-      {error && (
-        <Card className="mb-4 border-destructive">
-          <CardContent className="py-3 text-sm text-destructive">
-            {error.message}
-          </CardContent>
-        </Card>
+      {/* Bottom gradient overlay */}
+      <div className="pointer-events-none absolute inset-x-0 bottom-0 h-[80px] bg-gradient-to-t from-black/55 to-transparent" />
+
+      {/* Top-left time */}
+      {time && (
+        <span className="absolute left-2 top-2 font-mono text-[10px] font-bold text-white/95">
+          {time}
+        </span>
       )}
 
-      {/* Diary Entries */}
-      {data && (
-        <>
-          {entries.length > 0 && (
-            <div className="space-y-1.5 mb-16">
-              {grouped.map((group) => {
-                if (group.groupId && group.items.length > 1) {
-                  // Meal group — cluster in a shared card
-                  const groupImageUrl = group.items.find((e) => e.imageUrl)?.imageUrl;
-                  return (
-                    <div key={group.groupId} className="border-l-2 border-primary/20 pl-3 space-y-1.5">
-                      {groupImageUrl && (
-                        <div className="overflow-hidden rounded-md relative h-28 w-full">
-                          <Image
-                            src={groupImageUrl}
-                            alt="Meal photo"
-                            fill
-                            className="object-cover"
-                            sizes="(max-width: 512px) 100vw, 512px"
-                          />
-                        </div>
-                      )}
-                      {group.items.map((entry) => (
-                        <Link key={entry.id} href={`/food/edit/${entry.id}`}>
-                          <DiaryEntryCard entry={entry} />
-                        </Link>
-                      ))}
-                    </div>
-                  );
-                }
-                // Individual entries (no group or single-item group)
-                return group.items.map((entry, i) => (
-                  <div key={entry.id} className={i < 5 ? `animate-fade-in-delay-${i}` : "animate-fade-in-delay-4"}>
-                    <Link href={`/food/edit/${entry.id}`}>
-                      <DiaryEntryCard entry={entry} />
-                    </Link>
-                  </div>
-                ));
-              })}
-
-              {/* Daily total */}
-              {data.totalCalories > 0 && (
-                <p className="mt-3 text-center text-sm text-muted-foreground">
-                  {COPY.dailyTotal(data.totalCalories)}
-                </p>
-              )}
-            </div>
-          )}
-
-          {/* Empty state */}
-          {entries.length === 0 && !isLoading && (
-            <EmptyState
-              icon={<BookOpen className="h-10 w-10" />}
-              title={COPY.emptyDiaryTitle}
-              description={COPY.emptyDiaryDescription}
-              action={
-                <Button asChild size="sm">
-                  <Link href="/log">{COPY.emptyDiaryCta}</Link>
-                </Button>
-              }
-            />
-          )}
-        </>
-      )}
-
-      {/* Floating action button - warm pill */}
-      <Link
-        href="/log"
-        className="fixed bottom-[calc(env(safe-area-inset-bottom)+4.5rem)] right-4 z-40 flex items-center gap-2 rounded-full bg-primary px-4 py-3 text-sm font-medium text-primary-foreground shadow-lg animate-scale-in-delayed transition-[transform] duration-[var(--duration-instant)] hover:scale-105 active:scale-95 focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-none"
-      >
-        <Plus className="h-4 w-4" />
-        {COPY.fab}
-      </Link>
-    </div>
+      {/* Bottom-left calorie + KCAL */}
+      <div className="absolute bottom-2.5 left-2.5 flex items-end gap-[3px]">
+        <span className="text-[22px] font-black leading-none text-white">{kcal}</span>
+        <span className="pb-[3px] font-mono text-[8px] font-bold tracking-[0.1em] text-white/85">
+          KCAL
+        </span>
+      </div>
+    </Link>
   );
 }
