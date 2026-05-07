@@ -8,11 +8,10 @@ import { notificationRouter } from "./notification";
 import { mealEstimationRouter } from "./meal-estimation";
 import { achievementsRouter } from "./achievements";
 import { healthRouter } from "./health";
-import { petRouter } from "./pet";
+import { friendRouter } from "./friend";
 
 export const appRouter = router({
   health: healthRouter,
-  pet: petRouter,
   auth: authRouter,
   profile: profileRouter,
   food: foodRouter,
@@ -21,6 +20,7 @@ export const appRouter = router({
   notification: notificationRouter,
   mealEstimation: mealEstimationRouter,
   achievements: achievementsRouter,
+  friend: friendRouter,
 });
 
 export type AppRouter = typeof appRouter;

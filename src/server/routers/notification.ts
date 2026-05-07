@@ -177,18 +177,18 @@ export const notificationRouter = router({
     // Return defaults if no settings exist
     if (!settings) {
       return {
-        partnerFoodLogged: true,
-        partnerGoalReached: true,
-        partnerLinked: true,
+        friendFoodLogged: true,
+        friendGoalReached: true,
+        friendAdded: true,
         receiveNudges: true,
         timezone: "UTC",
       };
     }
 
     return {
-      partnerFoodLogged: settings.partnerFoodLogged,
-      partnerGoalReached: settings.partnerGoalReached,
-      partnerLinked: settings.partnerLinked,
+      friendFoodLogged: settings.friendFoodLogged,
+      friendGoalReached: settings.friendGoalReached,
+      friendAdded: settings.friendAdded,
       receiveNudges: settings.receiveNudges,
       timezone: settings.timezone,
     };
@@ -199,9 +199,9 @@ export const notificationRouter = router({
     .meta({ openapi: { method: "PUT", path: "/notifications/settings" } })
     .input(
       z.object({
-        partnerFoodLogged: z.boolean().optional(),
-        partnerGoalReached: z.boolean().optional(),
-        partnerLinked: z.boolean().optional(),
+        friendFoodLogged: z.boolean().optional(),
+        friendGoalReached: z.boolean().optional(),
+        friendAdded: z.boolean().optional(),
         receiveNudges: z.boolean().optional(),
         timezone: z.string().optional(),
       })
@@ -240,38 +240,50 @@ export const notificationRouter = router({
     return subscriptions;
   }),
 
-  // Send nudge to partner
+  // Send nudge to a friend (must be accepted friends).
   sendNudge: protectedProcedure
     .meta({ openapi: { method: "POST", path: "/notifications/nudge" } })
     .input(
       z.object({
+        friendId: z.string(),
         message: z.string().max(200).optional(),
       })
     )
     .output(z.any())
     .mutation(async ({ ctx, input }) => {
-      // Get user with partner info
-      const user = await ctx.prisma.user.findUnique({
-        where: { id: ctx.user.id },
-        include: {
-          partner: {
-            select: { id: true, name: true },
-          },
-        },
+      const [userAId, userBId] =
+        ctx.user.id < input.friendId
+          ? [ctx.user.id, input.friendId]
+          : [input.friendId, ctx.user.id];
+
+      const friendship = await ctx.prisma.friendship.findUnique({
+        where: { userAId_userBId: { userAId, userBId } },
       });
 
-      if (!user?.partner) {
+      if (!friendship || friendship.status !== "ACCEPTED") {
         throw new TRPCError({
-          code: "BAD_REQUEST",
-          message: "You don't have a linked partner",
+          code: "FORBIDDEN",
+          message: "You can only nudge accepted friends",
         });
       }
 
-      // Check cooldown - get last nudge sent to this partner
+      const friend = await ctx.prisma.user.findUnique({
+        where: { id: input.friendId },
+        select: { id: true, name: true },
+      });
+
+      if (!friend) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Friend not found",
+        });
+      }
+
+      // Cooldown check - last nudge from this user to this friend.
       const lastNudge = await ctx.prisma.nudge.findFirst({
         where: {
           fromUserId: ctx.user.id,
-          toUserId: user.partner.id,
+          toUserId: friend.id,
         },
         orderBy: { createdAt: "desc" },
       });
@@ -288,72 +300,61 @@ export const notificationRouter = router({
         }
       }
 
-      // Record the nudge
       await ctx.prisma.nudge.create({
         data: {
           fromUserId: ctx.user.id,
-          toUserId: user.partner.id,
+          toUserId: friend.id,
           message: input.message,
         },
       });
 
-      // Send the notification
       const sent = await sendNudgeNotification(
-        user.partner.id,
-        ctx.user.name || "Your partner",
+        friend.id,
+        ctx.user.name || "A friend",
         input.message
       );
 
       return {
         success: true,
         delivered: sent,
-        partnerName: user.partner.name,
+        friendName: friend.name,
       };
     }),
 
-  // Get last nudge sent to partner (for cooldown display)
+  // Get last nudge sent to a specific friend (for cooldown display).
   getLastNudge: protectedProcedure
     .meta({ openapi: { method: "GET", path: "/notifications/nudge/last" } })
-    .input(z.void())
+    .input(z.object({ friendId: z.string() }))
     .output(z.any())
-    .query(async ({ ctx }) => {
-    const user = await ctx.prisma.user.findUnique({
-      where: { id: ctx.user.id },
-      select: { partnerId: true },
-    });
+    .query(async ({ ctx, input }) => {
+      const lastNudge = await ctx.prisma.nudge.findFirst({
+        where: {
+          fromUserId: ctx.user.id,
+          toUserId: input.friendId,
+        },
+        orderBy: { createdAt: "desc" },
+        select: {
+          createdAt: true,
+          message: true,
+        },
+      });
 
-    if (!user?.partnerId) {
-      return null;
-    }
+      if (!lastNudge) {
+        return null;
+      }
 
-    const lastNudge = await ctx.prisma.nudge.findFirst({
-      where: {
-        fromUserId: ctx.user.id,
-        toUserId: user.partnerId,
-      },
-      orderBy: { createdAt: "desc" },
-      select: {
-        createdAt: true,
-        message: true,
-      },
-    });
+      const timeSinceLastNudge = Date.now() - lastNudge.createdAt.getTime();
+      const canSendNudge = timeSinceLastNudge >= NUDGE_COOLDOWN_MS;
+      const cooldownRemainingMs = canSendNudge
+        ? 0
+        : NUDGE_COOLDOWN_MS - timeSinceLastNudge;
 
-    if (!lastNudge) {
-      return null;
-    }
-
-    const timeSinceLastNudge = Date.now() - lastNudge.createdAt.getTime();
-    const canSendNudge = timeSinceLastNudge >= NUDGE_COOLDOWN_MS;
-    const cooldownRemainingMs = canSendNudge
-      ? 0
-      : NUDGE_COOLDOWN_MS - timeSinceLastNudge;
-
-    return {
-      sentAt: lastNudge.createdAt,
-      canSendNudge,
-      cooldownRemainingMs,
-    };
-  }),
+      return {
+        sentAt: lastNudge.createdAt,
+        canSendNudge,
+        cooldownRemainingMs,
+      };
+    }),
 
   // Check if user has any push subscriptions
   hasSubscription: protectedProcedure

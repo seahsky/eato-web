@@ -21,14 +21,10 @@ model User {
   // Profile data for BMR calculation
   profile Profile?
 
-  // Partner linking (bidirectional)
-  partnerId String? @unique @db.ObjectId
-  partner   User?   @relation("PartnerLink", fields: [partnerId], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  partnerOf User?   @relation("PartnerLink")
-
-  // Partner link request system
-  partnerLinkCode       String?   @unique
-  partnerLinkCodeExpiry DateTime?
+  // Friend system (many-to-many via Friendship)
+  friendshipsAsA Friendship[] @relation("FriendshipUserA")
+  friendshipsAsB Friendship[] @relation("FriendshipUserB")
+  friendCodes    FriendCode[]
 
   // Food tracking
   foodEntries   FoodEntry[]
@@ -64,23 +60,12 @@ model User {
   currentWeekDays     Int       @default(0)
   weekStartDate       DateTime?
 
-  // Gamification - Partner Shields
-  partnerShields       Int             @default(2)
-  shieldsUsedThisMonth DateTime[]      @default([])
-  lastShieldReset      DateTime        @default(now())
-  shieldsGiven         PartnerShield[] @relation("ShieldGiver")
-  shieldsReceived      PartnerShield[] @relation("ShieldReceiver")
-
   // Gamification - Unlockables
   unlockedTheme String @default("default")
   avatarFrame   String @default("none")
 
   // Achievements
   achievements Achievement[]
-
-  // Pixel Pet
-  petInteractionsSent     PetInteraction[] @relation("PetInteractionSent")
-  petInteractionsReceived PetInteraction[] @relation("PetInteractionReceived")
 }
 
 // Profile for BMR calculation
@@ -191,11 +176,6 @@ model FoodEntry {
 
   // Meal group (entries logged together share an ID)
   mealGroupId String?
-
-  // Partner logging fields
-  loggedByUserId String?        @db.ObjectId
-  approvalStatus ApprovalStatus @default(APPROVED)
-  rejectionNote  String?
 }
 
 enum MealType {
@@ -203,12 +183,6 @@ enum MealType {
   LUNCH
   DINNER
   SNACK
-}
-
-enum ApprovalStatus {
-  APPROVED
-  PENDING
-  REJECTED
 }
 
 enum FoodDataSource {
@@ -413,10 +387,10 @@ model NotificationSettings {
   userId String @unique @db.ObjectId
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  // Partner activity notifications
-  partnerFoodLogged  Boolean @default(true)
-  partnerGoalReached Boolean @default(true)
-  partnerLinked      Boolean @default(true)
+  // Friend activity notifications
+  friendFoodLogged  Boolean @default(true)
+  friendGoalReached Boolean @default(true)
+  friendAdded       Boolean @default(true)
 
   // Nudge notifications
   receiveNudges Boolean @default(true)
@@ -428,7 +402,7 @@ model NotificationSettings {
   updatedAt DateTime @updatedAt
 }
 
-// Nudge history for rate limiting
+// Nudge history for rate limiting (friend-to-friend)
 model Nudge {
   id         String   @id @default(auto()) @map("_id") @db.ObjectId
   fromUserId String   @db.ObjectId
@@ -505,6 +479,46 @@ model MealEstimationIngredient {
   sortOrder  Int     @default(0)
 
   @@index([estimationId])
+}
+
+// ============================================
+// Friend system (many-to-many)
+// ============================================
+
+// Bidirectional friendship between two users.
+// userAId < userBId by string ordering to keep one row per pair.
+model Friendship {
+  id        String           @id @default(auto()) @map("_id") @db.ObjectId
+  userAId   String           @db.ObjectId
+  userA     User             @relation("FriendshipUserA", fields: [userAId], references: [id], onDelete: Cascade)
+  userBId   String           @db.ObjectId
+  userB     User             @relation("FriendshipUserB", fields: [userBId], references: [id], onDelete: Cascade)
+  status    FriendshipStatus @default(PENDING)
+  createdAt DateTime         @default(now())
+  acceptedAt DateTime?
+
+  @@unique([userAId, userBId])
+  @@index([userAId])
+  @@index([userBId])
+  @@index([status])
+}
+
+enum FriendshipStatus {
+  PENDING
+  ACCEPTED
+}
+
+// Personal friend code, redeemable by another user to start a friendship.
+model FriendCode {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId    String   @db.ObjectId
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  code      String   @unique
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([expiresAt])
 }
 
 // ============================================
@@ -632,37 +646,4 @@ model Achievement {
 
   @@unique([userId, badgeId])
   @@index([userId])
-}
-
-// Partner shield usage history
-model PartnerShield {
-  id           String   @id @default(auto()) @map("_id") @db.ObjectId
-  fromUserId   String   @db.ObjectId
-  fromUser     User     @relation("ShieldGiver", fields: [fromUserId], references: [id], onDelete: Cascade)
-  toUserId     String   @db.ObjectId
-  toUser       User     @relation("ShieldReceiver", fields: [toUserId], references: [id], onDelete: Cascade)
-  shieldedDate DateTime
-  createdAt    DateTime @default(now())
-
-  @@index([fromUserId])
-  @@index([toUserId])
-  @@index([shieldedDate])
-}
-
-// ============================================
-// Pixel Pet - Interactions
-// ============================================
-
-// Pet interaction between partners (wave, pet, highfive)
-model PetInteraction {
-  id         String   @id @default(auto()) @map("_id") @db.ObjectId
-  fromUserId String   @db.ObjectId
-  fromUser   User     @relation("PetInteractionSent", fields: [fromUserId], references: [id], onDelete: Cascade)
-  toUserId   String   @db.ObjectId
-  toUser     User     @relation("PetInteractionReceived", fields: [toUserId], references: [id], onDelete: Cascade)
-  type       String // "wave" | "pet" | "highfive"
-  createdAt  DateTime @default(now())
-
-  @@index([fromUserId])
-  @@index([toUserId])
 }

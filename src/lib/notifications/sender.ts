@@ -42,9 +42,9 @@ export async function userHasAnySubscription(userId: string): Promise<boolean> {
 export async function isNotificationEnabled(
   userId: string,
   settingKey:
-    | "partnerFoodLogged"
-    | "partnerGoalReached"
-    | "partnerLinked"
+    | "friendFoodLogged"
+    | "friendGoalReached"
+    | "friendAdded"
     | "receiveNudges"
 ): Promise<boolean> {
   const settings = await prisma.notificationSettings.findUnique({
