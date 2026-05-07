@@ -34,11 +34,16 @@ struct SignInWithAppleButton: View {
 enum SignInWithAppleError: Error, LocalizedError {
     case missingToken
     case cancelled
+    case unavailable
+    case failed
 
     var errorDescription: String? {
         switch self {
         case .missingToken: "Apple did not return a sign-in token."
         case .cancelled: "Sign-in cancelled."
+        case .unavailable:
+            "Sign in with Apple isn't available right now. Make sure you're signed into iCloud in Settings, then try again."
+        case .failed: "Sign in with Apple failed. Please try again."
         }
     }
 }
@@ -104,10 +109,19 @@ private struct _SignInWithAppleButtonRepresentable: UIViewRepresentable {
             controller: ASAuthorizationController,
             didCompleteWithError error: Error
         ) {
-            if let authError = error as? ASAuthorizationError, authError.code == .canceled {
-                onError(SignInWithAppleError.cancelled)
-            } else {
+            guard let authError = error as? ASAuthorizationError else {
                 onError(error)
+                return
+            }
+            switch authError.code {
+            case .canceled:
+                onError(SignInWithAppleError.cancelled)
+            case .unknown, .notInteractive, .notHandled:
+                onError(SignInWithAppleError.unavailable)
+            case .failed, .invalidResponse:
+                onError(SignInWithAppleError.failed)
+            @unknown default:
+                onError(SignInWithAppleError.failed)
             }
         }
 

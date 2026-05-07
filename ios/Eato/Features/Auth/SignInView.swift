@@ -56,6 +56,19 @@ struct SignInView: View {
                         }
                     )
 
+                    SignInWithGoogleButton {
+                        do {
+                            try await ClerkSession.shared.signInWithGoogle()
+                            await session.loadMe()
+                        } catch {
+                            if SignInWithGoogleError.isCancellation(error) {
+                                errorMessage = nil
+                            } else {
+                                errorMessage = error.localizedDescription
+                            }
+                        }
+                    }
+
                     if let errorMessage {
                         Text(errorMessage)
                             .font(Typography.caption)
