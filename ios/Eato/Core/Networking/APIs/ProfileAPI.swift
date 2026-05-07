@@ -63,6 +63,10 @@ struct BMRPreviewDTO: Decodable, Sendable {
     let suggestedGoal: Double?
 }
 
+struct UpdateGoalRequest: Encodable, Sendable {
+    let calorieGoal: Double
+}
+
 enum ProfileAPI {
     static var get: Endpoint<ProfileDTO?> { .get("profile") }
 
@@ -72,5 +76,9 @@ enum ProfileAPI {
 
     static func calculateBMRPreview(_ body: CalculateBMRRequest) -> Endpoint<BMRPreviewDTO> {
         .post("profile/calculate-bmr-preview", body: body)
+    }
+
+    static func updateGoal(_ body: UpdateGoalRequest) -> Endpoint<ProfileDTO> {
+        .put("profile/goal", body: body)
     }
 }

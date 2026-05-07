@@ -28,7 +28,7 @@ struct MainTabView: View {
                 .tabItem { Label("Friends", systemImage: "person.3.fill") }
                 .tag(MainTab.friends)
 
-            NavigationStack { ProfileTabView() }
+            ProfileView()
                 .tabItem { Label("Me", systemImage: "person.crop.circle") }
                 .tag(MainTab.me)
         }
@@ -38,29 +38,5 @@ struct MainTabView: View {
             case .friends, .friendCode: selection = .friends
             }
         }
-    }
-}
-
-private struct ProfileTabView: View {
-    @Environment(SessionStore.self) private var session
-
-    var body: some View {
-        List {
-            Section("Account") {
-                if let user = session.currentUser {
-                    LabeledContent("Email", value: user.email)
-                    if let profile = user.profile {
-                        LabeledContent("Daily goal", value: "\(Int(profile.calorieGoal)) kcal")
-                    }
-                }
-            }
-            Section {
-                Button("Sign out", role: .destructive) {
-                    Task { await session.signOut() }
-                }
-            }
-        }
-        .navigationTitle("Me")
-        .navigationBarTitleDisplayMode(.inline)
     }
 }
