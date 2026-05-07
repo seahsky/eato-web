@@ -14,8 +14,7 @@ final class DashboardViewModel {
     private(set) var state: LoadState = .idle
     private(set) var summary: DailySummaryDTO?
     private(set) var streak: StreakDataDTO?
-    private(set) var achievements: AchievementsSummaryDTO?
-    private(set) var petHealth: PetHealthDTO?
+    private(set) var weekly: WeeklySummaryDTO?
 
     private let api: APIClient
     private let calendar: Calendar
@@ -53,14 +52,27 @@ final class DashboardViewModel {
         (summary?.entries.isEmpty == false)
     }
 
+    /// Diary entries sorted ascending by consumedAt — drives the timeline rail.
+    var timelineEntries: [FoodEntryDTO] {
+        (summary?.entries ?? []).sorted { $0.consumedAt < $1.consumedAt }
+    }
+
+    /// Apply a meal-type filter and return entries in timeline order.
+    func filteredEntries(_ filter: DiaryFilter) -> [FoodEntryDTO] {
+        let base = timelineEntries
+        switch filter {
+        case .all: return base
+        default: return base.filter { ($0.mealType ?? "") == filter.rawValue }
+        }
+    }
+
     func refresh() async {
         state = .loading
         async let summaryResult = fetch(StatsAPI.daily(date: todayString))
         async let streakResult = fetch(StatsAPI.streak)
-        async let achievementsResult = fetch(AchievementsAPI.getAll)
-        async let petResult = fetch(PetAPI.getHealth)
+        async let weeklyResult = fetch(StatsAPI.weekly(endDate: todayString))
 
-        let (s, st, ach, pet) = await (summaryResult, streakResult, achievementsResult, petResult)
+        let (s, st, w) = await (summaryResult, streakResult, weeklyResult)
 
         switch s {
         case .success(let value): summary = value
@@ -69,8 +81,7 @@ final class DashboardViewModel {
             return
         }
         streak = (try? st.get())
-        achievements = (try? ach.get())
-        petHealth = (try? pet.get())
+        weekly = (try? w.get())
         state = .loaded
     }
 
