@@ -36,6 +36,7 @@ struct OnboardingView: View {
                 VStack(alignment: .leading, spacing: Spacing.xl) {
                     Text(vm.step.title)
                         .font(Typography.titleLarge)
+                        .foregroundStyle(EatoColor.textPrimary)
                         .padding(.top, Spacing.xl)
 
                     switch vm.step {
@@ -127,7 +128,9 @@ private struct ActivityStep: View {
                 } label: {
                     HStack {
                         VStack(alignment: .leading, spacing: Spacing.xxs) {
-                            Text(level.label).font(Typography.titleSmall)
+                            Text(level.label)
+                                .font(Typography.titleSmall)
+                                .foregroundStyle(EatoColor.textPrimary)
                             Text(level.hint)
                                 .font(Typography.caption)
                                 .foregroundStyle(EatoColor.textSecondary)
@@ -169,6 +172,8 @@ private struct GoalStep: View {
                             .foregroundStyle(EatoColor.textSecondary)
                         Text("\(Int(suggested)) kcal")
                             .font(Typography.titleMedium)
+                            .foregroundStyle(EatoColor.terracotta)
+                            .monospacedDigit()
                         Text("Based on your BMR and activity.")
                             .font(Typography.caption)
                             .foregroundStyle(EatoColor.textSecondary)
@@ -189,16 +194,25 @@ private struct SteppedNumberField: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: Spacing.xs) {
-            Text(label).font(Typography.caption).foregroundStyle(EatoColor.textSecondary)
+            Text(label)
+                .font(Typography.caption)
+                .foregroundStyle(EatoColor.textSecondary)
             HStack {
                 Button { value = max(range.lowerBound, value - 1) } label: {
-                    Image(systemName: "minus")
+                    Image(systemName: "minus.circle.fill")
+                        .font(.system(size: 24))
+                        .foregroundStyle(EatoColor.terracotta)
                 }
                 Spacer()
-                Text("\(value)").font(Typography.titleMedium)
+                Text("\(value)")
+                    .font(.system(size: 28, weight: .bold, design: .rounded))
+                    .foregroundStyle(EatoColor.textPrimary)
+                    .monospacedDigit()
                 Spacer()
                 Button { value = min(range.upperBound, value + 1) } label: {
-                    Image(systemName: "plus")
+                    Image(systemName: "plus.circle.fill")
+                        .font(.system(size: 24))
+                        .foregroundStyle(EatoColor.terracotta)
                 }
             }
             .padding(Spacing.md)
@@ -214,10 +228,14 @@ private struct DecimalField: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: Spacing.xs) {
-            Text(label).font(Typography.caption).foregroundStyle(EatoColor.textSecondary)
+            Text(label)
+                .font(Typography.caption)
+                .foregroundStyle(EatoColor.textSecondary)
             TextField(label, value: $value, format: .number.precision(.fractionLength(0...1)))
                 .keyboardType(.decimalPad)
                 .font(Typography.titleMedium)
+                .foregroundStyle(EatoColor.textPrimary)
+                .tint(EatoColor.terracotta)
                 .padding(Spacing.md)
                 .background(EatoColor.surface, in: .rect(cornerRadius: Radius.md))
                 .onChange(of: value) { _, new in
@@ -233,13 +251,31 @@ private struct GenderPicker: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: Spacing.xs) {
-            Text("Gender").font(Typography.caption).foregroundStyle(EatoColor.textSecondary)
-            Picker("Gender", selection: $selection) {
+            Text("Gender")
+                .font(Typography.caption)
+                .foregroundStyle(EatoColor.textSecondary)
+            HStack(spacing: 4) {
                 ForEach(Gender.allCases, id: \.self) { g in
-                    Text(g.label).tag(g)
+                    Button {
+                        withAnimation(.smooth(duration: 0.18)) { selection = g }
+                    } label: {
+                        Text(g.label)
+                            .font(.system(size: 14, weight: .semibold, design: .rounded))
+                            .foregroundStyle(
+                                selection == g ? EatoColor.accentContrast : EatoColor.textSecondary
+                            )
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 10)
+                            .background(
+                                selection == g ? EatoColor.terracotta : Color.clear,
+                                in: Capsule()
+                            )
+                    }
+                    .buttonStyle(.plain)
                 }
             }
-            .pickerStyle(.segmented)
+            .padding(4)
+            .background(EatoColor.surface, in: Capsule())
         }
     }
 }
