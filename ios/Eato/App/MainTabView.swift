@@ -10,16 +10,18 @@ struct MainTabView: View {
 
     var body: some View {
         TabView(selection: $selection) {
-            NavigationStack { DashboardView() }
-                .tabItem { Label("Today", systemImage: "sun.max.fill") }
-                .tag(MainTab.today)
+            NavigationStack {
+                DashboardView(onCompose: { selection = .log })
+            }
+            .tabItem { Label("Today", systemImage: "sun.max.fill") }
+            .tag(MainTab.today)
 
-            LogHomeView()
+            AddFoodView()
                 .tabItem { Label("Log", systemImage: "plus.circle.fill") }
                 .tag(MainTab.log)
 
-            WeekView()
-                .tabItem { Label("Week", systemImage: "calendar") }
+            InsightView()
+                .tabItem { Label("Insight", systemImage: "chart.bar.fill") }
                 .tag(MainTab.week)
 
             PartnerHomeView()
