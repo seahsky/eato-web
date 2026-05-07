@@ -1,9 +1,8 @@
 import Foundation
 
 enum DeepLink: Equatable {
-    case partner               // eato://partner
-    case partnerLink(code: String) // eato.app/partner/link/ABC123 or eato://partner/link/ABC123
-    case approve(entryId: String)  // eato.app/approve/<id> or eato://approve/<id>
+    case friends                          // eato://friends
+    case friendCode(code: String)         // eato.app/friends/add/ABC123 or eato://friends/add/ABC123
 
     static func parse(_ url: URL) -> DeepLink? {
         // Universal Link: https://eato.app/<path>
@@ -21,16 +20,11 @@ enum DeepLink: Equatable {
     private static func fromPath(_ components: [String]) -> DeepLink? {
         let cleaned = components.filter { !$0.isEmpty && $0 != "/" }
         switch cleaned.first {
-        case "partner":
-            if cleaned.count >= 3, cleaned[1] == "link" {
-                return .partnerLink(code: cleaned[2].uppercased())
+        case "friends":
+            if cleaned.count >= 3, cleaned[1] == "add" {
+                return .friendCode(code: cleaned[2].uppercased())
             }
-            return .partner
-        case "approve":
-            if cleaned.count >= 2 {
-                return .approve(entryId: cleaned[1])
-            }
-            return nil
+            return .friends
         default:
             return nil
         }
