@@ -11,6 +11,7 @@ struct EatoApp: App {
     var body: some Scene {
         WindowGroup {
             RootView()
+                .preferredColorScheme(.light)
                 .environment(session)
                 .environment(router)
                 .onOpenURL { router.handle($0) }

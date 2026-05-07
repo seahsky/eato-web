@@ -37,4 +37,9 @@ actor ClerkSession: AuthTokenProvider {
             strategy: .idToken(provider: .apple, idToken: identityToken)
         )
     }
+
+    func signInWithGoogle() async throws {
+        let signIn = try await SignIn.create(strategy: .oauth(provider: .google))
+        _ = try await signIn.authenticateWithRedirect()
+    }
 }
