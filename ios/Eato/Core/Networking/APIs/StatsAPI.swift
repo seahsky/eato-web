@@ -26,49 +26,6 @@ enum AchievementsAPI {
     static var getAll: Endpoint<AchievementsSummaryDTO> { .get("achievements") }
 }
 
-enum PetAPI {
-    static var getHealth: Endpoint<PetHealthDTO> { .get("pet/health") }
-    static var partnerHealth: Endpoint<PetHealthDTO?> { .get("pet/partner-health") }
-    static var interactions: Endpoint<[PetInteractionDTO]> { .get("pet/interactions") }
-    static func sendInteraction(_ type: PetInteractionType) -> Endpoint<EmptyResponse> {
-        .post("pet/interaction", body: PetInteractionRequest(type: type.rawValue))
-    }
-}
-
-struct PetInteractionRequest: Encodable, Sendable { let type: String }
-
-enum PetInteractionType: String, CaseIterable, Sendable {
-    case wave, pet, highfive
-
-    var emoji: String {
-        switch self {
-        case .wave: "👋"
-        case .pet: "🤗"
-        case .highfive: "🙌"
-        }
-    }
-
-    var label: String {
-        switch self {
-        case .wave: "Wave"
-        case .pet: "Pet"
-        case .highfive: "High five"
-        }
-    }
-}
-
-struct PetInteractionDTO: Decodable, Sendable, Identifiable {
-    let id: String
-    let type: String
-    let createdAt: Date
-    let fromUser: FromUser?
-
-    struct FromUser: Decodable, Sendable {
-        let id: String
-        let name: String?
-    }
-}
-
 enum RestDayAPI {
     static var list: Endpoint<RestDayListDTO> { .get("stats/rest-days") }
 

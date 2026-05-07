@@ -40,6 +40,15 @@ extension Endpoint {
         let data = try? JSONEncoder.eato.encode(body)
         return .init(method: .post, path: path, query: query, body: data)
     }
+
+    static func put<Body: Encodable>(
+        _ path: String,
+        body: Body,
+        query: [URLQueryItem] = []
+    ) -> Endpoint<Response> {
+        let data = try? JSONEncoder.eato.encode(body)
+        return .init(method: .put, path: path, query: query, body: data)
+    }
 }
 
 extension JSONEncoder {

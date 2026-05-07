@@ -108,40 +108,6 @@ export const profileRouter = router({
       return profile;
     }),
 
-  // Get partner's profile (read-only)
-  getPartnerProfile: protectedProcedure
-    .meta({ openapi: { method: "GET", path: "/profile/partner" } })
-    .input(z.void())
-    .output(z.any())
-    .query(async ({ ctx }) => {
-    const user = await ctx.prisma.user.findUnique({
-      where: { id: ctx.user.id },
-      select: { partnerId: true },
-    });
-
-    if (!user?.partnerId) {
-      return null;
-    }
-
-    const profile = await ctx.prisma.profile.findUnique({
-      where: { userId: user.partnerId },
-    });
-
-    const partner = await ctx.prisma.user.findUnique({
-      where: { id: user.partnerId },
-      select: { name: true },
-    });
-
-    if (!profile) {
-      return null;
-    }
-
-    return {
-      partnerName: partner?.name ?? "Partner",
-      ...profile,
-    };
-  }),
-
   // Calculate BMR preview (without saving)
   calculateBMRPreview: protectedProcedure
     .meta({ openapi: { method: "POST", path: "/profile/calculate-bmr" } })

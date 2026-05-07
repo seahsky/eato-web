@@ -10,7 +10,6 @@ export async function POST(req: Request) {
     throw new Error("Missing CLERK_WEBHOOK_SECRET environment variable");
   }
 
-  // Get the headers
   const headerPayload = await headers();
   const svix_id = headerPayload.get("svix-id");
   const svix_timestamp = headerPayload.get("svix-timestamp");
@@ -20,11 +19,9 @@ export async function POST(req: Request) {
     return new Response("Missing svix headers", { status: 400 });
   }
 
-  // Get the body
   const payload = await req.json();
   const body = JSON.stringify(payload);
 
-  // Verify the webhook
   const wh = new Webhook(WEBHOOK_SECRET);
   let evt: WebhookEvent;
 
@@ -60,11 +57,8 @@ export async function POST(req: Request) {
         name: [first_name, last_name].filter(Boolean).join(" ") || null,
         // Gamification defaults (explicit for MongoDB safety)
         lastRestDayReset: new Date(),
-        lastShieldReset: new Date(),
         restDaysRemaining: 6,
         restDayDates: [],
-        partnerShields: 2,
-        shieldsUsedThisMonth: [],
         currentStreak: 0,
         longestStreak: 0,
         goalStreak: 0,
@@ -100,23 +94,17 @@ export async function POST(req: Request) {
   if (eventType === "user.deleted") {
     const { id } = evt.data;
     if (id) {
-      // Use transaction to ensure partner unlink + user delete are atomic
+      // Sweep friendships involving this user, then cascade-delete the user.
       await prisma.$transaction(async (tx) => {
         const user = await tx.user.findUnique({
           where: { clerkId: id },
-          select: { id: true, partnerId: true },
+          select: { id: true },
         });
 
         if (!user) return; // Already deleted (idempotent)
 
-        if (user.partnerId) {
-          await tx.user.update({
-            where: { id: user.partnerId },
-            data: { partnerId: null },
-          });
-        }
-
-        // Delete the user (cascades to profile, food entries, daily logs)
+        // Friendship rows have onDelete: Cascade on both userA and userB,
+        // so deleting the user will sweep them. Same for FriendCode rows.
         await tx.user.delete({
           where: { clerkId: id },
         });

@@ -6,8 +6,7 @@ import { searchFoods, searchFoodsFast } from "../services/food-search";
 import { analyzeFoodImage } from "../services/openai";
 import { uploadImage } from "../services/r2";
 import { hashQuery, cleanupExpiredCache } from "../services/search-cache";
-import { startOfDay } from "date-fns";
-import { notifyPartnerFoodLogged, notifyPartnerGoalReached, notifyPendingApproval, notifyBadgeUnlocked, notifyApprovalResult } from "@/lib/notifications/triggers";
+import { notifyBadgeUnlocked } from "@/lib/notifications/triggers";
 import {
   calculateStreakUpdateWithRestDays,
   calculateWeeklyStreakUpdate,
@@ -43,7 +42,6 @@ const foodEntrySchema = z.object({
   // Legacy fields for backward compatibility
   openFoodFactsId: z.string().optional(),
   usdaFdcId: z.number().optional(),
-  forPartnerId: z.string().optional(),
 });
 
 export const foodRouter = router({
@@ -230,77 +228,40 @@ export const foodRouter = router({
       return food;
     }),
 
-  // Log food entry
+  // Log food entry (self only).
   log: protectedProcedure
     .meta({ openapi: { method: "POST", path: "/food/entries" } })
     .input(foodEntrySchema)
     .output(z.any())
     .mutation(async ({ ctx, input }) => {
-    const { forPartnerId, ...entryData } = input;
-    const isLoggingForPartner = !!forPartnerId;
-    let targetUserId = ctx.user.id;
+      // Parse YYYY-MM-DD as UTC midnight for consistent date handling across timezones
+      const dayStart = new Date(input.consumedAt + "T00:00:00.000Z");
+      const consumedAt = new Date(input.consumedAt + "T12:00:00.000Z");
 
-    // Validate partner relationship if logging for partner
-    if (isLoggingForPartner) {
-      const user = await ctx.prisma.user.findUnique({
-        where: { id: ctx.user.id },
-        select: { partnerId: true },
+      let dailyLog = await ctx.prisma.dailyLog.findUnique({
+        where: { userId_date: { userId: ctx.user.id, date: dayStart } },
       });
 
-      if (user?.partnerId !== forPartnerId) {
-        throw new TRPCError({
-          code: "FORBIDDEN",
-          message: "You can only log food for your linked partner",
+      const profile = await ctx.prisma.profile.findUnique({
+        where: { userId: ctx.user.id },
+      });
+      const calorieGoal = profile?.calorieGoal ?? 2000;
+
+      if (!dailyLog) {
+        dailyLog = await ctx.prisma.dailyLog.create({
+          data: { userId: ctx.user.id, date: dayStart, calorieGoal },
         });
       }
-      targetUserId = forPartnerId;
-    }
 
-    // Parse YYYY-MM-DD as UTC midnight for consistent date handling across timezones
-    const dayStart = new Date(input.consumedAt + "T00:00:00.000Z");
-    const consumedAt = new Date(input.consumedAt + "T12:00:00.000Z");
-
-    // Get or create daily log for target user
-    let dailyLog = await ctx.prisma.dailyLog.findUnique({
-      where: {
-        userId_date: {
-          userId: targetUserId,
-          date: dayStart,
-        },
-      },
-    });
-
-    // Get target user's calorie goal
-    const profile = await ctx.prisma.profile.findUnique({
-      where: { userId: targetUserId },
-    });
-
-    const calorieGoal = profile?.calorieGoal ?? 2000;
-
-    if (!dailyLog) {
-      dailyLog = await ctx.prisma.dailyLog.create({
+      const entry = await ctx.prisma.foodEntry.create({
         data: {
-          userId: targetUserId,
-          date: dayStart,
-          calorieGoal,
+          userId: ctx.user.id,
+          dailyLogId: dailyLog.id,
+          ...input,
+          consumedAt,
         },
       });
-    }
 
-    // Create food entry
-    const entry = await ctx.prisma.foodEntry.create({
-      data: {
-        userId: targetUserId,
-        dailyLogId: dailyLog.id,
-        loggedByUserId: isLoggingForPartner ? ctx.user.id : null,
-        approvalStatus: isLoggingForPartner ? "PENDING" : "APPROVED",
-        ...entryData,
-        consumedAt,
-      },
-    });
-
-    // Only update daily log totals for approved (self-logged) entries
-    if (!isLoggingForPartner) {
       const updatedLog = await ctx.prisma.dailyLog.update({
         where: { id: dailyLog.id },
         data: {
@@ -312,7 +273,6 @@ export const foodRouter = router({
         },
       });
 
-      // Update user's streak (async, don't block the response)
       const userData = await ctx.prisma.user.findUnique({
         where: { id: ctx.user.id },
         select: {
@@ -331,15 +291,12 @@ export const foodRouter = router({
           weekStartDate: true,
           achievements: { select: { badgeId: true } },
           name: true,
-          partnerId: true,
         },
       });
 
       if (userData) {
-        // Check if monthly rest day reset needed
         const needsRestDayReset = shouldResetRestDays(userData.lastRestDayReset);
 
-        // Calculate daily streak with rest days
         const streakResult = calculateStreakUpdateWithRestDays(
           {
             currentStreak: userData.currentStreak,
@@ -355,7 +312,6 @@ export const foodRouter = router({
           consumedAt
         );
 
-        // Calculate weekly streak
         const weeklyResult = calculateWeeklyStreakUpdate(
           {
             weeklyStreak: userData.weeklyStreak,
@@ -366,7 +322,6 @@ export const foodRouter = router({
           consumedAt
         );
 
-        // Update user streak data
         await ctx.prisma.user.update({
           where: { id: ctx.user.id },
           data: {
@@ -385,27 +340,21 @@ export const foodRouter = router({
           },
         });
 
-        // Check for new badges to unlock based on streaks
         const unlockedBadgeIds = userData.achievements.map((a) => a.badgeId);
         const newDailyBadges = getStreakBadgesToUnlock(streakResult.newStreak, unlockedBadgeIds);
         const newWeeklyBadges = getWeeklyStreakBadgesToUnlock(weeklyResult.weeklyStreak, unlockedBadgeIds);
         const newBadges = [...newDailyBadges, ...newWeeklyBadges];
 
-        // Create achievement records for new badges (one at a time to handle duplicates)
         for (const badgeId of newBadges) {
           try {
             await ctx.prisma.achievement.create({
-              data: {
-                userId: ctx.user.id,
-                badgeId,
-              },
+              data: { userId: ctx.user.id, badgeId },
             });
           } catch {
             // Ignore duplicate key errors
           }
         }
 
-        // Notify user about new badges
         if (newBadges.length > 0) {
           const { BADGES } = await import("@/lib/gamification/badges");
           const badgeNames = newBadges
@@ -415,53 +364,16 @@ export const foodRouter = router({
         }
       }
 
-      // Send push notifications (async, don't block the response)
-      const userWithPartner = userData;
-
-      if (userWithPartner?.partnerId) {
-        // Notify partner about food logged (fire and forget)
-        notifyPartnerFoodLogged(
-          userWithPartner.partnerId,
-          userWithPartner.name || "Your partner",
-          input.name
-        ).catch(() => {});
-
-        // Check if goal was just reached (within 90-100% of goal)
-        const goalProgress = updatedLog.totalCalories / updatedLog.calorieGoal;
-        if (!updatedLog.goalMet && goalProgress >= 0.9 && goalProgress <= 1.0) {
-          // Mark goal as met
-          await ctx.prisma.dailyLog.update({
-            where: { id: dailyLog.id },
-            data: { goalMet: true },
-          });
-
-          // Notify partner about goal reached (fire and forget)
-          notifyPartnerGoalReached(
-            userWithPartner.partnerId,
-            userWithPartner.name || "Your partner"
-          ).catch(() => {});
-        }
+      const goalProgress = updatedLog.totalCalories / updatedLog.calorieGoal;
+      if (!updatedLog.goalMet && goalProgress >= 0.9 && goalProgress <= 1.0) {
+        await ctx.prisma.dailyLog.update({
+          where: { id: dailyLog.id },
+          data: { goalMet: true },
+        });
       }
-    } else {
-      // Logging for partner - send pending approval notification
-      const loggerName = await ctx.prisma.user.findUnique({
-        where: { id: ctx.user.id },
-        select: { name: true },
-      });
 
-      notifyPendingApproval(
-        targetUserId,
-        loggerName?.name || "Your partner",
-        {
-          id: entry.id,
-          name: input.name,
-          calories: input.calories,
-        }
-      ).catch(() => {});
-    }
-
-    return entry;
-  }),
+      return entry;
+    }),
 
   // Batch log multiple food entries at once (meal group)
   batchLog: protectedProcedure
@@ -512,12 +424,11 @@ export const foodRouter = router({
       let totalFiber = 0;
 
       for (const entryData of input.entries) {
-        const { forPartnerId, consumedAt: _entryDate, mealGroupId: _mg, ...rest } = entryData;
+        const { consumedAt: _entryDate, mealGroupId: _mg, ...rest } = entryData;
         const entry = await ctx.prisma.foodEntry.create({
           data: {
             userId: ctx.user.id,
             dailyLogId: dailyLog!.id,
-            approvalStatus: "APPROVED",
             ...rest,
             mealGroupId: input.mealGroupId,
             consumedAt,
@@ -562,7 +473,6 @@ export const foodRouter = router({
           weekStartDate: true,
           achievements: { select: { badgeId: true } },
           name: true,
-          partnerId: true,
         },
       });
 
@@ -633,32 +543,14 @@ export const foodRouter = router({
             .filter(Boolean) as string[];
           notifyBadgeUnlocked(ctx.user.id, badgeNames).catch(() => {});
         }
+      }
 
-        // Send one partner notification for the batch
-        if (userData.partnerId) {
-          const itemCount = input.entries.length;
-          const foodSummary = itemCount === 1
-            ? input.entries[0].name
-            : `${itemCount} items`;
-          notifyPartnerFoodLogged(
-            userData.partnerId,
-            userData.name || "Your partner",
-            foodSummary
-          ).catch(() => {});
-
-          // Check if goal was just reached
-          const goalProgress = updatedLog.totalCalories / updatedLog.calorieGoal;
-          if (!updatedLog.goalMet && goalProgress >= 0.9 && goalProgress <= 1.0) {
-            await ctx.prisma.dailyLog.update({
-              where: { id: dailyLog.id },
-              data: { goalMet: true },
-            });
-            notifyPartnerGoalReached(
-              userData.partnerId,
-              userData.name || "Your partner"
-            ).catch(() => {});
-          }
-        }
+      const goalProgress = updatedLog.totalCalories / updatedLog.calorieGoal;
+      if (!updatedLog.goalMet && goalProgress >= 0.9 && goalProgress <= 1.0) {
+        await ctx.prisma.dailyLog.update({
+          where: { id: dailyLog.id },
+          data: { goalMet: true },
+        });
       }
 
       return { entries: createdEntries, mealGroupId: input.mealGroupId };
@@ -709,7 +601,7 @@ export const foodRouter = router({
       return entries;
     }),
 
-  // Update entry
+  // Update entry (owner only).
   update: protectedProcedure
     .meta({ openapi: { method: "PUT", path: "/food/entries/{id}" } })
     .input(
@@ -720,9 +612,8 @@ export const foodRouter = router({
     )
     .output(z.any())
     .mutation(async ({ ctx, input }) => {
-      // First find the entry without user restriction
       const entry = await ctx.prisma.foodEntry.findFirst({
-        where: { id: input.id },
+        where: { id: input.id, userId: ctx.user.id },
       });
 
       if (!entry) {
@@ -732,46 +623,18 @@ export const foodRouter = router({
         });
       }
 
-      // Check permissions:
-      // - APPROVED entries: only owner can update
-      // - PENDING/REJECTED entries: owner OR the logger can update
-      const isOwner = entry.userId === ctx.user.id;
-      const isLogger = entry.loggedByUserId === ctx.user.id;
-
-      if (entry.approvalStatus === "APPROVED") {
-        if (!isOwner) {
-          throw new TRPCError({
-            code: "FORBIDDEN",
-            message: "Only the owner can update approved entries",
-          });
-        }
-      } else {
-        // PENDING or REJECTED — owner can update (it's their entry) or logger can update
-        if (!isOwner && !isLogger) {
-          throw new TRPCError({
-            code: "FORBIDDEN",
-            message: "Only the owner or the person who logged this entry can update it",
-          });
-        }
-      }
-
-      // Calculate difference for updating daily log
       const calorieDiff = (input.data.calories ?? entry.calories) - entry.calories;
       const proteinDiff = (input.data.protein ?? entry.protein ?? 0) - (entry.protein ?? 0);
       const carbsDiff = (input.data.carbs ?? entry.carbs ?? 0) - (entry.carbs ?? 0);
       const fatDiff = (input.data.fat ?? entry.fat ?? 0) - (entry.fat ?? 0);
       const fiberDiff = (input.data.fiber ?? entry.fiber ?? 0) - (entry.fiber ?? 0);
 
-      // Remove forPartnerId from update data if present
-      const { forPartnerId, ...updateData } = input.data;
-
       const updated = await ctx.prisma.foodEntry.update({
         where: { id: input.id },
-        data: updateData,
+        data: input.data,
       });
 
-      // Only update daily log for APPROVED entries
-      if (entry.approvalStatus === "APPROVED" && entry.dailyLogId) {
+      if (entry.dailyLogId) {
         const updatedLog = await ctx.prisma.dailyLog.update({
           where: { id: entry.dailyLogId },
           data: {
@@ -783,7 +646,6 @@ export const foodRouter = router({
           },
         });
 
-        // Recalculate goalMet after totals change
         const goalProgress = updatedLog.calorieGoal > 0
           ? updatedLog.totalCalories / updatedLog.calorieGoal
           : 0;
@@ -799,15 +661,14 @@ export const foodRouter = router({
       return updated;
     }),
 
-  // Delete entry
+  // Delete entry (owner only).
   delete: protectedProcedure
     .meta({ openapi: { method: "DELETE", path: "/food/entries/{id}" } })
     .input(z.object({ id: z.string() }))
     .output(z.object({ success: z.boolean() }))
     .mutation(async ({ ctx, input }) => {
-      // First find the entry without user restriction
       const entry = await ctx.prisma.foodEntry.findFirst({
-        where: { id: input.id },
+        where: { id: input.id, userId: ctx.user.id },
       });
 
       if (!entry) {
@@ -817,31 +678,7 @@ export const foodRouter = router({
         });
       }
 
-      // Check permissions:
-      // - APPROVED entries: only owner can delete
-      // - PENDING/REJECTED entries: owner OR the logger can delete
-      const isOwner = entry.userId === ctx.user.id;
-      const isLogger = entry.loggedByUserId === ctx.user.id;
-
-      if (entry.approvalStatus === "APPROVED") {
-        if (!isOwner) {
-          throw new TRPCError({
-            code: "FORBIDDEN",
-            message: "Only the owner can delete approved entries",
-          });
-        }
-      } else {
-        // PENDING or REJECTED — owner can delete (it's their entry) or logger can delete
-        if (!isOwner && !isLogger) {
-          throw new TRPCError({
-            code: "FORBIDDEN",
-            message: "Only the owner or the person who logged this entry can delete it",
-          });
-        }
-      }
-
-      // Only update daily log for APPROVED entries (others don't affect totals)
-      if (entry.approvalStatus === "APPROVED" && entry.dailyLogId) {
+      if (entry.dailyLogId) {
         const updatedLog = await ctx.prisma.dailyLog.update({
           where: { id: entry.dailyLogId },
           data: {
@@ -853,7 +690,6 @@ export const foodRouter = router({
           },
         });
 
-        // Recalculate goalMet after totals change
         const goalProgress = updatedLog.calorieGoal > 0
           ? updatedLog.totalCalories / updatedLog.calorieGoal
           : 0;
@@ -873,333 +709,6 @@ export const foodRouter = router({
       return { success: true };
     }),
 
-  // Get entries pending current user's approval
-  getPendingApprovals: protectedProcedure
-    .meta({ openapi: { method: "GET", path: "/food/pending-approvals" } })
-    .input(z.void())
-    .output(z.any())
-    .query(async ({ ctx }) => {
-    const entries = await ctx.prisma.foodEntry.findMany({
-      where: {
-        userId: ctx.user.id,
-        approvalStatus: "PENDING",
-        loggedByUserId: { not: null },
-      },
-      orderBy: { loggedAt: "desc" },
-    });
-
-    // Get logger names
-    const loggerIds = [...new Set(entries.map((e) => e.loggedByUserId).filter(Boolean))] as string[];
-    const loggers = await ctx.prisma.user.findMany({
-      where: { id: { in: loggerIds } },
-      select: { id: true, name: true },
-    });
-    const loggerMap = new Map(loggers.map((l) => [l.id, l.name]));
-
-    return entries.map((e) => ({
-      ...e,
-      loggedByName: e.loggedByUserId ? loggerMap.get(e.loggedByUserId) : null,
-    }));
-  }),
-
-  // Get pending approval count (for badge)
-  getPendingApprovalCount: protectedProcedure
-    .meta({ openapi: { method: "GET", path: "/food/pending-approvals/count" } })
-    .input(z.void())
-    .output(z.object({ count: z.number() }))
-    .query(async ({ ctx }) => {
-    const count = await ctx.prisma.foodEntry.count({
-      where: {
-        userId: ctx.user.id,
-        approvalStatus: "PENDING",
-        loggedByUserId: { not: null },
-      },
-    });
-    return { count };
-  }),
-
-  // Get entries I logged for partner that are pending/rejected
-  getMyPendingSubmissions: protectedProcedure
-    .meta({ openapi: { method: "GET", path: "/food/my-pending-submissions" } })
-    .input(z.void())
-    .output(z.any())
-    .query(async ({ ctx }) => {
-    const entries = await ctx.prisma.foodEntry.findMany({
-      where: {
-        loggedByUserId: ctx.user.id,
-        approvalStatus: { in: ["PENDING", "REJECTED"] },
-      },
-      include: {
-        user: { select: { name: true } },
-      },
-      orderBy: { loggedAt: "desc" },
-    });
-    return entries;
-  }),
-
-  // Approve an entry
-  approveEntry: protectedProcedure
-    .meta({ openapi: { method: "POST", path: "/food/entries/{entryId}/approve" } })
-    .input(z.object({ entryId: z.string() }))
-    .output(z.object({ success: z.boolean() }))
-    .mutation(async ({ ctx, input }) => {
-      // Use updateMany with status condition to atomically prevent double-approve
-      const result = await ctx.prisma.foodEntry.updateMany({
-        where: {
-          id: input.entryId,
-          userId: ctx.user.id,
-          approvalStatus: "PENDING",
-        },
-        data: { approvalStatus: "APPROVED" },
-      });
-
-      if (result.count === 0) {
-        throw new TRPCError({
-          code: "NOT_FOUND",
-          message: "Entry not found or already processed",
-        });
-      }
-
-      // Fetch the now-approved entry for daily log update and notification
-      const entry = await ctx.prisma.foodEntry.findUnique({
-        where: { id: input.entryId },
-      });
-
-      if (!entry) {
-        return { success: true };
-      }
-
-      // Update daily log totals and recalculate goalMet
-      if (entry.dailyLogId) {
-        const updatedLog = await ctx.prisma.dailyLog.update({
-          where: { id: entry.dailyLogId },
-          data: {
-            totalCalories: { increment: entry.calories },
-            totalProtein: { increment: entry.protein ?? 0 },
-            totalCarbs: { increment: entry.carbs ?? 0 },
-            totalFat: { increment: entry.fat ?? 0 },
-            totalFiber: { increment: entry.fiber ?? 0 },
-          },
-        });
-
-        // Recalculate goalMet after totals change
-        const goalProgress = updatedLog.calorieGoal > 0
-          ? updatedLog.totalCalories / updatedLog.calorieGoal
-          : 0;
-        const newGoalMet = goalProgress >= 0.9 && goalProgress <= 1.0;
-        if (updatedLog.goalMet !== newGoalMet) {
-          await ctx.prisma.dailyLog.update({
-            where: { id: entry.dailyLogId },
-            data: { goalMet: newGoalMet },
-          });
-        }
-      }
-
-      // Notify the logger that their entry was approved
-      if (entry.loggedByUserId) {
-        const approver = await ctx.prisma.user.findUnique({
-          where: { id: ctx.user.id },
-          select: { name: true },
-        });
-        notifyApprovalResult(
-          entry.loggedByUserId,
-          approver?.name || "Your partner",
-          entry.name,
-          true
-        ).catch(() => {});
-      }
-
-      return { success: true };
-    }),
-
-  // Reject an entry
-  rejectEntry: protectedProcedure
-    .meta({ openapi: { method: "POST", path: "/food/entries/{entryId}/reject" } })
-    .input(
-      z.object({
-        entryId: z.string(),
-        note: z.string().optional(),
-      })
-    )
-    .output(z.object({ success: z.boolean() }))
-    .mutation(async ({ ctx, input }) => {
-      // Use updateMany with status condition to atomically prevent double-reject
-      const result = await ctx.prisma.foodEntry.updateMany({
-        where: {
-          id: input.entryId,
-          userId: ctx.user.id,
-          approvalStatus: "PENDING",
-        },
-        data: {
-          approvalStatus: "REJECTED",
-          rejectionNote: input.note,
-        },
-      });
-
-      if (result.count === 0) {
-        throw new TRPCError({
-          code: "NOT_FOUND",
-          message: "Entry not found or already processed",
-        });
-      }
-
-      // Fetch the entry for notification
-      const entry = await ctx.prisma.foodEntry.findUnique({
-        where: { id: input.entryId },
-      });
-
-      // Notify the logger that their entry was rejected
-      if (entry?.loggedByUserId) {
-        const rejecter = await ctx.prisma.user.findUnique({
-          where: { id: ctx.user.id },
-          select: { name: true },
-        });
-        notifyApprovalResult(
-          entry.loggedByUserId,
-          rejecter?.name || "Your partner",
-          entry.name,
-          false
-        ).catch(() => {});
-      }
-
-      return { success: true };
-    }),
-
-  // Resubmit a rejected entry
-  resubmitEntry: protectedProcedure
-    .meta({ openapi: { method: "POST", path: "/food/entries/{entryId}/resubmit" } })
-    .input(z.object({ entryId: z.string() }))
-    .output(z.object({ success: z.boolean() }))
-    .mutation(async ({ ctx, input }) => {
-      // Use updateMany with status condition to atomically prevent race conditions
-      const result = await ctx.prisma.foodEntry.updateMany({
-        where: {
-          id: input.entryId,
-          loggedByUserId: ctx.user.id,
-          approvalStatus: "REJECTED",
-        },
-        data: {
-          approvalStatus: "PENDING",
-          rejectionNote: null,
-        },
-      });
-
-      if (result.count === 0) {
-        throw new TRPCError({
-          code: "NOT_FOUND",
-          message: "Entry not found or not rejected",
-        });
-      }
-
-      return { success: true };
-    }),
-
-  // Clone meal group to partner
-  cloneMealGroupToPartner: protectedProcedure
-    .meta({ openapi: { method: "POST", path: "/food/clone-meal-group-to-partner" } })
-    .input(
-      z.object({
-        mealGroupId: z.string(),
-      })
-    )
-    .output(z.object({ clonedCount: z.number(), partnerName: z.string().nullable() }))
-    .mutation(async ({ ctx, input }) => {
-      // Get user with partner info
-      const user = await ctx.prisma.user.findUnique({
-        where: { id: ctx.user.id },
-        include: {
-          partner: {
-            select: { id: true, name: true },
-          },
-        },
-      });
-
-      if (!user?.partner) {
-        throw new TRPCError({
-          code: "FORBIDDEN",
-          message: "You must have a linked partner to clone meals",
-        });
-      }
-
-      // Get user's approved entries for this meal group
-      const entries = await ctx.prisma.foodEntry.findMany({
-        where: {
-          userId: ctx.user.id,
-          mealGroupId: input.mealGroupId,
-          approvalStatus: "APPROVED",
-        },
-      });
-
-      if (entries.length === 0) {
-        return { clonedCount: 0, partnerName: user.partner.name };
-      }
-
-      // Use the date from the first entry
-      const dayStart = startOfDay(entries[0].consumedAt);
-
-      // Get or create partner's daily log
-      const partnerProfile = await ctx.prisma.profile.findUnique({
-        where: { userId: user.partner.id },
-      });
-      const calorieGoal = partnerProfile?.calorieGoal ?? 2000;
-
-      let partnerDailyLog = await ctx.prisma.dailyLog.findUnique({
-        where: {
-          userId_date: {
-            userId: user.partner.id,
-            date: dayStart,
-          },
-        },
-      });
-
-      if (!partnerDailyLog) {
-        partnerDailyLog = await ctx.prisma.dailyLog.create({
-          data: {
-            userId: user.partner.id,
-            date: dayStart,
-            calorieGoal,
-          },
-        });
-      }
-
-      // Clone entries for partner with a new meal group ID
-      const newMealGroupId = crypto.randomUUID();
-      const clonedEntries = await ctx.prisma.foodEntry.createMany({
-        data: entries.map((entry) => ({
-          userId: user.partner!.id,
-          dailyLogId: partnerDailyLog!.id,
-          loggedByUserId: ctx.user.id,
-          approvalStatus: "PENDING" as const,
-          name: entry.name,
-          barcode: entry.barcode,
-          brand: entry.brand,
-          imageUrl: entry.imageUrl,
-          calories: entry.calories,
-          protein: entry.protein,
-          carbs: entry.carbs,
-          fat: entry.fat,
-          fiber: entry.fiber,
-          sugar: entry.sugar,
-          sodium: entry.sodium,
-          servingSize: entry.servingSize,
-          servingUnit: entry.servingUnit,
-          mealGroupId: newMealGroupId,
-          consumedAt: entry.consumedAt,
-          isManualEntry: entry.isManualEntry,
-          dataSource: entry.dataSource,
-          fatSecretId: entry.fatSecretId,
-          openFoodFactsId: entry.openFoodFactsId,
-          usdaFdcId: entry.usdaFdcId,
-          recipeId: entry.recipeId,
-        })),
-      });
-
-      return {
-        clonedCount: clonedEntries.count,
-        partnerName: user.partner.name,
-      };
-    }),
-
   // Get recent unique foods (last 14 days)
   getRecentFoods: protectedProcedure
     .meta({ openapi: { method: "GET", path: "/food/recent" } })
@@ -1213,7 +722,6 @@ export const foodRouter = router({
     const entries = await ctx.prisma.foodEntry.findMany({
       where: {
         userId: ctx.user.id,
-        approvalStatus: "APPROVED",
         consumedAt: { gte: fourteenDaysAgo },
       },
       orderBy: { consumedAt: "desc" },
@@ -1322,7 +830,6 @@ export const foodRouter = router({
     const entries = await ctx.prisma.foodEntry.findMany({
       where: {
         userId: ctx.user.id,
-        approvalStatus: "APPROVED",
         consumedAt: { gte: thirtyDaysAgo },
       },
       select: {
@@ -1537,135 +1044,6 @@ export const foodRouter = router({
         });
         return { isFavorite: true };
       }
-    }),
-
-  // Copy a partner's food entry to your log
-  copyPartnerFood: protectedProcedure
-    .meta({ openapi: { method: "POST", path: "/food/copy-partner-food" } })
-    .input(
-      z.object({
-        entryId: z.string(),
-        consumedAt: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Date must be in YYYY-MM-DD format").optional(),
-      })
-    )
-    .output(z.object({ success: z.boolean(), entry: z.any(), foodName: z.string() }))
-    .mutation(async ({ ctx, input }) => {
-      // Get partner relationship
-      const user = await ctx.prisma.user.findUnique({
-        where: { id: ctx.user.id },
-        select: { partnerId: true },
-      });
-
-      if (!user?.partnerId) {
-        throw new TRPCError({
-          code: "FORBIDDEN",
-          message: "You must have a linked partner to copy food",
-        });
-      }
-
-      // Find the partner's food entry
-      const partnerEntry = await ctx.prisma.foodEntry.findFirst({
-        where: {
-          id: input.entryId,
-          userId: user.partnerId,
-          approvalStatus: "APPROVED",
-        },
-      });
-
-      if (!partnerEntry) {
-        throw new TRPCError({
-          code: "NOT_FOUND",
-          message: "Food entry not found or not accessible",
-        });
-      }
-
-      // Use today's date if not specified
-      const dateStr = input.consumedAt ?? new Date().toISOString().split("T")[0];
-      const dayStart = new Date(dateStr + "T00:00:00.000Z");
-      const consumedAt = new Date(dateStr + "T12:00:00.000Z");
-
-      // Get or create daily log for current user
-      const profile = await ctx.prisma.profile.findUnique({
-        where: { userId: ctx.user.id },
-      });
-      const calorieGoal = profile?.calorieGoal ?? 2000;
-
-      let dailyLog = await ctx.prisma.dailyLog.findUnique({
-        where: {
-          userId_date: {
-            userId: ctx.user.id,
-            date: dayStart,
-          },
-        },
-      });
-
-      if (!dailyLog) {
-        dailyLog = await ctx.prisma.dailyLog.create({
-          data: {
-            userId: ctx.user.id,
-            date: dayStart,
-            calorieGoal,
-          },
-        });
-      }
-
-      // Create the food entry copy
-      const newEntry = await ctx.prisma.foodEntry.create({
-        data: {
-          userId: ctx.user.id,
-          dailyLogId: dailyLog.id,
-          approvalStatus: "APPROVED",
-          name: partnerEntry.name,
-          barcode: partnerEntry.barcode,
-          brand: partnerEntry.brand,
-          imageUrl: partnerEntry.imageUrl,
-          calories: partnerEntry.calories,
-          protein: partnerEntry.protein,
-          carbs: partnerEntry.carbs,
-          fat: partnerEntry.fat,
-          fiber: partnerEntry.fiber,
-          sugar: partnerEntry.sugar,
-          sodium: partnerEntry.sodium,
-          servingSize: partnerEntry.servingSize,
-          servingUnit: partnerEntry.servingUnit,
-          consumedAt,
-          isManualEntry: partnerEntry.isManualEntry,
-          dataSource: partnerEntry.dataSource,
-          fatSecretId: partnerEntry.fatSecretId,
-          openFoodFactsId: partnerEntry.openFoodFactsId,
-          usdaFdcId: partnerEntry.usdaFdcId,
-        },
-      });
-
-      // Update daily log totals and recalculate goalMet
-      const updatedLog = await ctx.prisma.dailyLog.update({
-        where: { id: dailyLog.id },
-        data: {
-          totalCalories: { increment: partnerEntry.calories },
-          totalProtein: { increment: partnerEntry.protein ?? 0 },
-          totalCarbs: { increment: partnerEntry.carbs ?? 0 },
-          totalFat: { increment: partnerEntry.fat ?? 0 },
-          totalFiber: { increment: partnerEntry.fiber ?? 0 },
-        },
-      });
-
-      // Recalculate goalMet after totals change
-      const goalProgress = updatedLog.calorieGoal > 0
-        ? updatedLog.totalCalories / updatedLog.calorieGoal
-        : 0;
-      const newGoalMet = goalProgress >= 0.9 && goalProgress <= 1.0;
-      if (updatedLog.goalMet !== newGoalMet) {
-        await ctx.prisma.dailyLog.update({
-          where: { id: dailyLog.id },
-          data: { goalMet: newGoalMet },
-        });
-      }
-
-      return {
-        success: true,
-        entry: newEntry,
-        foodName: partnerEntry.name,
-      };
     }),
 
   // Clear search cache for debugging

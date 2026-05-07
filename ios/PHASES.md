@@ -12,11 +12,25 @@ file tracks what's landed on `feat/ios-native` and what remains.
 | 2 | Logging core — search, barcode, photo, manual | `82010a9` |
 | 3 | Week tab + history | `2525b7a` |
 | 4 | Recipes — list, builder, detail, log portion | (Phase 4 commit) |
-| 5 | Partner — link code, dashboard, approvals, nudges | (Phase 5 commit) |
-| 6 | Pet + rest days | (Phase 6 commit) |
+| 5 | Partner — link code, dashboard, approvals, nudges | (Phase 5 commit) — **superseded by Friends rewrite, see redesign phases below** |
+| 6 | Pet + rest days | (Phase 6 commit) — **Pet UI deleted in redesign Phase 5** |
 | 7 | Meal estimator | (Phase 7 commit) |
 | 8a | APNs dispatch (backend) + iOS registration manager | `ed44281` |
-| 8b | Deep links (Universal + custom scheme) + actionable approval notifications | (Phase 8 commit) |
+| 8b | Deep links (Universal + custom scheme) + actionable approval notifications | (Phase 8 commit) — **approval actions removed in redesign Phase 5** |
+
+## Eato redesign — phase status (current)
+
+Top-level plan: 7-phase redesign to retro.app-style chronological diary, drop Pet, replace 1:1 Partner with many-to-many Friend.
+
+| # | Phase | Commit |
+|---|---|---|
+| 0 | Design foundation — brand palette, 8 primitives, softShadow | `43b4612` |
+| 1 | Backend — drop Pet, Partner→Friend, drop approval flow, migration script | `b87b093` |
+| 2 | Splash + Sign-in restyle + Onboarding pre-fill | `3ec4da3` |
+| 3 | Diary timeline + postcard overlay + summary strip + quick chips | `47e62ba` |
+| 4 | AddFood + Insight (Weekly Charts, History calendar, Streaks badges) | `a2427d9` |
+| 5 | Friends UI (Feed/Friends/You) + delete Partner/Pet UI | `29410c8` |
+| 6 | ProfileView + final cleanup | `58e05e9` |
 
 ## Remaining for true Phase 8 "ship" completion
 
@@ -75,20 +89,18 @@ Not verified (requires infra I don't have access to):
 
 | Tab | Entry point | Built in |
 |---|---|---|
-| Today | DashboardView | Phase 1 |
-| Log | LogHomeView → search/barcode/photo/manual/recipes/meal estimator | Phases 2, 4, 7 |
-| Week | WeekView → HistoryDayView | Phase 3 |
-| Partner | PartnerHomeView → PartnerLinkView / PartnerDashboardView / PendingApprovalsView | Phase 5 |
-| Me | ProfileTabView → PetView / RestDaysView | Phase 6 |
+| Today | DashboardView (timeline + postcard overlay) | Redesign Phase 3 |
+| Log | AddFoodView → search/barcode/photo/manual/recipes/meal estimator | Redesign Phase 4 |
+| Insight | InsightView → WeeklyView (Charts) / HistoryView (calendar) / StreaksView (badges) | Redesign Phase 4 |
+| Friends | FriendsView (Feed/Friends/You) | Redesign Phase 5 |
+| Me | ProfileView | Redesign Phase 6 |
 
 ## Deep links
 
 | URL | Routes to |
 |---|---|
-| `eato://partner` | Partner tab |
-| `eato://partner/link/<code>` or `https://eato.app/partner/link/<code>` | Partner tab, pre-fills code in PartnerLinkView |
-| `eato://approve/<id>` or `https://eato.app/approve/<id>` | Partner tab → PendingApprovalsView |
+| `eato://friends` | Friends tab |
+| `eato://friends/add/<code>` or `https://eato.app/friends/add/<code>` | Friends tab → You sub-tab, pre-fills code |
 
-Actionable APNs: `PENDING_APPROVAL` category exposes **Approve** /
-**Reject** buttons that POST directly from the manager without opening
-the app.
+Actionable APNs were removed with the approval-flow rewrite. Notifications
+now route via the `url` payload field (or fall back to opening the app).

@@ -1,6 +1,6 @@
 // Badge/Achievement definitions for Eato gamification system
 
-export type BadgeCategory = "consistency" | "logging" | "goals" | "partner";
+export type BadgeCategory = "consistency" | "logging" | "goals" | "social";
 
 export interface BadgeDefinition {
   id: string;
@@ -253,56 +253,36 @@ export const BADGES: Record<string, BadgeDefinition> = {
     order: 5,
   },
 
-  // Partner badges
-  better_together: {
-    id: "better_together",
-    name: "Better Together",
-    description: "Linked with a partner",
-    category: "partner",
+  // Social badges (friend system)
+  first_friend: {
+    id: "first_friend",
+    name: "First Friend",
+    description: "Added your first friend",
+    category: "social",
     icon: "heart",
-    requirement: "Link with a partner",
+    requirement: "Add a friend",
     rarity: "common",
     order: 1,
   },
-  accountability_buddy: {
-    id: "accountability_buddy",
-    name: "Accountability Buddy",
-    description: "Both you and partner maintained 7-day streaks",
-    category: "partner",
+  social_butterfly: {
+    id: "social_butterfly",
+    name: "Social Butterfly",
+    description: "Added 5 friends",
+    category: "social",
     icon: "users",
-    requirement: "7-day mutual streak with partner",
+    requirement: "Add 5 friends",
     rarity: "uncommon",
     order: 2,
   },
-  power_couple: {
-    id: "power_couple",
-    name: "Power Couple",
-    description: "Both you and partner maintained 30-day streaks",
-    category: "partner",
-    icon: "zap",
-    requirement: "30-day mutual streak with partner",
-    rarity: "rare",
-    order: 3,
-  },
-  nudge_master: {
-    id: "nudge_master",
-    name: "Nudge Master",
-    description: "Sent 10 nudges to your partner",
-    category: "partner",
+  nudge_sender: {
+    id: "nudge_sender",
+    name: "Nudge Sender",
+    description: "Sent 10 nudges to friends",
+    category: "social",
     icon: "bell",
     requirement: "Send 10 nudges",
     rarity: "common",
-    order: 4,
-  },
-  supportive_partner: {
-    id: "supportive_partner",
-    name: "Supportive Partner",
-    description: "Logged 5 meals for your partner",
-    category: "partner",
-    icon: "gift",
-    requirement: "Log 5 meals on partner's behalf",
-    rarity: "uncommon",
-    order: 5,
+    order: 3,
   },
 } as const;
 

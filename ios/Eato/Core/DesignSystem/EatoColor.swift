@@ -1,17 +1,34 @@
 import SwiftUI
 
-// Semantic colour tokens. Phase 0 maps to system-provided colours so the app
-// adapts to light/dark without a full asset catalog. Later phases can swap
-// individual tokens for custom colorsets without touching call-sites.
+extension Color {
+    init(hex: UInt32, opacity: Double = 1.0) {
+        let r = Double((hex >> 16) & 0xFF) / 255
+        let g = Double((hex >> 8) & 0xFF) / 255
+        let b = Double(hex & 0xFF) / 255
+        self.init(.sRGB, red: r, green: g, blue: b, opacity: opacity)
+    }
+}
+
 enum EatoColor {
-    static let background = Color(.systemBackground)
-    static let surface = Color(.secondarySystemBackground)
-    static let divider = Color(.separator)
-    static let textPrimary = Color(.label)
-    static let textSecondary = Color(.secondaryLabel)
-    static let accent = Color("AccentColor")
+    static let terracotta = Color(hex: 0xC4704B)
+    static let terracottaSoft = Color(hex: 0xE8B89A)
+    static let sage = Color(hex: 0x6A9D72)
+    static let sageSoft = Color(hex: 0xC2D9C5)
+    static let cream = Color(hex: 0xFDF8F4)
+    static let darkBrown = Color(hex: 0x3D2A1F)
+
+    static let background = cream
+    static let surface = Color(hex: 0xFFFFFF)
+    static let surfaceWarm = Color(hex: 0xFAF1E8)
+    static let divider = Color(hex: 0xEADBCB)
+    static let textPrimary = darkBrown
+    static let textSecondary = Color(hex: 0x8B7563)
+    static let textTertiary = Color(hex: 0xB39A85)
+    static let accent = terracotta
+    static let accentSoft = terracottaSoft
     static let accentContrast = Color.white
-    static let success = Color.green
-    static let warning = Color.orange
-    static let danger = Color.red
+    static let success = sage
+    static let successSoft = sageSoft
+    static let warning = Color(hex: 0xE0A040)
+    static let danger = Color(hex: 0xB44E3F)
 }

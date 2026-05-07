@@ -17,10 +17,9 @@ eato/
 - **Calorie Tracking**: Log meals with FatSecret database search, barcode scanning, or manual entry
 - **Recipe Builder**: Create custom recipes with automatic per-100g nutrition calculation
 - **BMR Calculator**: Calculate Basal Metabolic Rate using the Mifflin-St Jeor equation
-- **Partner Mode**: Link accounts with your partner to track progress together
-- **Partner Food Logging**: Log food for your partner (with approval workflow)
-- **Gamification**: Streaks, achievements, partner shields, and rest days
-- **Push Notifications**: Meal reminders and partner activity alerts
+- **Friends**: Add friends by 6-character code, see their meals in a read-only feed
+- **Gamification**: Streaks, achievements (consistency, logging, goals, social), and rest days
+- **Push Notifications**: Meal reminders and friend activity alerts
 - **Daily & Weekly Stats**: Visualize progress with charts and summaries
 
 ## Tech Stack

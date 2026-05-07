@@ -141,26 +141,8 @@ export const recipeRouter = router({
       orderBy: { updatedAt: "desc" },
     });
 
-    // Get partner's recipes if linked
-    let partnerRecipes: typeof userRecipes = [];
-    if (ctx.user.partnerId) {
-      partnerRecipes = await ctx.prisma.recipe.findMany({
-        where: { userId: ctx.user.partnerId },
-        include: {
-          ingredients: {
-            orderBy: { sortOrder: "asc" },
-          },
-          user: {
-            select: { name: true },
-          },
-        },
-        orderBy: { updatedAt: "desc" },
-      });
-    }
-
     return {
       userRecipes,
-      partnerRecipes,
     };
   }),
 
@@ -173,10 +155,7 @@ export const recipeRouter = router({
       const recipe = await ctx.prisma.recipe.findFirst({
         where: {
           id: input.id,
-          OR: [
-            { userId: ctx.user.id },
-            { userId: ctx.user.partnerId ?? "" },
-          ],
+          userId: ctx.user.id,
         },
         include: {
           ingredients: {
@@ -341,10 +320,7 @@ export const recipeRouter = router({
       const recipe = await ctx.prisma.recipe.findFirst({
         where: {
           id: input.recipeId,
-          OR: [
-            { userId: ctx.user.id },
-            { userId: ctx.user.partnerId ?? "" },
-          ],
+          userId: ctx.user.id,
         },
       });
 
@@ -481,10 +457,7 @@ export const recipeRouter = router({
     .query(async ({ ctx, input }) => {
       const recipes = await ctx.prisma.recipe.findMany({
         where: {
-          OR: [
-            { userId: ctx.user.id },
-            { userId: ctx.user.partnerId ?? "" },
-          ],
+          userId: ctx.user.id,
           name: {
             contains: input.query,
             mode: "insensitive",

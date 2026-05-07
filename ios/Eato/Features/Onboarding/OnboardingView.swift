@@ -14,7 +14,10 @@ struct OnboardingView: View {
         }
         .task {
             if viewModel == nil {
-                viewModel = OnboardingViewModel(api: session.api) { [session] in
+                viewModel = OnboardingViewModel(
+                    api: session.api,
+                    prefill: session.currentUser?.profile
+                ) { [session] in
                     await session.loadMe()
                 }
             }
