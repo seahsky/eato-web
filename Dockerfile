@@ -1,50 +1,58 @@
 # =============================================================================
-# Dockerfile for Next.js App
-# Builds and serves the Next.js application on port 8080
+# Dockerfile for Eato API (Next.js standalone, API-only)
+# Builds the API surface (no web frontend) and serves it on port 8080.
+# Build context is filtered by .dockerignore — iOS, docs, and local env files
+# never enter the image.
 # =============================================================================
 
 # -----------------------------------------------------------------------------
-# Stage 1: Build Next.js
+# Stage 1: Build
 # -----------------------------------------------------------------------------
 FROM node:20-alpine AS build
 
-# Install OpenSSL for Prisma query engine
+# OpenSSL is needed by the Prisma query engine
 RUN apk add --no-cache openssl
 
 WORKDIR /api
 
-COPY package*.json ./
+# Install dependencies first for better layer caching.
+COPY package.json package-lock.json ./
 COPY prisma ./prisma
 RUN npm ci
-COPY . ./
+
+# Copy only the files needed to build the API. Everything not listed here
+# (ios/, docs/, .git/, env backups, etc.) stays out of the image.
+COPY src ./src
+COPY next.config.ts tsconfig.json ./
+
 RUN npm run build
 
 # -----------------------------------------------------------------------------
-# Stage 2: Production Runtime
+# Stage 2: Runtime
 # -----------------------------------------------------------------------------
 FROM node:20-alpine AS runtime
 
-# Install OpenSSL for Prisma query engine and curl for health checks
+# OpenSSL for Prisma; curl for the HEALTHCHECK probe
 RUN apk add --no-cache openssl curl
 
 WORKDIR /app
 
-# Copy Next.js build artifacts
-COPY --from=build /api/.next ./.next
-COPY --from=build /api/node_modules ./node_modules
-COPY --from=build /api/package.json ./
-COPY --from=build /api/public ./public
-COPY --from=build /api/prisma ./prisma
-
-# Set production environment
 ENV NODE_ENV=production
+ENV PORT=8080
+ENV HOSTNAME=0.0.0.0
 
-# Expose port 8080
+# Next.js standalone output: self-contained server.js + traced node_modules.
+COPY --from=build /api/.next/standalone ./
+COPY --from=build /api/.next/static ./.next/static
+
+# Prisma client + engines aren't always traced into standalone; copy explicitly.
+COPY --from=build /api/prisma ./prisma
+COPY --from=build /api/node_modules/.prisma ./node_modules/.prisma
+COPY --from=build /api/node_modules/@prisma/client ./node_modules/@prisma/client
+
 EXPOSE 8080
 
-# Health check for container orchestration
 HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
   CMD curl -f http://localhost:8080/api/rest/health || exit 1
 
-# Start Next.js
-CMD ["node_modules/.bin/next", "start", "-p", "8080"]
+CMD ["node", "server.js"]

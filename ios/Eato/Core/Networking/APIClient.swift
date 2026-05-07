@@ -68,6 +68,7 @@ actor APIClient {
         var request = URLRequest(url: url)
         request.httpMethod = endpoint.method.rawValue
         request.setValue("application/json", forHTTPHeaderField: "Accept")
+        request.setValue(AppConfig.apiKey, forHTTPHeaderField: "X-API-Key")
         if let body = endpoint.body {
             request.httpBody = body
             request.setValue("application/json", forHTTPHeaderField: "Content-Type")

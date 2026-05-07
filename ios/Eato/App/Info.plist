@@ -18,6 +18,8 @@
     <string>$(CURRENT_PROJECT_VERSION)</string>
     <key>EatoAPIBaseURL</key>
     <string>$(API_BASE_URL)</string>
+    <key>EatoAPIKey</key>
+    <string>$(API_KEY)</string>
     <key>EatoClerkPublishableKey</key>
     <string>$(CLERK_PUBLISHABLE_KEY)</string>
     <key>LSRequiresIPhoneOS</key>

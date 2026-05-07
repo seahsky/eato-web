@@ -8,4 +8,7 @@ API_BASE_URL = http:/$()/localhost:3000/api/rest
 // Clerk publishable key for development (DO NOT commit real keys).
 CLERK_PUBLISHABLE_KEY = pk_test_REPLACE_ME
 
+// Shared client API key. Real value belongs in Local.xcconfig (gitignored).
+API_KEY = REPLACE_ME_DEV_KEY
+
 #include? "Local.xcconfig"

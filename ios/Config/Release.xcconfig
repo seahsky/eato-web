@@ -3,4 +3,7 @@
 API_BASE_URL = https:/$()/eato.app/api/rest
 CLERK_PUBLISHABLE_KEY = pk_live_REPLACE_ME
 
+// Shared client API key. Real value belongs in Local.xcconfig (gitignored).
+API_KEY = REPLACE_ME_PROD_KEY
+
 #include? "Local.xcconfig"

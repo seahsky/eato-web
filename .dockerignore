@@ -1,0 +1,48 @@
+# Build context allowlist via exclusions — keep the API image lean and avoid
+# leaking the iOS source tree, secrets, or local artifacts into the image.
+
+# VCS & local tooling
+.git
+.github
+.gitignore
+.claude
+.gstack
+.serena
+.worktrees
+.clerk
+.vscode
+.idea
+
+# OS / editor cruft
+.DS_Store
+*.swp
+*.swo
+Thumbs.db
+
+# iOS app — not part of the API build
+ios
+
+# Docs & meta — not needed at build time
+docs
+README.md
+CLAUDE.md
+
+# Local secrets / env files — never bake into the image
+.env
+.env.*
+!.env.example
+*.env.local.backup
+apps-api.env.local.backup
+
+# Build artifacts that npm ci / next build regenerate
+node_modules
+.next
+out
+build
+dist
+*.tsbuildinfo
+next-env.d.ts
+
+# Docker meta
+Dockerfile
+.dockerignore

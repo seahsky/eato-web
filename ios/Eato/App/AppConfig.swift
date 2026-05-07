@@ -20,4 +20,15 @@ enum AppConfig {
         }
         return value
     }()
+
+    static let apiKey: String = {
+        guard
+            let value = Bundle.main.object(forInfoDictionaryKey: "EatoAPIKey") as? String,
+            !value.isEmpty,
+            !value.hasPrefix("REPLACE_ME")
+        else {
+            preconditionFailure("EatoAPIKey missing — set API_KEY in Config/Local.xcconfig")
+        }
+        return value
+    }()
 }
