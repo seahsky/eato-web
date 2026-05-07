@@ -225,6 +225,7 @@ private struct DecimalField: View {
     let label: String
     @Binding var value: Double
     let range: ClosedRange<Double>
+    @FocusState private var isFocused: Bool
 
     var body: some View {
         VStack(alignment: .leading, spacing: Spacing.xs) {
@@ -238,9 +239,10 @@ private struct DecimalField: View {
                 .tint(EatoColor.terracotta)
                 .padding(Spacing.md)
                 .background(EatoColor.surface, in: .rect(cornerRadius: Radius.md))
-                .onChange(of: value) { _, new in
-                    if new < range.lowerBound { value = range.lowerBound }
-                    if new > range.upperBound { value = range.upperBound }
+                .focused($isFocused)
+                .onChange(of: isFocused) { _, focused in
+                    guard !focused else { return }
+                    value = min(max(value, range.lowerBound), range.upperBound)
                 }
         }
     }
