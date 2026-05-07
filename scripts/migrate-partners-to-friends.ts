@@ -1,9 +1,12 @@
 /**
- * One-off migration: convert legacy 1:1 Partner pairs into Friendship rows.
+ * One-off migration. Two effects:
+ *  1. Convert legacy 1:1 Partner pairs into ACCEPTED Friendship rows.
+ *  2. Reset `User.profileCompleted` to false so every existing account walks
+ *     through the new onboarding (pre-filled from their existing Profile data
+ *     by the iOS client). Per-user decision: existing users re-onboard once.
  *
- * Run AFTER the schema change has been applied (`npm run prisma:push`) but
- * BEFORE deleting the legacy `partnerId` field from any records that still
- * carry it. Idempotent — safe to re-run.
+ * Run AFTER the schema change has been applied (`npm run prisma:push`).
+ * Idempotent — safe to re-run.
  *
  * Usage:
  *   tsx scripts/migrate-partners-to-friends.ts
@@ -89,8 +92,17 @@ async function main() {
     }
 
     console.log(
-      `Migration complete: ${created} friendship rows upserted, ${skipped} skipped.`
+      `Friendship migration: ${created} rows upserted, ${skipped} skipped.`
     );
+
+    // Re-onboard pass — flip every user back to profileCompleted=false so the
+    // iOS client walks them through the redesigned onboarding once. Their
+    // Profile rows are untouched and the new client pre-fills from them.
+    const reonboard = await prisma.user.updateMany({
+      where: { profileCompleted: true },
+      data: { profileCompleted: false },
+    });
+    console.log(`Re-onboarding: flipped ${reonboard.count} users to profileCompleted=false.`);
   } finally {
     await mongo.close();
     await prisma.$disconnect();

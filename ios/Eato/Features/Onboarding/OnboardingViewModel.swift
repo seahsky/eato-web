@@ -40,9 +40,26 @@ final class OnboardingViewModel {
     private let api: APIClient
     private let onComplete: @MainActor () async -> Void
 
-    init(api: APIClient, onComplete: @escaping @MainActor () async -> Void) {
+    init(
+        api: APIClient,
+        prefill: ProfileDTO? = nil,
+        onComplete: @escaping @MainActor () async -> Void
+    ) {
         self.api = api
         self.onComplete = onComplete
+
+        // Pre-fill from existing profile so users migrating from the legacy
+        // app glide through onboarding instead of re-entering everything.
+        if let p = prefill {
+            self.age = p.age
+            self.gender = Gender(rawValue: p.gender) ?? .female
+            self.weightKg = p.weight
+            self.heightCm = p.height
+            self.activityLevel = ActivityLevel(rawValue: p.activityLevel) ?? .moderatelyActive
+            self.calorieGoal = p.calorieGoal
+            self.suggestedGoal = p.calorieGoal
+            self.showSuggestedGoal = false
+        }
     }
 
     var canAdvance: Bool {

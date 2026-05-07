@@ -6,7 +6,7 @@ struct RootView: View {
     var body: some View {
         switch session.state {
         case .loading:
-            ProgressView().progressViewStyle(.circular)
+            SplashView()
         case .signedOut:
             SignInView()
         case .signedIn:
