@@ -34,10 +34,9 @@ Eato is a mobile-first calorie tracking app for couples to track their daily cal
 - Calorie tracking with FatSecret food database search and manual entry
 - BMR (Basal Metabolic Rate) and TDEE (Total Daily Energy Expenditure) calculator
 - Recipe builder with per-100g nutrition calculation
-- Partner mode for linking accounts and viewing shared progress
-- Partner food logging with approval workflow
-- Push notifications (Web Push)
-- Gamification system (streaks, achievements, partner shields)
+- Friends: many-to-many connections via 6-char codes; read-only feed of friends' meals
+- Push notifications (Web Push + APNs)
+- Gamification system (streaks, achievements across consistency/logging/goals/social, rest days)
 - Daily and weekly statistics with visual progress indicators
 
 ---
@@ -90,49 +89,51 @@ eato/
 - Clerk manages all user authentication (OAuth providers and email/password)
 - A webhook endpoint receives Clerk lifecycle events (user created, updated, deleted)
 - On user creation in Clerk, a corresponding user record is created in MongoDB
-- On user deletion, the system first unlinks any partner relationship, then cascades deletion to all related data
+- On user deletion, Friendship rows cascade-delete via Prisma `onDelete: Cascade`, then the user record is removed
 - All tRPC procedures marked as protected require both valid Clerk authentication AND an existing database user record
 
 ### Data Model Relationships
-- **User**: Central entity linked to Clerk via clerkId. Contains partner linking, gamification stats, and notification settings.
+- **User**: Central entity linked to Clerk via clerkId. Contains gamification stats and notification settings.
 - **Profile**: One-to-one with User. Stores physical metrics, calculated BMR/TDEE, calorie goal, and display preferences.
-- **FoodEntry**: Many-to-one with User and DailyLog. Individual food items with full nutritional data and approval status.
+- **FoodEntry**: Many-to-one with User and DailyLog. Individual food items with full nutritional data.
 - **DailyLog**: Many-to-one with User. Aggregated daily totals with unique constraint on userId + date.
 - **Recipe**: Many-to-one with User. Custom recipes with ingredients and per-100g nutrition.
 - **Achievement**: Many-to-one with User. Unlocked badges and milestones.
-- **PushSubscription**: Many-to-one with User. Web Push or Expo Push tokens per device.
+- **PushSubscription**: Many-to-one with User. Web Push or APNs tokens per device.
+- **Friendship**: One row per pair (userAId < userBId), status PENDING/ACCEPTED. Cascade-deletes on either side.
+- **FriendCode**: Personal redeemable code for a user (24h TTL). One active code per user.
 
-### Partner System Logic
-- Users generate a 6-character alphanumeric partner link code (expires in 24 hours)
-- When User B enters User A's code, bidirectional linking occurs
-- Partners can log food for each other (requires approval workflow)
-- Partners can view each other's daily and weekly summaries
-- Partner shields can protect a partner's streak from breaking
+### Friend System Logic
+- Users generate a 6-character alphanumeric friend code (expires in 24 hours; one active per user)
+- When another user enters that code, a Friendship row is created with status=ACCEPTED (no separate request/accept step)
+- Friends are read-only: they can see each other's logged meals via the friend feed but cannot log food on each other's behalf
+- Friends can nudge each other (rate-limited to once per 4 hours per pair)
+- Removing a friend deletes the Friendship row regardless of status
 
 ### Food Logging Logic
 - Food entries originate from: FatSecret database search, barcode scan, manual entry, or recipes
 - DailyLog totals are atomically incremented/decremented when entries are created/updated/deleted
-- Partner-logged entries start with PENDING approval status
-- Approved entries count toward daily totals; rejected entries are excluded
+- Entries are owner-only: a user can only log/edit/delete their own entries
 
 ### Gamification System
 - **Daily Streaks**: Consecutive days with at least one logged entry
 - **Goal Streaks**: Consecutive days meeting calorie goal
 - **Weekly Streaks**: Logging on 5+ days per week
-- **Partner Shields**: Protect partner's streak (2 per month)
-- **Achievements/Badges**: Unlocked for milestones (first entry, week warrior, etc.)
+- **Streak Freezes**: Earned every 7 days; can save a missed day (max 2 banked)
+- **Achievements/Badges**: Unlocked for milestones across consistency, logging, goals, and social categories
 - **Rest Days**: Users can declare up to 6 rest days per month (streak protection)
 
 ### API Router Structure
 - **health**: Health check endpoints for container monitoring
-- **auth**: Partner code generation, linking/unlinking, current user with profile
-- **profile**: Profile CRUD, BMR/TDEE calculations, calorie goal updates
-- **food**: FatSecret search, barcode lookup, food entry CRUD, favorites, partner logging
-- **stats**: Daily/weekly summaries with meal breakdown, partner summaries
+- **auth**: Current user with profile (`getMe`)
+- **friend**: Generate/accept/remove friend codes, list friends, paginated friend feed
+- **profile**: Profile CRUD, BMR/TDEE calculations, calorie goal updates, energy unit preferences
+- **food**: FatSecret search, barcode lookup, food entry CRUD, favorites, recents, frequents
+- **stats**: Daily/weekly summaries with meal breakdown, streak data, rest days
 - **recipe**: Recipe CRUD with ingredient management and nutrition calculation
-- **notification**: Push subscription management, nudges, reminder settings
+- **notification**: Push subscription management, friend-gated nudges, friend* notification settings
 - **mealEstimation**: Meal calculator for estimating nutrition from ingredient list
-- **achievements**: Badge queries and unlock checking
+- **achievements**: Badge queries and unlock checking, theme/avatar-frame customization
 
 ### Data Flow Patterns
 - tRPC client fetches data from API routes
