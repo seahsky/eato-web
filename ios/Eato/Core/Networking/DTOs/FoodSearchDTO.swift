@@ -45,7 +45,7 @@ struct FoodSearchResponse: Decodable, Sendable {
     let hasMore: Bool?
 }
 
-struct AnalyzedItem: Decodable, Sendable, Identifiable {
+struct AnalyzedItem: Decodable, Sendable, Equatable, Identifiable {
     let query: String
     let products: [FoodProductDTO]
 

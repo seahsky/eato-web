@@ -7,7 +7,7 @@ final class DashboardViewModelTests: XCTestCase {
         let vm = DashboardViewModel(
             api: makeAPI(session: EmptySession()),
             calendar: utcCalendar,
-            dateProvider: { Date(timeIntervalSince1970: 1_714_000_000) } // 2024-04-25 01:06 UTC
+            dateProvider: { Date(timeIntervalSince1970: 1_714_007_160) } // 2024-04-25 01:06 UTC
         )
         XCTAssertEqual(vm.todayString, "2024-04-25")
     }

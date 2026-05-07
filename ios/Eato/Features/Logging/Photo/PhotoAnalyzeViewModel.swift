@@ -36,6 +36,8 @@ final class PhotoAnalyzeViewModel {
         }
     }
 
+    func setValue(_ stage: Stage) { self.stage = stage }
+
     static func compress(_ image: UIImage) -> String? {
         // Target ~1.2 MB JPEG so we stay under the backend's 1.5 MB cap.
         var quality: CGFloat = 0.85

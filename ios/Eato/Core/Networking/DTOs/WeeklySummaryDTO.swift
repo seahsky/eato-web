@@ -1,7 +1,7 @@
 import Foundation
 
 struct WeeklySummaryDTO: Decodable, Sendable, Equatable {
-    struct Day: Decodable, Sendable, Equatable, Identifiable {
+    struct Day: Decodable, Sendable, Equatable, Hashable, Identifiable {
         let date: Date
         let totalCalories: Double
         let totalProtein: Double

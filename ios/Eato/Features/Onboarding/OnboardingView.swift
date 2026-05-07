@@ -36,10 +36,10 @@ struct OnboardingView: View {
                         .padding(.top, Spacing.xl)
 
                     switch vm.step {
-                    case .basics: BasicsStep(vm: $vm)
-                    case .body: BodyStep(vm: $vm)
-                    case .activity: ActivityStep(vm: $vm)
-                    case .goal: GoalStep(vm: $vm)
+                    case .basics: BasicsStep(vm: vm)
+                    case .body: BodyStep(vm: vm)
+                    case .activity: ActivityStep(vm: vm)
+                    case .goal: GoalStep(vm: vm)
                     }
 
                     if let errorMessage = vm.errorMessage {
@@ -92,7 +92,7 @@ private struct OnboardingProgressBar: View {
 }
 
 private struct BasicsStep: View {
-    @Binding var vm: OnboardingViewModel
+    @Bindable var vm: OnboardingViewModel
 
     var body: some View {
         VStack(alignment: .leading, spacing: Spacing.lg) {
@@ -103,7 +103,7 @@ private struct BasicsStep: View {
 }
 
 private struct BodyStep: View {
-    @Binding var vm: OnboardingViewModel
+    @Bindable var vm: OnboardingViewModel
 
     var body: some View {
         VStack(alignment: .leading, spacing: Spacing.lg) {
@@ -114,7 +114,7 @@ private struct BodyStep: View {
 }
 
 private struct ActivityStep: View {
-    @Binding var vm: OnboardingViewModel
+    @Bindable var vm: OnboardingViewModel
 
     var body: some View {
         VStack(spacing: Spacing.sm) {
@@ -154,7 +154,7 @@ private struct ActivityStep: View {
 }
 
 private struct GoalStep: View {
-    @Binding var vm: OnboardingViewModel
+    @Bindable var vm: OnboardingViewModel
 
     var body: some View {
         VStack(alignment: .leading, spacing: Spacing.lg) {

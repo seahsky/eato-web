@@ -31,6 +31,12 @@ packages:
   SnapshotTesting:
     url: https://github.com/pointfreeco/swift-snapshot-testing
     from: "1.17.0"
+  OpenAPIRuntime:
+    url: https://github.com/apple/swift-openapi-runtime
+    from: "1.0.0"
+  HTTPTypes:
+    url: https://github.com/apple/swift-http-types
+    from: "1.0.0"
 
 targets:
   Eato:
@@ -46,8 +52,10 @@ targets:
     dependencies:
       - package: Clerk
         product: Clerk
-      - package: Clerk
-        product: ClerkUI
+      - package: OpenAPIRuntime
+        product: OpenAPIRuntime
+      - package: HTTPTypes
+        product: HTTPTypes
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.eato.app

@@ -22,7 +22,7 @@ actor ClerkSession: AuthTokenProvider {
     }
 
     func refresh() async throws {
-        _ = try await Clerk.shared.session?.getToken(options: .init(skipCache: true))
+        _ = try await Clerk.shared.session?.getToken(.init(skipCache: true))
     }
 
     func forceSignOut() async {
@@ -34,7 +34,7 @@ actor ClerkSession: AuthTokenProvider {
 
     func signInWithApple(identityToken: String) async throws {
         _ = try await SignIn.create(
-            strategy: .oauthToken(provider: .apple, token: identityToken)
+            strategy: .idToken(provider: .apple, idToken: identityToken)
         )
     }
 }

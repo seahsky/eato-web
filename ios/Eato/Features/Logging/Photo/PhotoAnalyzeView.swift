@@ -141,8 +141,3 @@ private struct AnalyzedItemSection: View {
     }
 }
 
-// Small helper so the "Try again" action in EmptyState can push the VM
-// back to the picking stage without the view touching state directly.
-extension PhotoAnalyzeViewModel {
-    func setValue(_ stage: Stage) { self.stage = stage }
-}

@@ -14,7 +14,8 @@ final class APIClientTests: XCTestCase {
         )
         let user = try await client.send(AuthAPI.me)
         XCTAssertEqual(user.id, "u1")
-        XCTAssertEqual(await session.lastRequest?.value(forHTTPHeaderField: "Authorization"), "Bearer abc")
+        let authHeader = await session.lastRequest?.value(forHTTPHeaderField: "Authorization")
+        XCTAssertEqual(authHeader, "Bearer abc")
     }
 
     func test_get_401_retriesOnce_thenSignsOut() async throws {
