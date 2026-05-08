@@ -1,5 +1,8 @@
 import SwiftUI
 
+/// 6-step onboarding flow per design `profile.jsx:155-162`.
+/// Renders progress dots → title + subtitle → step content → bottom
+/// Continue / Back buttons.
 struct OnboardingView: View {
     @Environment(SessionStore.self) private var session
     @State private var viewModel: OnboardingViewModel?
@@ -28,35 +31,51 @@ struct OnboardingView: View {
     private func content(_ vm: OnboardingViewModel) -> some View {
         @Bindable var vm = vm
         VStack(spacing: 0) {
-            OnboardingProgressBar(progress: vm.step.progress)
-                .padding(.horizontal, Spacing.lg)
-                .padding(.top, Spacing.lg)
+            ProgressDots(stepIndex: vm.step.rawValue, total: OnboardingStep.allCases.count)
+                .padding(.top, 58)
+                .padding(.bottom, 22)
 
             ScrollView {
-                VStack(alignment: .leading, spacing: Spacing.xl) {
+                VStack(alignment: .leading, spacing: 0) {
                     Text(vm.step.title)
-                        .font(Typography.titleLarge)
+                        .font(.system(size: 32, weight: .heavy, design: .rounded))
                         .foregroundStyle(EatoColor.textPrimary)
-                        .padding(.top, Spacing.xl)
+                        .lineSpacing(2)
 
-                    switch vm.step {
-                    case .basics: BasicsStep(vm: vm)
-                    case .body: BodyStep(vm: vm)
-                    case .activity: ActivityStep(vm: vm)
-                    case .goal: GoalStep(vm: vm)
-                    case .summary: SummaryStep(vm: vm)
-                    }
+                    Text(vm.step.subtitle)
+                        .font(.system(size: 15, weight: .medium, design: .rounded))
+                        .foregroundStyle(EatoColor.textSecondary)
+                        .padding(.top, 14)
+                        .lineSpacing(2)
+
+                    stepContent(vm: vm)
+                        .padding(.top, 28)
 
                     if let errorMessage = vm.errorMessage {
                         Text(errorMessage)
                             .font(Typography.caption)
                             .foregroundStyle(EatoColor.danger)
+                            .padding(.top, 12)
                     }
                 }
-                .padding(.horizontal, Spacing.lg)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.horizontal, 28)
             }
 
-            VStack(spacing: Spacing.sm) {
+            HStack(spacing: 10) {
+                if vm.step != .gender {
+                    Button(action: vm.goBack) {
+                        Text("Back")
+                            .font(.system(size: 15, weight: .heavy, design: .rounded))
+                            .foregroundStyle(EatoColor.textPrimary)
+                            .padding(.vertical, 16)
+                            .padding(.horizontal, 22)
+                            .background(EatoColor.surface, in: Capsule())
+                            .softShadow(elevation: 2)
+                    }
+                    .buttonStyle(.plain)
+                }
+
                 PrimaryButton(
                     vm.step == .summary ? "Start your diary" : "Continue",
                     isLoading: vm.isSaving
@@ -64,57 +83,172 @@ struct OnboardingView: View {
                     Task { await vm.advance() }
                 }
                 .disabled(!vm.canAdvance || vm.isSaving)
-
-                if vm.step != .basics {
-                    Button("Back", action: vm.goBack)
-                        .font(Typography.bodyMedium)
-                        .foregroundStyle(EatoColor.textSecondary)
-                }
             }
-            .padding(.horizontal, Spacing.lg)
-            .padding(.bottom, Spacing.xl)
+            .padding(.horizontal, 24)
+            .padding(.top, 16)
+            .padding(.bottom, 22)
         }
         .background(EatoColor.background)
     }
+
+    @ViewBuilder
+    private func stepContent(vm: OnboardingViewModel) -> some View {
+        @Bindable var vm = vm
+        switch vm.step {
+        case .gender: GenderStep(selection: $vm.gender)
+        case .height: BigNumberStep(value: $vm.heightCm, unit: "cm", range: 120...220, step: 1)
+        case .weight: BigNumberStep(value: $vm.weightKg, unit: "kg", range: 35...160, step: 1)
+        case .age: BigNumberIntStep(value: $vm.age, unit: "years", range: 14...90)
+        case .activity: ActivityStep(vm: vm)
+        case .summary: SummaryStep(vm: vm)
+        }
+    }
 }
 
-private struct OnboardingProgressBar: View {
-    let progress: Double
+// MARK: - Progress dots
+
+private struct ProgressDots: View {
+    let stepIndex: Int
+    let total: Int
 
     var body: some View {
-        GeometryReader { geo in
-            ZStack(alignment: .leading) {
-                RoundedRectangle(cornerRadius: Radius.pill)
-                    .fill(EatoColor.divider)
-                RoundedRectangle(cornerRadius: Radius.pill)
-                    .fill(EatoColor.accent)
-                    .frame(width: geo.size.width * progress)
-                    .animation(.easeOut, value: progress)
+        HStack(spacing: 6) {
+            ForEach(0..<total, id: \.self) { i in
+                Capsule()
+                    .fill(i <= stepIndex ? EatoColor.terracotta : EatoColor.divider)
+                    .frame(width: i == stepIndex ? 22 : 6, height: 6)
+                    .animation(.easeOut(duration: 0.22), value: stepIndex)
             }
         }
-        .frame(height: 4)
     }
 }
 
-private struct BasicsStep: View {
-    @Bindable var vm: OnboardingViewModel
+// MARK: - Steps
+
+private struct GenderStep: View {
+    @Binding var selection: Gender
+
+    private let options: [Gender] = [.female, .male, .nonbinary, .preferNotToSay]
 
     var body: some View {
-        VStack(alignment: .leading, spacing: Spacing.lg) {
-            SteppedNumberField(label: "Age", value: $vm.age, range: 13...120)
-            GenderPicker(selection: $vm.gender)
+        LazyVGrid(
+            columns: [GridItem(.flexible(), spacing: 10), GridItem(.flexible(), spacing: 10)],
+            spacing: 10
+        ) {
+            ForEach(options, id: \.self) { g in
+                Button {
+                    withAnimation(.smooth(duration: 0.18)) { selection = g }
+                } label: {
+                    Text(g.label)
+                        .font(.system(size: 15, weight: .heavy, design: .rounded))
+                        .foregroundStyle(EatoColor.textPrimary)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 22)
+                        .padding(.horizontal, 16)
+                        .background(
+                            selection == g
+                                ? EatoColor.terracotta.opacity(0.08)
+                                : EatoColor.surface,
+                            in: .rect(cornerRadius: 18)
+                        )
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 18)
+                                .strokeBorder(
+                                    selection == g ? EatoColor.terracotta : .clear,
+                                    lineWidth: 2
+                                )
+                        )
+                        .softShadow(elevation: 2)
+                }
+                .buttonStyle(.plain)
+            }
         }
     }
 }
 
-private struct BodyStep: View {
-    @Bindable var vm: OnboardingViewModel
+private struct BigNumberStep: View {
+    @Binding var value: Double
+    let unit: String
+    let range: ClosedRange<Double>
+    let step: Double
 
     var body: some View {
-        VStack(alignment: .leading, spacing: Spacing.lg) {
-            DecimalField(label: "Weight (kg)", value: $vm.weightKg, range: 20...500)
-            DecimalField(label: "Height (cm)", value: $vm.heightCm, range: 50...300)
+        VStack(spacing: 30) {
+            HStack(alignment: .firstTextBaseline, spacing: 10) {
+                Text(format(value))
+                    .font(.system(size: 76, weight: .heavy, design: .rounded))
+                    .foregroundStyle(EatoColor.terracotta)
+                    .monospacedDigit()
+                Text(unit)
+                    .font(.system(size: 18, weight: .heavy, design: .rounded))
+                    .foregroundStyle(EatoColor.textSecondary)
+            }
+
+            VStack(spacing: 6) {
+                Slider(
+                    value: $value,
+                    in: range,
+                    step: step
+                )
+                .tint(EatoColor.terracotta)
+
+                HStack {
+                    Text(format(range.lowerBound))
+                    Spacer()
+                    Text(format(range.upperBound))
+                }
+                .font(.system(size: 12, weight: .medium, design: .rounded))
+                .foregroundStyle(EatoColor.textTertiary)
+            }
         }
+        .frame(maxWidth: .infinity)
+        .padding(.top, 20)
+    }
+
+    private func format(_ v: Double) -> String {
+        v.truncatingRemainder(dividingBy: 1) == 0 ? "\(Int(v))" : String(format: "%.1f", v)
+    }
+}
+
+private struct BigNumberIntStep: View {
+    @Binding var value: Int
+    let unit: String
+    let range: ClosedRange<Int>
+
+    var body: some View {
+        VStack(spacing: 30) {
+            HStack(alignment: .firstTextBaseline, spacing: 10) {
+                Text("\(value)")
+                    .font(.system(size: 76, weight: .heavy, design: .rounded))
+                    .foregroundStyle(EatoColor.terracotta)
+                    .monospacedDigit()
+                Text(unit)
+                    .font(.system(size: 18, weight: .heavy, design: .rounded))
+                    .foregroundStyle(EatoColor.textSecondary)
+            }
+
+            VStack(spacing: 6) {
+                Slider(
+                    value: Binding(
+                        get: { Double(value) },
+                        set: { value = Int($0) }
+                    ),
+                    in: Double(range.lowerBound)...Double(range.upperBound),
+                    step: 1
+                )
+                .tint(EatoColor.terracotta)
+
+                HStack {
+                    Text("\(range.lowerBound)")
+                    Spacer()
+                    Text("\(range.upperBound)")
+                }
+                .font(.system(size: 12, weight: .medium, design: .rounded))
+                .foregroundStyle(EatoColor.textTertiary)
+            }
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.top, 20)
     }
 }
 
@@ -128,31 +262,33 @@ private struct ActivityStep: View {
                     vm.activityLevel = level
                 } label: {
                     HStack {
-                        VStack(alignment: .leading, spacing: Spacing.xxs) {
+                        VStack(alignment: .leading, spacing: 2) {
                             Text(level.label)
-                                .font(Typography.titleSmall)
+                                .font(.system(size: 16, weight: .heavy, design: .rounded))
                                 .foregroundStyle(EatoColor.textPrimary)
                             Text(level.hint)
-                                .font(Typography.caption)
-                                .foregroundStyle(EatoColor.textSecondary)
+                                .font(.system(size: 13, weight: .medium, design: .rounded))
+                                .foregroundStyle(EatoColor.textTertiary)
                         }
                         Spacer()
-                        if vm.activityLevel == level {
-                            Image(systemName: "checkmark.circle.fill")
-                                .foregroundStyle(EatoColor.accent)
-                        }
                     }
-                    .padding(Spacing.md)
+                    .padding(.horizontal, 18)
+                    .padding(.vertical, 16)
+                    .frame(maxWidth: .infinity, alignment: .leading)
                     .background(
                         vm.activityLevel == level
-                            ? EatoColor.surface
-                            : Color.clear,
-                        in: .rect(cornerRadius: Radius.md)
+                            ? EatoColor.terracotta.opacity(0.08)
+                            : EatoColor.surface,
+                        in: .rect(cornerRadius: 16)
                     )
                     .overlay(
-                        RoundedRectangle(cornerRadius: Radius.md)
-                            .stroke(EatoColor.divider)
+                        RoundedRectangle(cornerRadius: 16)
+                            .strokeBorder(
+                                vm.activityLevel == level ? EatoColor.terracotta : .clear,
+                                lineWidth: 2
+                            )
                     )
+                    .softShadow(elevation: 2)
                 }
                 .buttonStyle(.plain)
             }
@@ -212,128 +348,5 @@ private struct SummaryStep: View {
         .padding(14)
         .background(EatoColor.surface, in: .rect(cornerRadius: 14))
         .softShadow(elevation: 2)
-    }
-}
-
-private struct GoalStep: View {
-    @Bindable var vm: OnboardingViewModel
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: Spacing.lg) {
-            if let suggested = vm.suggestedGoal {
-                Card {
-                    VStack(alignment: .leading, spacing: Spacing.sm) {
-                        Text("Suggested daily goal")
-                            .font(Typography.caption)
-                            .foregroundStyle(EatoColor.textSecondary)
-                        Text("\(Int(suggested)) kcal")
-                            .font(Typography.titleMedium)
-                            .foregroundStyle(EatoColor.terracotta)
-                            .monospacedDigit()
-                        Text("Based on your BMR and activity.")
-                            .font(Typography.caption)
-                            .foregroundStyle(EatoColor.textSecondary)
-                    }
-                }
-            }
-            DecimalField(label: "Daily calorie goal", value: $vm.calorieGoal, range: 1000...10000)
-        }
-    }
-}
-
-// MARK: - Form fields
-
-private struct SteppedNumberField: View {
-    let label: String
-    @Binding var value: Int
-    let range: ClosedRange<Int>
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: Spacing.xs) {
-            Text(label)
-                .font(Typography.caption)
-                .foregroundStyle(EatoColor.textSecondary)
-            HStack {
-                Button { value = max(range.lowerBound, value - 1) } label: {
-                    Image(systemName: "minus.circle.fill")
-                        .font(.system(size: 24))
-                        .foregroundStyle(EatoColor.terracotta)
-                }
-                Spacer()
-                Text("\(value)")
-                    .font(.system(size: 28, weight: .bold, design: .rounded))
-                    .foregroundStyle(EatoColor.textPrimary)
-                    .monospacedDigit()
-                Spacer()
-                Button { value = min(range.upperBound, value + 1) } label: {
-                    Image(systemName: "plus.circle.fill")
-                        .font(.system(size: 24))
-                        .foregroundStyle(EatoColor.terracotta)
-                }
-            }
-            .padding(Spacing.md)
-            .background(EatoColor.surface, in: .rect(cornerRadius: Radius.md))
-        }
-    }
-}
-
-private struct DecimalField: View {
-    let label: String
-    @Binding var value: Double
-    let range: ClosedRange<Double>
-    @FocusState private var isFocused: Bool
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: Spacing.xs) {
-            Text(label)
-                .font(Typography.caption)
-                .foregroundStyle(EatoColor.textSecondary)
-            TextField(label, value: $value, format: .number.precision(.fractionLength(0...1)))
-                .keyboardType(.decimalPad)
-                .font(Typography.titleMedium)
-                .foregroundStyle(EatoColor.textPrimary)
-                .tint(EatoColor.terracotta)
-                .padding(Spacing.md)
-                .background(EatoColor.surface, in: .rect(cornerRadius: Radius.md))
-                .focused($isFocused)
-                .onChange(of: isFocused) { _, focused in
-                    guard !focused else { return }
-                    value = min(max(value, range.lowerBound), range.upperBound)
-                }
-        }
-    }
-}
-
-private struct GenderPicker: View {
-    @Binding var selection: Gender
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: Spacing.xs) {
-            Text("Gender")
-                .font(Typography.caption)
-                .foregroundStyle(EatoColor.textSecondary)
-            HStack(spacing: 4) {
-                ForEach(Gender.allCases, id: \.self) { g in
-                    Button {
-                        withAnimation(.smooth(duration: 0.18)) { selection = g }
-                    } label: {
-                        Text(g.label)
-                            .font(.system(size: 14, weight: .semibold, design: .rounded))
-                            .foregroundStyle(
-                                selection == g ? EatoColor.accentContrast : EatoColor.textSecondary
-                            )
-                            .frame(maxWidth: .infinity)
-                            .padding(.vertical, 10)
-                            .background(
-                                selection == g ? EatoColor.terracotta : Color.clear,
-                                in: Capsule()
-                            )
-                    }
-                    .buttonStyle(.plain)
-                }
-            }
-            .padding(4)
-            .background(EatoColor.surface, in: Capsule())
-        }
     }
 }

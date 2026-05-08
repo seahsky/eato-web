@@ -1,14 +1,41 @@
 import Foundation
 
-enum Gender: String, Codable, CaseIterable, Sendable {
+enum Gender: String, CaseIterable, Sendable {
     case male = "MALE"
     case female = "FEMALE"
+    case nonbinary = "NONBINARY"
+    case preferNotToSay = "PREFER_NOT_TO_SAY"
 
     var label: String {
         switch self {
         case .male: "Male"
         case .female: "Female"
+        case .nonbinary: "Non-binary"
+        case .preferNotToSay: "Rather not say"
         }
+    }
+
+    /// Backend-acceptable representation. The server's `profileSchema`
+    /// only accepts `MALE` / `FEMALE` (see `src/server/routers/profile.ts`),
+    /// so non-binary and "rather not say" map to `FEMALE` at the wire —
+    /// the more conservative BMR value of the two.
+    var wireValue: String {
+        switch self {
+        case .male: "MALE"
+        case .female, .nonbinary, .preferNotToSay: "FEMALE"
+        }
+    }
+}
+
+extension Gender: Codable {
+    init(from decoder: Decoder) throws {
+        let raw = try decoder.singleValueContainer().decode(String.self)
+        self = Gender(rawValue: raw) ?? .female
+    }
+
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.singleValueContainer()
+        try container.encode(wireValue)
     }
 }
 

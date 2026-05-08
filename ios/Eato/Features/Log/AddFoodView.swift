@@ -10,12 +10,15 @@ struct AddFoodView: View {
         case mealEstimate
     }
 
+    @Environment(\.dismiss) private var dismiss
     @State private var path: [Route] = []
     @State private var searchText: String = ""
+    /// Toast surfaced when a child save callback succeeds.
+    @State private var toast: ToastMessage?
 
     var body: some View {
         NavigationStack(path: $path) {
-            ZStack {
+            ZStack(alignment: .bottom) {
                 EatoColor.background.ignoresSafeArea()
                 ScrollView {
                     VStack(alignment: .leading, spacing: Spacing.lg) {
@@ -28,18 +31,58 @@ struct AddFoodView: View {
                     .padding(.horizontal, Spacing.lg)
                     .padding(.top, Spacing.md)
                 }
+
+                if let toast {
+                    Toast(message: toast)
+                        .padding(.horizontal, 20)
+                        .padding(.bottom, 48)
+                        .transition(.move(edge: .bottom).combined(with: .opacity))
+                }
             }
             .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .topBarLeading) {
+                    Button(action: { dismiss() }) {
+                        Image(systemName: "xmark")
+                            .font(.system(size: 14, weight: .bold))
+                            .foregroundStyle(EatoColor.textPrimary)
+                            .frame(width: 32, height: 32)
+                            .background(EatoColor.surface, in: Circle())
+                            .softShadow(elevation: 2)
+                    }
+                    .accessibilityLabel("Close")
+                }
+            }
             .navigationDestination(for: Route.self) { route in
                 switch route {
-                case .search: FoodSearchView(onDismiss: { path.removeAll() })
-                case .manual: ManualEntryView(onDismiss: { path.removeAll() })
-                case .barcode: BarcodeScanView(onDismiss: { path.removeAll() })
-                case .photo: PhotoAnalyzeView(onDismiss: { path.removeAll() })
+                case .search: FoodSearchView(onDismiss: handleSaved)
+                case .manual: ManualEntryView(onDismiss: handleSaved)
+                case .barcode: BarcodeScanView(onDismiss: handleSaved)
+                case .photo: PhotoAnalyzeView(onDismiss: handleSaved)
                 case .recipes: RecipesListView()
                 case .mealEstimate: MealEstimationView()
                 }
             }
+        }
+    }
+
+    /// Callback fired after a child save view dismisses. Shows a brief
+    /// toast then auto-dismisses the AddFood sheet so the user lands
+    /// back on the diary with their new entry visible.
+    private func handleSaved() {
+        path.removeAll()
+        let message = ToastMessage(text: "Saved to today", icon: "checkmark")
+        withAnimation(.spring(response: 0.35, dampingFraction: 0.85)) {
+            toast = message
+        }
+        Task { @MainActor in
+            try? await Task.sleep(nanoseconds: 1_100_000_000)
+            withAnimation(.easeInOut(duration: 0.22)) {
+                toast = nil
+            }
+            // Brief beat for the toast to fade before closing the sheet.
+            try? await Task.sleep(nanoseconds: 220_000_000)
+            dismiss()
         }
     }
 

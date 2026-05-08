@@ -57,3 +57,6 @@ next-env.d.ts
 
 # clerk configuration (can include secrets)
 /.clerk/
+
+# Design handoff source (raw .jsx + .html exported from Claude Design)
+ios/design-handoff/

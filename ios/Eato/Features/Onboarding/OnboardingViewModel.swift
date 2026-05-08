@@ -1,20 +1,36 @@
 import Foundation
 import Observation
 
+/// 6-step onboarding flow per design `profile.jsx:155-162`.
+/// One field per step; the daily calorie goal is computed from
+/// BMR + activity and shown on the summary, not edited mid-flow.
 enum OnboardingStep: Int, CaseIterable {
-    case basics
-    case body
+    case gender
+    case height
+    case weight
+    case age
     case activity
-    case goal
     case summary
 
     var title: String {
         switch self {
-        case .basics: "Tell us about you"
-        case .body: "Your stats"
+        case .gender: "Let's get to know you"
+        case .height: "How tall are you?"
+        case .weight: "And weight?"
+        case .age: "When were you born?"
         case .activity: "How active are you?"
-        case .goal: "Your daily goal"
         case .summary: "You're all set"
+        }
+    }
+
+    var subtitle: String {
+        switch self {
+        case .gender: "This helps us figure out your calorie needs."
+        case .height: "We promise not to judge."
+        case .weight: "Just a starting point — it's your baseline, not a grade."
+        case .age: "Your metabolism uses this."
+        case .activity: "Be honest — not aspirational."
+        case .summary: "Here's what we figured out."
         }
     }
 
@@ -26,14 +42,13 @@ enum OnboardingStep: Int, CaseIterable {
 @Observable
 @MainActor
 final class OnboardingViewModel {
-    var step: OnboardingStep = .basics
+    var step: OnboardingStep = .gender
     var age: Int = 28
     var gender: Gender = .female
     var weightKg: Double = 65
     var heightCm: Double = 165
     var activityLevel: ActivityLevel = .moderatelyActive
     var calorieGoal: Double = 2000
-    var showSuggestedGoal: Bool = true
 
     var suggestedGoal: Double?
     var isSaving: Bool = false
@@ -60,16 +75,16 @@ final class OnboardingViewModel {
             self.activityLevel = ActivityLevel(rawValue: p.activityLevel) ?? .moderatelyActive
             self.calorieGoal = p.calorieGoal
             self.suggestedGoal = p.calorieGoal
-            self.showSuggestedGoal = false
         }
     }
 
     var canAdvance: Bool {
         switch step {
-        case .basics: age >= 13 && age <= 120
-        case .body: weightKg >= 20 && weightKg <= 500 && heightCm >= 50 && heightCm <= 300
+        case .gender: true
+        case .height: heightCm >= 120 && heightCm <= 220
+        case .weight: weightKg >= 35 && weightKg <= 160
+        case .age: age >= 14 && age <= 90
         case .activity: true
-        case .goal: calorieGoal >= 1000 && calorieGoal <= 10000
         case .summary: true
         }
     }
@@ -77,14 +92,16 @@ final class OnboardingViewModel {
     func advance() async {
         guard canAdvance else { return }
         switch step {
-        case .basics:
-            step = .body
-        case .body:
+        case .gender:
+            step = .height
+        case .height:
+            step = .weight
+        case .weight:
+            step = .age
+        case .age:
             step = .activity
         case .activity:
             await fetchSuggestedGoal()
-            step = .goal
-        case .goal:
             step = .summary
         case .summary:
             await submit()
@@ -99,6 +116,8 @@ final class OnboardingViewModel {
 
     /// BMR estimate for the Summary step. Mirrors the backend Mifflin-St Jeor
     /// formula — kept here so we can show a number before the user submits.
+    /// For non-binary or "rather not say", uses the midpoint of the male
+    /// and female formulas (5 + (-161))/2 = -78.
     var estimatedBMR: Int {
         let base: Double
         switch gender {
@@ -106,6 +125,8 @@ final class OnboardingViewModel {
             base = 10 * weightKg + 6.25 * heightCm - 5 * Double(age) + 5
         case .female:
             base = 10 * weightKg + 6.25 * heightCm - 5 * Double(age) - 161
+        case .nonbinary, .preferNotToSay:
+            base = 10 * weightKg + 6.25 * heightCm - 5 * Double(age) - 78
         }
         return Int(base.rounded())
     }
@@ -129,12 +150,23 @@ final class OnboardingViewModel {
                 )
             )
             suggestedGoal = preview.suggestedGoal ?? preview.tdee
-            if showSuggestedGoal, let suggested = suggestedGoal {
+            if let suggested = suggestedGoal {
                 calorieGoal = suggested
             }
         } catch {
-            // Fall back to the user-typed goal without a preview.
-            suggestedGoal = nil
+            // Fall back to a local estimate so the summary still shows
+            // something reasonable even when the preview endpoint fails.
+            let multiplier: Double
+            switch activityLevel {
+            case .sedentary: multiplier = 1.2
+            case .lightlyActive: multiplier = 1.375
+            case .moderatelyActive: multiplier = 1.55
+            case .active: multiplier = 1.725
+            case .veryActive: multiplier = 1.9
+            }
+            let estimate = Double(estimatedBMR) * multiplier
+            suggestedGoal = estimate
+            calorieGoal = estimate
         }
     }
 
