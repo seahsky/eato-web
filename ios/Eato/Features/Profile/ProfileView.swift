@@ -218,9 +218,9 @@ struct ProfileView: View {
     // MARK: - Activity card
 
     private func activityCard(vm: ProfileViewModel) -> some View {
-        let levels: [ActivityLevel] = [
-            .sedentary, .lightlyActive, .moderatelyActive, .active,
-        ]
+        // Use allCases so a user who picked .veryActive in onboarding can
+        // still see + re-select that level here.
+        let levels = ActivityLevel.allCases
         let currentRaw = session.currentUser?.profile?.activityLevel ?? ""
         let current = ActivityLevel(rawValue: currentRaw)
         return VStack(spacing: 0) {

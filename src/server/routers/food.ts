@@ -18,7 +18,11 @@ import {
   getWeeklyStreakBadgesToUnlock,
 } from "@/lib/gamification/badges";
 
-const R2_PUBLIC_URL_PREFIX = process.env.R2_PUBLIC_URL ?? "";
+// Trailing slash prevents subdomain-bypass (e.g. R2_PUBLIC_URL="https://cdn.eato.app"
+// would accept "https://cdn.eato.app.evil.com/x.jpg" without it).
+const R2_PUBLIC_URL_PREFIX = process.env.R2_PUBLIC_URL
+  ? process.env.R2_PUBLIC_URL.replace(/\/+$/, "") + "/"
+  : null;
 
 const foodEntrySchema = z.object({
   name: z.string().min(1).max(200),
@@ -26,14 +30,14 @@ const foodEntrySchema = z.object({
   brand: z.string().max(100).nullable().optional(),
   // Only accept URLs minted by presignFoodPhotoUpload (or empty/undefined).
   // Pre-Phase-7a entries left this nil; new entries must be R2-hosted.
+  // Fail-closed: if R2_PUBLIC_URL is unset, reject ALL imageUrls rather than
+  // accepting anything.
   imageUrl: z
     .string()
     .max(2048)
     .refine(
       (url) =>
-        !url ||
-        !R2_PUBLIC_URL_PREFIX ||
-        url.startsWith(R2_PUBLIC_URL_PREFIX),
+        !url || (R2_PUBLIC_URL_PREFIX !== null && url.startsWith(R2_PUBLIC_URL_PREFIX)),
       "imageUrl must be an R2 public URL"
     )
     .optional(),
