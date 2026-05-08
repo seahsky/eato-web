@@ -32,6 +32,7 @@ Top-level plan: 7-phase redesign to retro.app-style chronological diary, drop Pe
 | 5 | Friends UI (Feed/Friends/You) + delete Partner/Pet UI | `29410c8` |
 | 6 | ProfileView + final cleanup | `58e05e9` |
 | 7a | Photo-required logging — R2 presign endpoint, `R2Uploader`, `PhotoCaptureStep` wired into Search / Manual / Barcode / Photo paths; encoder fix (drop `.convertToSnakeCase` so multi-word fields like `imageUrl` actually reach the backend) | _pending_ |
+| 7b | Dashboard rewrite — 3-col `LazyVGrid` of `StackCard` photo tiles + `AddCard`, tappable `WeekStrip`, "Back to today" pill, `PostcardOverlay` 3D flip, redesigned `SummaryStrip`, `DashboardViewModel.viewedDay` for arbitrary-date browsing. Deletes `EntryCard` + `QuickChips` (filter chips superseded by reverse-chrono grid). | _pending_ |
 
 ## Remaining for true Phase 8 "ship" completion
 

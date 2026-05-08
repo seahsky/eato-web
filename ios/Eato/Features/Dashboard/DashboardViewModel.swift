@@ -12,9 +12,14 @@ final class DashboardViewModel {
     }
 
     private(set) var state: LoadState = .idle
+    /// Daily summary for the day the user is currently viewing
+    /// (default = today; may switch when they tap a `WeekStrip` pill).
     private(set) var summary: DailySummaryDTO?
     private(set) var streak: StreakDataDTO?
     private(set) var weekly: WeeklySummaryDTO?
+
+    /// The day currently displayed by the dashboard. Set via `setViewedDay(_:)`.
+    private(set) var viewedDay: Date
 
     private let api: APIClient
     private let calendar: Calendar
@@ -28,14 +33,19 @@ final class DashboardViewModel {
         self.api = api
         self.calendar = calendar
         self.dateProvider = dateProvider
+        self.viewedDay = dateProvider()
     }
 
     var todayString: String {
-        let formatter = DateFormatter()
-        formatter.calendar = calendar
-        formatter.dateFormat = "yyyy-MM-dd"
-        formatter.timeZone = calendar.timeZone
-        return formatter.string(from: dateProvider())
+        Self.dayKey(dateProvider(), calendar: calendar)
+    }
+
+    var viewedDayString: String {
+        Self.dayKey(viewedDay, calendar: calendar)
+    }
+
+    var isViewingToday: Bool {
+        viewedDayString == todayString
     }
 
     var caloriesRemaining: Double {
@@ -52,23 +62,35 @@ final class DashboardViewModel {
         (summary?.entries.isEmpty == false)
     }
 
-    /// Diary entries sorted ascending by consumedAt — drives the timeline rail.
-    var timelineEntries: [FoodEntryDTO] {
-        (summary?.entries ?? []).sorted { $0.consumedAt < $1.consumedAt }
+    /// Reverse-chronological ordering — newest first — to match the
+    /// design's "today leads with the AddCard, then most recent meal".
+    var entriesNewestFirst: [FoodEntryDTO] {
+        (summary?.entries ?? []).sorted { $0.consumedAt > $1.consumedAt }
     }
 
-    /// Apply a meal-type filter and return entries in timeline order.
-    func filteredEntries(_ filter: DiaryFilter) -> [FoodEntryDTO] {
-        let base = timelineEntries
-        switch filter {
-        case .all: return base
-        default: return base.filter { ($0.mealType ?? "") == filter.rawValue }
+    /// Day-key set populated from the weekly summary so `WeekStrip` can show
+    /// a green dot on days the user logged at least one entry.
+    var loggedDays: Set<String> {
+        guard let weekly else { return [] }
+        var keys: Set<String> = []
+        for day in weekly.days where day.totalCalories > 0 {
+            keys.insert(Self.dayKey(day.date, calendar: calendar))
         }
+        return keys
+    }
+
+    func setViewedDay(_ date: Date) async {
+        viewedDay = date
+        await loadDailySummary()
+    }
+
+    func goToToday() async {
+        await setViewedDay(dateProvider())
     }
 
     func refresh() async {
         state = .loading
-        async let summaryResult = fetch(StatsAPI.daily(date: todayString))
+        async let summaryResult = fetch(StatsAPI.daily(date: viewedDayString))
         async let streakResult = fetch(StatsAPI.streak)
         async let weeklyResult = fetch(StatsAPI.weekly(endDate: todayString))
 
@@ -85,6 +107,20 @@ final class DashboardViewModel {
         state = .loaded
     }
 
+    /// Used when the user taps a different `WeekStrip` pill — only the daily
+    /// summary changes, the weekly + streak data is fetched at refresh time.
+    private func loadDailySummary() async {
+        state = .loading
+        let result = await fetch(StatsAPI.daily(date: viewedDayString))
+        switch result {
+        case .success(let value):
+            summary = value
+            state = .loaded
+        case .failure(let error):
+            state = .failed(error)
+        }
+    }
+
     private func fetch<R>(_ endpoint: Endpoint<R>) async -> Result<R, APIError> {
         do {
             return .success(try await api.send(endpoint))
@@ -95,7 +131,17 @@ final class DashboardViewModel {
         }
     }
 
+    private static func dayKey(_ date: Date, calendar: Calendar) -> String {
+        let f = DateFormatter()
+        f.calendar = calendar
+        f.dateFormat = "yyyy-MM-dd"
+        f.timeZone = calendar.timeZone
+        return f.string(from: date)
+    }
+
     #if DEBUG
     func _debugInject(summary: DailySummaryDTO) { self.summary = summary }
+    func _debugInject(weekly: WeeklySummaryDTO) { self.weekly = weekly }
+    func _debugInject(viewedDay date: Date) { self.viewedDay = date }
     #endif
 }
