@@ -18,11 +18,25 @@ import {
   getWeeklyStreakBadgesToUnlock,
 } from "@/lib/gamification/badges";
 
+const R2_PUBLIC_URL_PREFIX = process.env.R2_PUBLIC_URL ?? "";
+
 const foodEntrySchema = z.object({
   name: z.string().min(1).max(200),
   barcode: z.string().optional(),
   brand: z.string().max(100).nullable().optional(),
-  imageUrl: z.string().optional(),
+  // Only accept URLs minted by presignFoodPhotoUpload (or empty/undefined).
+  // Pre-Phase-7a entries left this nil; new entries must be R2-hosted.
+  imageUrl: z
+    .string()
+    .max(2048)
+    .refine(
+      (url) =>
+        !url ||
+        !R2_PUBLIC_URL_PREFIX ||
+        url.startsWith(R2_PUBLIC_URL_PREFIX),
+      "imageUrl must be an R2 public URL"
+    )
+    .optional(),
   calories: z.number().min(0),
   protein: z.number().min(0).optional(),
   carbs: z.number().min(0).optional(),

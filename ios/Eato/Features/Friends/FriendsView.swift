@@ -618,11 +618,12 @@ private struct YouTab: View {
         return "Add me on Eato"
     }
 
+    /// Single-tile stat row. Posts / Reacts tiles are intentionally omitted
+    /// until the backend exposes those counts (deferred with the rest of the
+    /// reactions/feed-aggregation work). Showing hardcoded `0` would mislead.
     private var statTiles: some View {
         HStack(spacing: 10) {
             youStatTile(label: "Friends", value: vm.friends.count)
-            youStatTile(label: "Posts", value: 0)
-            youStatTile(label: "Reacts", value: 0)
         }
     }
 

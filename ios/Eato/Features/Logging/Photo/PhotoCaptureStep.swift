@@ -43,7 +43,6 @@ struct PhotoCaptureStep: View {
         .padding(Spacing.lg)
         .navigationTitle(title)
         .navigationBarTitleDisplayMode(.inline)
-        .photosPicker(isPresented: .constant(false), selection: $pickerItem)
         .onChange(of: pickerItem) { _, new in
             Task { await loadFromPicker(new) }
         }
