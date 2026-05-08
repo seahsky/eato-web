@@ -92,7 +92,12 @@ struct PhotoAnalyzeView: View {
                         .foregroundStyle(EatoColor.textSecondary)
                     ForEach(items) { item in
                         AnalyzedItemSection(item: item, onSelect: { product in
-                            selectedSeed = LogEntrySeed(product: product)
+                            var seed = LogEntrySeed(product: product)
+                            // Prefer the user's actual photo over the stock image.
+                            if let url = viewModel?.capturedImageUrl {
+                                seed.imageUrl = url
+                            }
+                            selectedSeed = seed
                         })
                     }
                 }

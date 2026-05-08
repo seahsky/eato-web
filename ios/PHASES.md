@@ -31,6 +31,7 @@ Top-level plan: 7-phase redesign to retro.app-style chronological diary, drop Pe
 | 4 | AddFood + Insight (Weekly Charts, History calendar, Streaks badges) | `a2427d9` |
 | 5 | Friends UI (Feed/Friends/You) + delete Partner/Pet UI | `29410c8` |
 | 6 | ProfileView + final cleanup | `58e05e9` |
+| 7a | Photo-required logging — R2 presign endpoint, `R2Uploader`, `PhotoCaptureStep` wired into Search / Manual / Barcode / Photo paths; encoder fix (drop `.convertToSnakeCase` so multi-word fields like `imageUrl` actually reach the backend) | _pending_ |
 
 ## Remaining for true Phase 8 "ship" completion
 

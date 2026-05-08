@@ -4,7 +4,7 @@ import { TRPCError } from "@trpc/server";
 import { getProductByBarcode, getProductById } from "../services/fatsecret";
 import { searchFoods, searchFoodsFast } from "../services/food-search";
 import { analyzeFoodImage } from "../services/openai";
-import { uploadImage } from "../services/r2";
+import { presignFoodPhotoUpload, uploadImage } from "../services/r2";
 import { hashQuery, cleanupExpiredCache } from "../services/search-cache";
 import { notifyBadgeUnlocked } from "@/lib/notifications/triggers";
 import {
@@ -194,6 +194,29 @@ export const foodRouter = router({
     .mutation(async ({ ctx, input }) => {
       const url = await uploadImage(input.image, ctx.user.id, input.mealGroupId);
       return { url };
+    }),
+
+  // Get a presigned PUT URL for direct R2 upload from the iOS client.
+  // The client PUTs the image bytes to `uploadUrl`, then sends `publicUrl`
+  // back as the entry's imageUrl when calling `food.log`.
+  presignPhoto: protectedProcedure
+    .meta({ openapi: { method: "POST", path: "/food/photos/presign" } })
+    .input(
+      z.object({
+        contentType: z
+          .enum(["image/jpeg", "image/png"])
+          .default("image/jpeg"),
+      })
+    )
+    .output(
+      z.object({
+        uploadUrl: z.string().url(),
+        publicUrl: z.string().url(),
+        key: z.string(),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      return presignFoodPhotoUpload(ctx.user.id, input.contentType);
     }),
 
   // Get product by barcode (FatSecret)

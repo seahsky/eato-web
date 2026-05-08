@@ -52,10 +52,13 @@ extension Endpoint {
 }
 
 extension JSONEncoder {
+    // Backend Zod schemas (and the generated OpenAPI spec) use camelCase keys,
+    // so the encoder must keep property names as-is. Do NOT enable
+    // `.convertToSnakeCase` here — it would silently drop multi-word fields
+    // like `imageUrl`, `consumedAt`, `mealGroupId` on the wire.
     static let eato: JSONEncoder = {
         let e = JSONEncoder()
         e.dateEncodingStrategy = .iso8601
-        e.keyEncodingStrategy = .convertToSnakeCase
         return e
     }()
 }

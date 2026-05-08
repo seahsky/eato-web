@@ -3,7 +3,7 @@ import VisionKit
 
 struct BarcodeScanView: View {
     @Environment(SessionStore.self) private var session
-    @State private var seed: LogEntrySeed?
+    @State private var resolvedProduct: ResolvedProduct?
     @State private var isLoading: Bool = false
     @State private var errorMessage: String?
     let onDismiss: () -> Void
@@ -42,18 +42,18 @@ struct BarcodeScanView: View {
         }
         .navigationTitle("Scan barcode")
         .navigationBarTitleDisplayMode(.inline)
-        .navigationDestination(item: $seed) { seed in
-            LogEntryView(seed: seed, onLogged: { _ in onDismiss() })
+        .navigationDestination(item: $resolvedProduct) { ref in
+            BarcodePhotoThenLog(product: ref.product, onDismiss: onDismiss)
         }
     }
 
     private func resolve(code: String) async {
-        guard !isLoading, seed == nil else { return }
+        guard !isLoading, resolvedProduct == nil else { return }
         isLoading = true
         defer { isLoading = false }
         do {
             let product = try await session.api.send(FoodAPI.barcode(code))
-            seed = LogEntrySeed(product: product)
+            resolvedProduct = ResolvedProduct(product: product)
         } catch APIError.notFound {
             errorMessage = "Barcode not found. Try searching manually."
         } catch let apiError as APIError {
@@ -62,6 +62,33 @@ struct BarcodeScanView: View {
             errorMessage = error.localizedDescription
         }
     }
+}
+
+private struct BarcodePhotoThenLog: View {
+    let product: FoodProductDTO
+    let onDismiss: () -> Void
+    @State private var seed: LogEntrySeed?
+
+    var body: some View {
+        PhotoCaptureStep(title: "Snap your \(product.name)") { url in
+            var s = LogEntrySeed(product: product)
+            s.imageUrl = url
+            seed = s
+        }
+        .navigationDestination(item: $seed) { seed in
+            LogEntryView(seed: seed, onLogged: { _ in onDismiss() })
+        }
+    }
+}
+
+/// Hashable id-only wrapper so we can drive a `navigationDestination(item:)`
+/// off the resolved product without forcing FoodProductDTO to adopt Hashable.
+struct ResolvedProduct: Hashable, Identifiable {
+    let product: FoodProductDTO
+    var id: String { product.id }
+
+    static func == (lhs: Self, rhs: Self) -> Bool { lhs.product.id == rhs.product.id }
+    func hash(into hasher: inout Hasher) { hasher.combine(product.id) }
 }
 
 private struct BarcodeScannerRepresentable: UIViewControllerRepresentable {
