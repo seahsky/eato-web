@@ -6,6 +6,7 @@ enum OnboardingStep: Int, CaseIterable {
     case body
     case activity
     case goal
+    case summary
 
     var title: String {
         switch self {
@@ -13,6 +14,7 @@ enum OnboardingStep: Int, CaseIterable {
         case .body: "Your stats"
         case .activity: "How active are you?"
         case .goal: "Your daily goal"
+        case .summary: "You're all set"
         }
     }
 
@@ -68,6 +70,7 @@ final class OnboardingViewModel {
         case .body: weightKg >= 20 && weightKg <= 500 && heightCm >= 50 && heightCm <= 300
         case .activity: true
         case .goal: calorieGoal >= 1000 && calorieGoal <= 10000
+        case .summary: true
         }
     }
 
@@ -82,8 +85,29 @@ final class OnboardingViewModel {
             await fetchSuggestedGoal()
             step = .goal
         case .goal:
+            step = .summary
+        case .summary:
             await submit()
         }
+    }
+
+    /// Computed weekly target for the Summary step — `dailyBudget * 7`.
+    /// Returns 0 when no goal has been computed yet.
+    var weeklyTarget: Int {
+        Int(calorieGoal * 7)
+    }
+
+    /// BMR estimate for the Summary step. Mirrors the backend Mifflin-St Jeor
+    /// formula — kept here so we can show a number before the user submits.
+    var estimatedBMR: Int {
+        let base: Double
+        switch gender {
+        case .male:
+            base = 10 * weightKg + 6.25 * heightCm - 5 * Double(age) + 5
+        case .female:
+            base = 10 * weightKg + 6.25 * heightCm - 5 * Double(age) - 161
+        }
+        return Int(base.rounded())
     }
 
     func goBack() {

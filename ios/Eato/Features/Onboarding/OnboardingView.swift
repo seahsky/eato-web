@@ -44,6 +44,7 @@ struct OnboardingView: View {
                     case .body: BodyStep(vm: vm)
                     case .activity: ActivityStep(vm: vm)
                     case .goal: GoalStep(vm: vm)
+                    case .summary: SummaryStep(vm: vm)
                     }
 
                     if let errorMessage = vm.errorMessage {
@@ -57,7 +58,7 @@ struct OnboardingView: View {
 
             VStack(spacing: Spacing.sm) {
                 PrimaryButton(
-                    vm.step == .goal ? "Finish" : "Continue",
+                    vm.step == .summary ? "Start your diary" : "Continue",
                     isLoading: vm.isSaving
                 ) {
                     Task { await vm.advance() }
@@ -156,6 +157,61 @@ private struct ActivityStep: View {
                 .buttonStyle(.plain)
             }
         }
+    }
+}
+
+/// Final onboarding step. Shows the computed daily budget as a 190dp ring,
+/// the BMR + Weekly target stats, and a sage motivational callout.
+/// Mirrors `profile.jsx` `summary`.
+private struct SummaryStep: View {
+    @Bindable var vm: OnboardingViewModel
+
+    var body: some View {
+        VStack(spacing: 22) {
+            CalorieRing(
+                consumed: Int(vm.calorieGoal),
+                goal: Int(vm.calorieGoal),
+                diameter: 190,
+                lineWidth: 14
+            )
+            .frame(maxWidth: .infinity)
+            .padding(.top, 6)
+
+            HStack(spacing: 10) {
+                summaryTile(label: "BMR", value: vm.estimatedBMR)
+                summaryTile(label: "Weekly", value: vm.weeklyTarget)
+            }
+
+            VStack(alignment: .leading, spacing: 4) {
+                Text("Take it one meal at a time.")
+                    .font(.system(size: 20, weight: .heavy, design: .rounded))
+                    .foregroundStyle(EatoColor.textPrimary)
+                Text("You can always adjust these later.")
+                    .font(.system(size: 13, weight: .medium, design: .rounded))
+                    .foregroundStyle(EatoColor.textSecondary)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.horizontal, 18)
+            .padding(.vertical, 14)
+            .background(EatoColor.sage.opacity(0.14), in: .rect(cornerRadius: 16))
+        }
+    }
+
+    private func summaryTile(label: String, value: Int) -> some View {
+        VStack(alignment: .leading, spacing: 3) {
+            Text(label.uppercased())
+                .font(.system(size: 11, weight: .bold, design: .rounded))
+                .foregroundStyle(EatoColor.textTertiary)
+                .kerning(1.0)
+            Text("\(value)")
+                .font(.system(size: 20, weight: .heavy, design: .rounded))
+                .foregroundStyle(EatoColor.textPrimary)
+                .monospacedDigit()
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(14)
+        .background(EatoColor.surface, in: .rect(cornerRadius: 14))
+        .softShadow(elevation: 2)
     }
 }
 

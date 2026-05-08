@@ -6,6 +6,7 @@ import Observation
 final class ProfileViewModel {
     private(set) var streak: StreakDataDTO?
     private(set) var settings: NotificationSettingsDTO?
+    private(set) var friendCount: Int = 0
     private(set) var lastError: String?
     var isSaving: Bool = false
 
@@ -20,8 +21,10 @@ final class ProfileViewModel {
     func load() async {
         async let s: StreakDataDTO? = try? api.send(StatsAPI.streak)
         async let n: NotificationSettingsDTO? = try? api.send(NotificationAPI.getSettings)
+        async let friends: [FriendDTO]? = try? api.send(FriendAPI.list)
         streak = await s
         settings = await n
+        friendCount = (await friends)?.count ?? 0
     }
 
     func updateGoal(_ kcal: Double) async {
@@ -29,6 +32,37 @@ final class ProfileViewModel {
         defer { isSaving = false }
         do {
             _ = try await api.send(ProfileAPI.updateGoal(.init(calorieGoal: kcal)))
+            await onProfileChanged()
+        } catch let e as APIError {
+            lastError = e.errorDescription
+        } catch {
+            lastError = error.localizedDescription
+        }
+    }
+
+    /// Re-runs profile.upsert with the new activity level so BMR/TDEE/calorieGoal
+    /// recompute on the backend. Caller supplies the current physical metrics
+    /// from the session's user so we don't re-prompt or store them locally.
+    func updateActivityLevel(
+        _ level: ActivityLevel,
+        currentProfile profile: ProfileDTO
+    ) async {
+        guard let gender = Gender(rawValue: profile.gender) else { return }
+        isSaving = true
+        defer { isSaving = false }
+        do {
+            _ = try await api.send(
+                ProfileAPI.upsert(
+                    .init(
+                        age: profile.age,
+                        weight: profile.weight,
+                        height: profile.height,
+                        gender: gender,
+                        activityLevel: level,
+                        calorieGoal: nil
+                    )
+                )
+            )
             await onProfileChanged()
         } catch let e as APIError {
             lastError = e.errorDescription

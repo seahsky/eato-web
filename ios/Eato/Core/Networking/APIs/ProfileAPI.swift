@@ -67,6 +67,18 @@ struct UpdateGoalRequest: Encodable, Sendable {
     let calorieGoal: Double
 }
 
+/// Full-profile upsert body — matches the backend's `profileSchema`.
+/// `calorieGoal` is optional so changing only the activity level still
+/// triggers a server-side recompute of BMR/TDEE/calorieGoal.
+struct UpsertProfileRequest: Encodable, Sendable {
+    let age: Int
+    let weight: Double
+    let height: Double
+    let gender: Gender
+    let activityLevel: ActivityLevel
+    let calorieGoal: Double?
+}
+
 enum ProfileAPI {
     static var get: Endpoint<ProfileDTO?> { .get("profile") }
 
@@ -80,5 +92,9 @@ enum ProfileAPI {
 
     static func updateGoal(_ body: UpdateGoalRequest) -> Endpoint<ProfileDTO> {
         .put("profile/goal", body: body)
+    }
+
+    static func upsert(_ body: UpsertProfileRequest) -> Endpoint<ProfileDTO> {
+        .put("profile", body: body)
     }
 }
