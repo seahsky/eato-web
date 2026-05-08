@@ -4,11 +4,9 @@ struct DashboardView: View {
     @Environment(SessionStore.self) private var session
     @State private var viewModel: DashboardViewModel?
     @State private var openedEntry: FoodEntryDTO?
+    @State private var showAddSheet: Bool = false
     @Namespace private var cardNamespace
 
-    /// Tap on the AddCard or the footer chip bubbles up here so a host
-    /// (MainTabView) can switch to the Add tab. Defaults to a no-op.
-    var onCompose: () -> Void = {}
     var onOpenProfile: () -> Void = {}
     var onOpenHistory: () -> Void = {}
 
@@ -34,6 +32,12 @@ struct DashboardView: View {
                 viewModel = DashboardViewModel(api: session.api)
             }
             await viewModel?.refresh()
+        }
+        .fullScreenCover(isPresented: $showAddSheet) {
+            AddFoodView()
+                .onDisappear {
+                    Task { await viewModel?.refresh() }
+                }
         }
     }
 
@@ -199,7 +203,7 @@ struct DashboardView: View {
                 spacing: 10
             ) {
                 if vm.isViewingToday {
-                    AddCard(onTap: onCompose)
+                    AddCard(onTap: { showAddSheet = true })
                 }
                 ForEach(Array(entries.enumerated()), id: \.element.id) { idx, entry in
                     StackCard(
