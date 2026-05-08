@@ -1,166 +1,248 @@
 import SwiftUI
 
+/// Tap-to-flip postcard overlay. The overlay uses `matchedGeometryEffect` so
+/// it animates outward from the source `StackCard`'s frame to a centered
+/// 260×340 target, then a `rotation3DEffect` flips it to the back.
+/// Mirrors `dashboard.jsx` `PostcardOverlay`.
 struct PostcardOverlay: View {
     let entry: FoodEntryDTO
+    let namespace: Namespace.ID
     var onClose: () -> Void
-    @State private var flipped: Bool = false
+    @State private var phase: Phase = .preOpen
+
+    enum Phase { case preOpen, open, closing }
+
+    private let targetSize = CGSize(width: 260, height: 340)
 
     var body: some View {
         ZStack {
-            EatoColor.darkBrown.opacity(0.55)
+            // Backdrop dim + blur (blur first, then dim color on top).
+            BackdropBlur(intensity: phase == .open ? 8 : 0)
                 .ignoresSafeArea()
-                .onTapGesture { onClose() }
+            EatoColor.darkBrown
+                .opacity(phase == .open ? 0.55 : 0)
+                .ignoresSafeArea()
+                .onTapGesture { close() }
 
-            postcard
-                .padding(.horizontal, Spacing.xl)
-                .frame(maxWidth: 420)
-                .onTapGesture {
-                    withAnimation(.spring(duration: 0.55, bounce: 0.18)) {
-                        flipped.toggle()
+            card
+                .frame(width: targetSize.width, height: targetSize.height)
+                .matchedGeometryEffect(id: entry.id, in: namespace, isSource: false)
+
+            if phase == .open {
+                Button(action: close) {
+                    HStack(spacing: 6) {
+                        Image(systemName: "xmark")
+                            .font(.system(size: 12, weight: .bold))
+                        Text("Put it back")
+                            .font(.system(size: 13, weight: .bold, design: .rounded))
                     }
+                    .foregroundStyle(EatoColor.darkBrown)
+                    .padding(.horizontal, 18)
+                    .padding(.vertical, 8)
+                    .background(.white.opacity(0.95), in: Capsule())
+                    .shadow(color: .black.opacity(0.25), radius: 8, x: 0, y: 4)
                 }
-                .gesture(
-                    DragGesture()
-                        .onEnded { value in
-                            if value.translation.height > 80 { onClose() }
-                        }
-                )
+                .buttonStyle(.plain)
+                .padding(.bottom, 80)
+                .frame(maxHeight: .infinity, alignment: .bottom)
+                .transition(.opacity.animation(.easeIn(duration: 0.25).delay(0.35)))
+            }
         }
-        .transition(.opacity.combined(with: .scale(scale: 0.96)))
+        .onAppear { withAnimation(.timingCurve(0.22, 0.61, 0.36, 1, duration: 0.62)) { phase = .open } }
     }
 
-    private var postcard: some View {
+    private func close() {
+        withAnimation(.timingCurve(0.22, 0.61, 0.36, 1, duration: 0.45)) {
+            phase = .closing
+        }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.45) {
+            onClose()
+        }
+    }
+
+    private var card: some View {
         ZStack {
-            front
-                .opacity(flipped ? 0 : 1)
+            CardFront(entry: entry)
+                .clipShape(.rect(cornerRadius: 14))
+                .opacity(phase == .open ? 0 : 1)
                 .rotation3DEffect(
-                    .degrees(flipped ? 180 : 0),
-                    axis: (x: 0, y: 1, z: 0)
+                    .degrees(phase == .open ? 180 : 0),
+                    axis: (x: 0, y: 1, z: 0),
+                    perspective: 0.7
                 )
 
-            back
-                .opacity(flipped ? 1 : 0)
+            PostcardBack(entry: entry)
+                .clipShape(.rect(cornerRadius: 14))
+                .opacity(phase == .open ? 1 : 0)
                 .rotation3DEffect(
-                    .degrees(flipped ? 0 : -180),
-                    axis: (x: 0, y: 1, z: 0)
+                    .degrees(phase == .open ? 0 : -180),
+                    axis: (x: 0, y: 1, z: 0),
+                    perspective: 0.7
                 )
         }
-        .softShadow(elevation: 24)
+        .shadow(
+            color: phase == .open
+                ? EatoColor.darkBrown.opacity(0.45)
+                : EatoColor.darkBrown.opacity(0.16),
+            radius: phase == .open ? 30 : 7,
+            x: 0,
+            y: phase == .open ? 20 : 4
+        )
     }
+}
 
-    private var front: some View {
-        VStack(spacing: 0) {
-            // Photo / fallback fills the top.
-            ZStack {
-                EatoColor.terracottaSoft.opacity(0.4)
-                if let urlString = entry.imageUrl, let url = URL(string: urlString) {
-                    AsyncImage(url: url) { phase in
-                        switch phase {
-                        case .success(let image):
-                            image.resizable().scaledToFill()
-                        default:
-                            EmptyView()
-                        }
-                    }
-                } else {
-                    Text("🍽️").font(.system(size: 96))
-                }
-            }
-            .frame(height: 280)
-            .clipShape(.rect(topLeadingRadius: Radius.lg, topTrailingRadius: Radius.lg))
+// MARK: - Postcard back face
 
-            VStack(spacing: 8) {
+struct PostcardBack: View {
+    let entry: FoodEntryDTO
+
+    private let paper = Color(red: 0xF6 / 255, green: 0xEF / 255, blue: 0xE3 / 255)
+    private let paperDark = Color(red: 0xE8 / 255, green: 0xDC / 255, blue: 0xC6 / 255)
+    private let ink = Color(red: 0x3D / 255, green: 0x2A / 255, blue: 0x1F / 255)
+    private let inkSoft = Color(red: 0x6E / 255, green: 0x5A / 255, blue: 0x4C / 255)
+
+    var body: some View {
+        ZStack(alignment: .topTrailing) {
+            ruledPaper
+                .ignoresSafeArea()
+
+            stamp
+                .padding(.top, 16)
+                .padding(.trailing, 16)
+
+            VStack(alignment: .leading, spacing: 0) {
+                Text(metaLine)
+                    .font(.system(size: 10, weight: .bold, design: .monospaced))
+                    .foregroundStyle(inkSoft)
+                    .kerning(1.2)
+                    .padding(.trailing, 70) // make room for stamp
+
                 Text(entry.foodName)
-                    .font(.system(size: 22, weight: .bold, design: .rounded))
-                    .foregroundStyle(EatoColor.textPrimary)
-                    .multilineTextAlignment(.center)
+                    .font(.system(size: 22, weight: .heavy, design: .rounded))
+                    .foregroundStyle(ink)
+                    .kerning(-0.2)
+                    .lineLimit(2)
+                    .padding(.top, 8)
+                    .padding(.trailing, 70)
 
-                HStack(spacing: 8) {
-                    KCalBadge(kcal: Int(entry.calories), emphasized: true)
-                    if let mood = Mood(rawValue: entry.mood ?? "") {
-                        MoodTag(mood: mood)
+                Text("\(Int(entry.calories)) kcal\(moodSuffix)")
+                    .font(.system(size: 13, weight: .bold, design: .rounded))
+                    .foregroundStyle(inkSoft)
+                    .padding(.top, 4)
+
+                Rectangle()
+                    .fill(ink.opacity(0.14))
+                    .frame(height: 1)
+                    .padding(.vertical, 14)
+
+                Text(caption)
+                    .font(.system(size: 14, weight: .medium, design: .rounded))
+                    .italic()
+                    .foregroundStyle(ink)
+                    .lineSpacing(3)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+
+                Spacer(minLength: 0)
+
+                Text("— m.")
+                    .font(.system(size: 14, weight: .bold, design: .rounded))
+                    .italic()
+                    .foregroundStyle(inkSoft)
+                    .frame(maxWidth: .infinity, alignment: .trailing)
+                    .padding(.top, 10)
+            }
+            .padding(18)
+        }
+    }
+
+    private var ruledPaper: some View {
+        ZStack {
+            paper
+            // Simulate the JSX `repeating-linear-gradient` of 28px ruled lines.
+            GeometryReader { geo in
+                let step: CGFloat = 28
+                let count = Int(geo.size.height / step) + 1
+                VStack(spacing: 0) {
+                    ForEach(0..<count, id: \.self) { _ in
+                        Color.clear
+                            .frame(height: step - 1)
+                        Rectangle()
+                            .fill(Color(red: 0xD4 / 255, green: 0xB2 / 255, blue: 0x78 / 255).opacity(0.10))
+                            .frame(height: 1)
                     }
                 }
-
-                Text("Tap to flip · Swipe down to close")
-                    .font(.system(size: 11, weight: .medium, design: .rounded))
-                    .foregroundStyle(EatoColor.textTertiary)
-                    .padding(.top, Spacing.sm)
             }
-            .padding(Spacing.lg)
-        }
-        .background(EatoColor.surface, in: .rect(cornerRadius: Radius.lg))
-    }
-
-    private var back: some View {
-        VStack(alignment: .leading, spacing: Spacing.lg) {
-            HStack {
-                Text(timestampText)
-                    .font(.system(size: 12, weight: .semibold, design: .monospaced))
-                    .foregroundStyle(EatoColor.textTertiary)
-                Spacer()
-                Text(entry.mealType?.lowercased().capitalized ?? "—")
-                    .font(.system(size: 12, weight: .semibold, design: .rounded))
-                    .foregroundStyle(EatoColor.terracotta)
-            }
-
-            Text(entry.foodName)
-                .font(.system(size: 18, weight: .bold, design: .rounded))
-                .foregroundStyle(EatoColor.textPrimary)
-
-            if let note = entry.note, !note.isEmpty {
-                Text(note)
-                    .font(.system(size: 15, weight: .regular, design: .rounded))
-                    .foregroundStyle(EatoColor.textPrimary)
-                    .italic()
-                    .frame(maxWidth: .infinity, alignment: .leading)
-            } else {
-                Text("No caption.")
-                    .font(.system(size: 14, weight: .medium, design: .rounded))
-                    .foregroundStyle(EatoColor.textTertiary)
-                    .italic()
-            }
-
-            Spacer()
-
-            macroRow
-
-            Text("Tap to flip back")
-                .font(.system(size: 11, weight: .medium, design: .rounded))
-                .foregroundStyle(EatoColor.textTertiary)
-                .frame(maxWidth: .infinity, alignment: .center)
-        }
-        .padding(Spacing.lg)
-        .frame(height: 460)
-        .background(EatoColor.surfaceWarm, in: .rect(cornerRadius: Radius.lg))
-    }
-
-    private var macroRow: some View {
-        HStack(spacing: Spacing.md) {
-            macroPill(label: "P", value: entry.protein, tint: EatoColor.sage)
-            macroPill(label: "C", value: entry.carbs, tint: EatoColor.warning)
-            macroPill(label: "F", value: entry.fat, tint: EatoColor.terracotta)
         }
     }
 
-    private func macroPill(label: String, value: Double?, tint: Color) -> some View {
-        VStack(spacing: 2) {
-            Text(label)
-                .font(.system(size: 10, weight: .bold, design: .rounded))
-                .foregroundStyle(tint)
-            Text(value.map { "\(Int($0))g" } ?? "—")
-                .font(.system(size: 14, weight: .semibold, design: .rounded))
-                .foregroundStyle(EatoColor.textPrimary)
-                .monospacedDigit()
-        }
-        .frame(maxWidth: .infinity)
-        .padding(.vertical, 8)
-        .background(tint.opacity(0.12), in: .rect(cornerRadius: Radius.md))
+    private var stamp: some View {
+        RoundedRectangle(cornerRadius: 4)
+            .fill(paperDark)
+            .frame(width: 56, height: 68)
+            .overlay(
+                RoundedRectangle(cornerRadius: 4)
+                    .strokeBorder(
+                        ink.opacity(0.18),
+                        style: StrokeStyle(lineWidth: 1.5, dash: [3, 3])
+                    )
+            )
+            .overlay(
+                Text(moodEmoji)
+                    .font(.system(size: 32))
+            )
+            .rotationEffect(.degrees(4))
     }
 
-    private var timestampText: String {
+    // MARK: helpers
+    private var metaLine: String {
         let f = DateFormatter()
-        f.dateFormat = "HH:mm"
-        return f.string(from: entry.consumedAt)
+        f.dateFormat = "MMM d"
+        let date = f.string(from: entry.consumedAt).uppercased()
+        let t = DateFormatter()
+        t.dateFormat = "HH:mm"
+        let time = t.string(from: entry.consumedAt)
+        let serving: String = {
+            guard let size = entry.servingSize, let unit = entry.servingUnit else { return "" }
+            let formatted = size.truncatingRemainder(dividingBy: 1) == 0
+                ? "\(Int(size))" : String(format: "%.1f", size)
+            return " · \(formatted)\(unit)"
+        }()
+        return "\(date) · \(time)\(serving)"
+    }
+
+    private var moodSuffix: String {
+        guard let raw = entry.mood, let m = Mood(rawValue: raw) else { return "" }
+        return " · \(m.label)"
+    }
+
+    private var moodEmoji: String {
+        guard let raw = entry.mood, let m = Mood(rawValue: raw) else { return "✺" }
+        switch m {
+        case .great: return "★"
+        case .good: return "♡"
+        case .meh: return "·"
+        case .off: return "▢"
+        }
+    }
+
+    private var caption: String {
+        if let note = entry.note, !note.isEmpty { return note }
+        return "A small moment. Noted."
+    }
+}
+
+// MARK: - UIKit blur bridge for the backdrop
+
+private struct BackdropBlur: UIViewRepresentable {
+    var intensity: CGFloat
+
+    func makeUIView(context: Context) -> UIVisualEffectView {
+        UIVisualEffectView(effect: nil)
+    }
+
+    func updateUIView(_ uiView: UIVisualEffectView, context: Context) {
+        UIView.animate(withDuration: 0.6) {
+            uiView.effect = intensity > 0 ? UIBlurEffect(style: .systemUltraThinMaterialDark) : nil
+        }
     }
 }

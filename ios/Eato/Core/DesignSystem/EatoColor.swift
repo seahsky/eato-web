@@ -12,6 +12,7 @@ extension Color {
 enum EatoColor {
     static let terracotta = Color(hex: 0xC4704B)
     static let terracottaSoft = Color(hex: 0xE8B89A)
+    static let terracottaDeep = Color(hex: 0x9C5638)
     static let sage = Color(hex: 0x6A9D72)
     static let sageSoft = Color(hex: 0xC2D9C5)
     static let cream = Color(hex: 0xFDF8F4)

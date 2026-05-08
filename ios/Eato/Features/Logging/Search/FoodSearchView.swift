@@ -50,11 +50,29 @@ struct FoodSearchView: View {
         }
         .sheet(item: $selection) { product in
             NavigationStack {
-                LogEntryView(seed: .init(product: product), onLogged: { _ in
+                SearchPhotoThenLog(product: product) {
                     selection = nil
                     onDismiss()
-                })
+                }
             }
+        }
+    }
+}
+
+/// Inside the search sheet's NavigationStack: capture photo, then push log.
+private struct SearchPhotoThenLog: View {
+    let product: FoodProductDTO
+    let onDismiss: () -> Void
+    @State private var seed: LogEntrySeed?
+
+    var body: some View {
+        PhotoCaptureStep(title: "Snap your \(product.name)") { url in
+            var s = LogEntrySeed(product: product)
+            s.imageUrl = url
+            seed = s
+        }
+        .navigationDestination(item: $seed) { seed in
+            LogEntryView(seed: seed, onLogged: { _ in onDismiss() })
         }
     }
 }

@@ -35,6 +35,20 @@ enum FoodAPI {
     static func batchSearch(_ body: BatchSearchRequest) -> Endpoint<[BatchSearchResultItem]> {
         .post("food/batch-search", body: body)
     }
+
+    static func presignPhoto(contentType: String = "image/jpeg") -> Endpoint<PresignPhotoResponse> {
+        .post("food/photos/presign", body: PresignPhotoRequest(contentType: contentType))
+    }
+}
+
+struct PresignPhotoRequest: Encodable, Sendable {
+    let contentType: String
+}
+
+struct PresignPhotoResponse: Decodable, Sendable {
+    let uploadUrl: String
+    let publicUrl: String
+    let key: String
 }
 
 enum MealEstimationAPI {

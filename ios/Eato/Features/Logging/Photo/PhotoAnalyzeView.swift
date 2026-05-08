@@ -92,7 +92,14 @@ struct PhotoAnalyzeView: View {
                         .foregroundStyle(EatoColor.textSecondary)
                     ForEach(items) { item in
                         AnalyzedItemSection(item: item, onSelect: { product in
-                            selectedSeed = LogEntrySeed(product: product)
+                            var seed = LogEntrySeed(product: product)
+                            // Always overwrite with our R2 URL — even if upload
+                            // failed (capturedImageUrl is nil). Passing the
+                            // FatSecret stock URL through would 400 on the
+                            // backend's R2-prefix refine and the user would see
+                            // a confusing error after picking a meal.
+                            seed.imageUrl = viewModel?.capturedImageUrl
+                            selectedSeed = seed
                         })
                     }
                 }

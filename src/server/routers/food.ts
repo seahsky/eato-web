@@ -4,7 +4,7 @@ import { TRPCError } from "@trpc/server";
 import { getProductByBarcode, getProductById } from "../services/fatsecret";
 import { searchFoods, searchFoodsFast } from "../services/food-search";
 import { analyzeFoodImage } from "../services/openai";
-import { uploadImage } from "../services/r2";
+import { presignFoodPhotoUpload, uploadImage } from "../services/r2";
 import { hashQuery, cleanupExpiredCache } from "../services/search-cache";
 import { notifyBadgeUnlocked } from "@/lib/notifications/triggers";
 import {
@@ -18,11 +18,29 @@ import {
   getWeeklyStreakBadgesToUnlock,
 } from "@/lib/gamification/badges";
 
+// Trailing slash prevents subdomain-bypass (e.g. R2_PUBLIC_URL="https://cdn.eato.app"
+// would accept "https://cdn.eato.app.evil.com/x.jpg" without it).
+const R2_PUBLIC_URL_PREFIX = process.env.R2_PUBLIC_URL
+  ? process.env.R2_PUBLIC_URL.replace(/\/+$/, "") + "/"
+  : null;
+
 const foodEntrySchema = z.object({
   name: z.string().min(1).max(200),
   barcode: z.string().optional(),
   brand: z.string().max(100).nullable().optional(),
-  imageUrl: z.string().optional(),
+  // Only accept URLs minted by presignFoodPhotoUpload (or empty/undefined).
+  // Pre-Phase-7a entries left this nil; new entries must be R2-hosted.
+  // Fail-closed: if R2_PUBLIC_URL is unset, reject ALL imageUrls rather than
+  // accepting anything.
+  imageUrl: z
+    .string()
+    .max(2048)
+    .refine(
+      (url) =>
+        !url || (R2_PUBLIC_URL_PREFIX !== null && url.startsWith(R2_PUBLIC_URL_PREFIX)),
+      "imageUrl must be an R2 public URL"
+    )
+    .optional(),
   calories: z.number().min(0),
   protein: z.number().min(0).optional(),
   carbs: z.number().min(0).optional(),
@@ -194,6 +212,29 @@ export const foodRouter = router({
     .mutation(async ({ ctx, input }) => {
       const url = await uploadImage(input.image, ctx.user.id, input.mealGroupId);
       return { url };
+    }),
+
+  // Get a presigned PUT URL for direct R2 upload from the iOS client.
+  // The client PUTs the image bytes to `uploadUrl`, then sends `publicUrl`
+  // back as the entry's imageUrl when calling `food.log`.
+  presignPhoto: protectedProcedure
+    .meta({ openapi: { method: "POST", path: "/food/photos/presign" } })
+    .input(
+      z.object({
+        contentType: z
+          .enum(["image/jpeg", "image/png"])
+          .default("image/jpeg"),
+      })
+    )
+    .output(
+      z.object({
+        uploadUrl: z.string().url(),
+        publicUrl: z.string().url(),
+        key: z.string(),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      return presignFoodPhotoUpload(ctx.user.id, input.contentType);
     }),
 
   // Get product by barcode (FatSecret)

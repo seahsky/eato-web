@@ -1,63 +1,69 @@
 import SwiftUI
 
+/// Day-summary card sitting below the photo grid (`dashboard.jsx:175`).
+/// 60dp ring + "DAY TOTAL" eyebrow + N/budget + "X kcal left/under/over".
 struct SummaryStrip: View {
     let consumed: Int
     let goal: Int
-    let weeklyTotal: Int?
-    let weeklyGoal: Int?
+    /// `nil` for today's view, otherwise an absolute date label like `APR 18`
+    /// to show on the eyebrow row.
+    var dateLabel: String? = nil
+    /// `true` when this is the live "today" view; controls the "left" vs.
+    /// "under" wording.
+    var isToday: Bool = true
 
-    private var remaining: Int { max(0, goal - consumed) }
+    private var remaining: Int { goal - consumed }
 
     var body: some View {
-        HStack(spacing: Spacing.lg) {
-            CalorieRing(consumed: consumed, goal: goal, diameter: 76, lineWidth: 8)
+        HStack(spacing: 14) {
+            CalorieRing(consumed: consumed, goal: goal, diameter: 60, lineWidth: 6)
+                .layoutPriority(0)
 
-            VStack(alignment: .leading, spacing: 6) {
-                stat(
-                    label: "Left today",
-                    value: "\(remaining)",
-                    suffix: "kcal",
-                    tint: EatoColor.terracotta
-                )
+            VStack(alignment: .leading, spacing: 2) {
+                Text(eyebrow)
+                    .font(.system(size: 10, weight: .bold, design: .monospaced))
+                    .foregroundStyle(EatoColor.textTertiary)
+                    .kerning(1.2)
 
-                if let weeklyTotal {
-                    stat(
-                        label: "This week",
-                        value: weeklyValueText(weeklyTotal),
-                        suffix: weeklyGoal.map { "/ \(Int($0 / 1000))k" } ?? "kcal",
-                        tint: EatoColor.sage
-                    )
+                HStack(alignment: .firstTextBaseline, spacing: 4) {
+                    Text("\(consumed)")
+                        .font(.system(size: 22, weight: .heavy, design: .rounded))
+                        .foregroundStyle(EatoColor.textPrimary)
+                        .kerning(-0.3)
+                        .monospacedDigit()
+                    Text("/ \(goal)")
+                        .font(.system(size: 14, weight: .semibold, design: .rounded))
+                        .foregroundStyle(EatoColor.textTertiary)
+                        .monospacedDigit()
                 }
+
+                Text(remainingText)
+                    .font(.system(size: 12, weight: .medium, design: .rounded))
+                    .foregroundStyle(remainingColor)
+                    .padding(.top, 2)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
         }
-        .padding(Spacing.md)
-        .background(EatoColor.surface, in: .rect(cornerRadius: Radius.lg))
+        .padding(.horizontal, 18)
+        .padding(.vertical, 16)
+        .background(EatoColor.surface, in: .rect(cornerRadius: 20))
         .softShadow(elevation: 6)
     }
 
-    private func weeklyValueText(_ total: Int) -> String {
-        if total >= 1000 {
-            return String(format: "%.1fk", Double(total) / 1000.0)
-        }
-        return "\(total)"
+    private var eyebrow: String {
+        if let dateLabel { return "\(dateLabel) · TOTAL" }
+        return "DAY TOTAL"
     }
 
-    private func stat(label: String, value: String, suffix: String, tint: Color) -> some View {
-        VStack(alignment: .leading, spacing: 0) {
-            Text(label.uppercased())
-                .font(.system(size: 9, weight: .bold, design: .rounded))
-                .foregroundStyle(EatoColor.textTertiary)
-                .kerning(0.8)
-            HStack(alignment: .firstTextBaseline, spacing: 4) {
-                Text(value)
-                    .font(.system(size: 20, weight: .bold, design: .rounded))
-                    .foregroundStyle(tint)
-                    .monospacedDigit()
-                Text(suffix)
-                    .font(.system(size: 11, weight: .semibold, design: .rounded))
-                    .foregroundStyle(EatoColor.textSecondary)
-            }
+    private var remainingText: String {
+        if remaining >= 0 {
+            return "\(remaining) kcal \(isToday ? "left" : "under")"
+        } else {
+            return "\(abs(remaining)) kcal over"
         }
+    }
+
+    private var remainingColor: Color {
+        remaining >= 0 ? EatoColor.textSecondary : EatoColor.danger
     }
 }

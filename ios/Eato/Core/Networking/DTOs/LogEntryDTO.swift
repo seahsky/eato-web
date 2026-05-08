@@ -33,5 +33,4 @@ struct LogEntryRequest: Encodable, Sendable {
     let isManualEntry: Bool
     let dataSource: FoodDataSource
     let fatSecretId: String?
-    let forPartnerId: String?
 }

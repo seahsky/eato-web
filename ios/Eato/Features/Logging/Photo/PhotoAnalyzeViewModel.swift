@@ -13,16 +13,33 @@ final class PhotoAnalyzeViewModel {
     }
 
     private(set) var stage: Stage = .picking
+    /// Public R2 URL of the user's photo. Set during `analyse(image:)` so each
+    /// `LogEntrySeed` produced from a review match carries the user's actual
+    /// meal photo (not the FatSecret stock image).
+    private(set) var capturedImageUrl: String?
 
     private let api: APIClient
+    private let uploader: R2Uploader
 
     init(api: APIClient) {
         self.api = api
+        self.uploader = R2Uploader(api: api)
     }
 
     func analyse(image: UIImage) async {
         stage = .analysing
-        guard let base64 = Self.compress(image) else {
+        capturedImageUrl = nil
+        guard let jpeg = image.jpegData(compressionQuality: 0.85) else {
+            stage = .failed("Couldn't read that image.")
+            return
+        }
+        // Upload first so we have the public URL ready before review.
+        // If upload fails, fall back to analysis without a stored photo —
+        // the review step still works, the entry just won't be photo-keyed.
+        if let url = try? await uploader.upload(imageData: jpeg) {
+            capturedImageUrl = url
+        }
+        guard let base64 = Self.compressBase64(image) else {
             stage = .failed("Couldn't read that image.")
             return
         }
@@ -38,7 +55,7 @@ final class PhotoAnalyzeViewModel {
 
     func setValue(_ stage: Stage) { self.stage = stage }
 
-    static func compress(_ image: UIImage) -> String? {
+    static func compressBase64(_ image: UIImage) -> String? {
         // Target ~1.2 MB JPEG so we stay under the backend's 1.5 MB cap.
         var quality: CGFloat = 0.85
         while quality > 0.1 {

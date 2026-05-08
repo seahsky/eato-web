@@ -1,10 +1,37 @@
 import SwiftUI
 
+/// One of three preset deltas around TDEE — Lose (-500), Maintain (TDEE),
+/// Gain (+500). Computed locally from the current `calorieGoal` vs `tdee`
+/// since the backend doesn't carry an explicit `goalKind` column.
+enum GoalKind: String, CaseIterable, Identifiable {
+    case lose, maintain, gain
+    var id: String { rawValue }
+    var label: String {
+        switch self {
+        case .lose: "Lose"
+        case .maintain: "Maintain"
+        case .gain: "Gain"
+        }
+    }
+    var deltaFromTDEE: Double {
+        switch self {
+        case .lose: -500
+        case .maintain: 0
+        case .gain: 500
+        }
+    }
+
+    static func infer(calorieGoal: Double, tdee: Double) -> GoalKind {
+        let diff = calorieGoal - tdee
+        if diff <= -250 { return .lose }
+        if diff >= 250 { return .gain }
+        return .maintain
+    }
+}
+
 struct ProfileView: View {
     @Environment(SessionStore.self) private var session
     @State private var viewModel: ProfileViewModel?
-    @State private var showGoalSheet: Bool = false
-    @State private var goalDraft: Double = 2000
 
     var body: some View {
         NavigationStack {
@@ -17,7 +44,6 @@ struct ProfileView: View {
                     ProgressView().frame(maxWidth: .infinity, maxHeight: .infinity)
                 }
             }
-            .navigationTitle("Me")
             .navigationBarTitleDisplayMode(.inline)
         }
         .task {
@@ -28,109 +54,260 @@ struct ProfileView: View {
             }
             await viewModel?.load()
         }
-        .sheet(isPresented: $showGoalSheet) {
-            goalEditorSheet
-                .presentationDetents([.medium])
-        }
     }
 
     @ViewBuilder
     private func content(_ vm: ProfileViewModel) -> some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: Spacing.lg) {
-                avatarHeader
-                accountCard(vm)
-                preferencesCard(vm)
-                appCard
+            VStack(alignment: .leading, spacing: 16) {
+                pageHeader
+                    .padding(.horizontal, 24)
+                    .padding(.top, 8)
+
+                avatarCard
+                    .padding(.horizontal, 20)
+
+                statsGrid
+                    .padding(.horizontal, 20)
+
+                sectionTitle("Your goal")
+                goalPills(vm: vm)
+                    .padding(.horizontal, 20)
+
+                sectionTitle("Activity level")
+                activityCard(vm: vm)
+                    .padding(.horizontal, 20)
+
+                sectionTitle("Gentle nudges")
+                notificationsCard(vm: vm)
+                    .padding(.horizontal, 20)
+
                 signOutButton
-                Spacer(minLength: Spacing.xxl)
+                    .padding(.horizontal, 20)
+                    .padding(.top, 8)
+
+                footer
+                    .padding(.top, 14)
+                    .padding(.bottom, 30)
             }
-            .padding(.horizontal, Spacing.lg)
-            .padding(.top, Spacing.md)
         }
         .refreshable { await vm.load() }
     }
 
-    private var avatarHeader: some View {
-        VStack(spacing: Spacing.sm) {
-            Avatar(initials: initials, size: .xl)
-            Text(session.currentUser?.name ?? "")
-                .font(.system(size: 20, weight: .bold, design: .rounded))
+    // MARK: - Page header
+
+    private var pageHeader: some View {
+        VStack(alignment: .leading, spacing: 2) {
+            Text("ABOUT YOU")
+                .font(.system(size: 13, weight: .bold, design: .rounded))
+                .foregroundStyle(EatoColor.textTertiary)
+                .kerning(1.4)
+            Text("Profile")
+                .font(.system(size: 34, weight: .heavy, design: .rounded))
                 .foregroundStyle(EatoColor.textPrimary)
-            Text(session.currentUser?.email ?? "")
-                .font(.system(size: 12, weight: .medium, design: .rounded))
-                .foregroundStyle(EatoColor.textSecondary)
         }
-        .frame(maxWidth: .infinity)
-        .padding(.vertical, Spacing.md)
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 
-    private func accountCard(_ vm: ProfileViewModel) -> some View {
+    // MARK: - Avatar header card
+
+    private var avatarCard: some View {
         Card {
-            VStack(spacing: 0) {
-                row(
-                    icon: "target",
-                    label: "Daily goal",
-                    value: session.currentUser?.profile.map { "\(Int($0.calorieGoal)) kcal" } ?? "—",
-                    trailing: { Image(systemName: "chevron.right").foregroundStyle(EatoColor.textTertiary) },
-                    onTap: {
-                        goalDraft = session.currentUser?.profile?.calorieGoal ?? 2000
-                        showGoalSheet = true
+            HStack(spacing: 14) {
+                Circle()
+                    .fill(
+                        LinearGradient(
+                            colors: [EatoColor.terracottaSoft, EatoColor.terracotta],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        )
+                    )
+                    .frame(width: 66, height: 66)
+                    .overlay(
+                        Text(initials)
+                            .font(.system(size: 26, weight: .heavy, design: .rounded))
+                            .foregroundStyle(.white)
+                    )
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(displayName)
+                        .font(.system(size: 26, weight: .heavy, design: .rounded))
+                        .foregroundStyle(EatoColor.textPrimary)
+                    Text(subline)
+                        .font(.system(size: 13, weight: .medium, design: .rounded))
+                        .foregroundStyle(EatoColor.textSecondary)
+                }
+                Spacer()
+            }
+            .padding(.vertical, 4)
+        }
+    }
+
+    // MARK: - 3-tile stats
+
+    private var statsGrid: some View {
+        let bmr = Int(session.currentUser?.profile?.bmr ?? 0)
+        let tdee = Int(session.currentUser?.profile?.tdee ?? 0)
+        let weekTarget = Int((session.currentUser?.profile?.calorieGoal ?? 0) * 7)
+        return HStack(spacing: 8) {
+            statTile(label: "BMR", value: bmr, unit: "kcal")
+            statTile(label: "TDEE", value: tdee, unit: "kcal/d")
+            statTile(label: "Week", value: weekTarget, unit: "kcal")
+        }
+    }
+
+    private func statTile(label: String, value: Int, unit: String) -> some View {
+        VStack(spacing: 4) {
+            Text(label.uppercased())
+                .font(.system(size: 10, weight: .bold, design: .rounded))
+                .foregroundStyle(EatoColor.textTertiary)
+                .kerning(1.0)
+            Text("\(value)")
+                .font(.system(size: 18, weight: .heavy, design: .rounded))
+                .foregroundStyle(EatoColor.textPrimary)
+                .monospacedDigit()
+            Text(unit)
+                .font(.system(size: 10, weight: .medium, design: .rounded))
+                .foregroundStyle(EatoColor.textTertiary)
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 12)
+        .padding(.horizontal, 8)
+        .background(EatoColor.surface, in: .rect(cornerRadius: 16))
+        .softShadow(elevation: 2)
+    }
+
+    // MARK: - Goal pills
+
+    private func goalPills(vm: ProfileViewModel) -> some View {
+        let tdee = session.currentUser?.profile?.tdee ?? 0
+        let current = session.currentUser?.profile?.calorieGoal ?? 0
+        let inferred = GoalKind.infer(calorieGoal: current, tdee: tdee)
+        return HStack(spacing: 8) {
+            ForEach(GoalKind.allCases) { kind in
+                Button {
+                    Task {
+                        await vm.updateGoal(tdee + kind.deltaFromTDEE)
                     }
-                )
-                divider
-                row(
-                    icon: "flame.fill",
-                    label: "TDEE",
-                    value: session.currentUser?.profile.map { "\(Int($0.tdee)) kcal" } ?? "—"
-                )
-                divider
-                row(
-                    icon: "bolt.fill",
-                    label: "Current streak",
-                    value: vm.streak.map { "\($0.currentStreak) days" } ?? "—"
-                )
+                } label: {
+                    Text(kind.label)
+                        .font(.system(size: 14, weight: .heavy, design: .rounded))
+                        .foregroundStyle(
+                            inferred == kind ? .white : EatoColor.textPrimary
+                        )
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 14)
+                        .background(
+                            inferred == kind ? EatoColor.terracotta : EatoColor.surface,
+                            in: .rect(cornerRadius: 14)
+                        )
+                        .shadow(
+                            color: inferred == kind
+                                ? EatoColor.terracotta.opacity(0.28)
+                                : .black.opacity(0.04),
+                            radius: inferred == kind ? 12 : 4,
+                            x: 0,
+                            y: inferred == kind ? 4 : 1
+                        )
+                }
+                .buttonStyle(.plain)
+                .disabled(vm.isSaving || tdee == 0)
             }
         }
     }
 
-    private func preferencesCard(_ vm: ProfileViewModel) -> some View {
-        Card {
+    // MARK: - Activity card
+
+    private func activityCard(vm: ProfileViewModel) -> some View {
+        // Use allCases so a user who picked .veryActive in onboarding can
+        // still see + re-select that level here.
+        let levels = ActivityLevel.allCases
+        let currentRaw = session.currentUser?.profile?.activityLevel ?? ""
+        let current = ActivityLevel(rawValue: currentRaw)
+        return VStack(spacing: 0) {
+            ForEach(Array(levels.enumerated()), id: \.element) { index, level in
+                Button {
+                    if let profile = session.currentUser?.profile {
+                        Task { await vm.updateActivityLevel(level, currentProfile: profile) }
+                    }
+                } label: {
+                    HStack(spacing: 12) {
+                        radio(filled: current == level)
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(level.label)
+                                .font(.system(size: 15, weight: .heavy, design: .rounded))
+                                .foregroundStyle(EatoColor.textPrimary)
+                            Text(level.hint)
+                                .font(.system(size: 12, weight: .medium, design: .rounded))
+                                .foregroundStyle(EatoColor.textTertiary)
+                        }
+                        Spacer()
+                    }
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 14)
+                }
+                .buttonStyle(.plain)
+                .disabled(vm.isSaving)
+
+                if index < levels.count - 1 {
+                    Rectangle()
+                        .fill(EatoColor.divider.opacity(0.6))
+                        .frame(height: 1)
+                        .padding(.leading, 50)
+                }
+            }
+        }
+        .background(EatoColor.surface, in: .rect(cornerRadius: 16))
+        .softShadow(elevation: 2)
+    }
+
+    private func radio(filled: Bool) -> some View {
+        Circle()
+            .strokeBorder(
+                filled ? EatoColor.terracotta : EatoColor.divider,
+                lineWidth: filled ? 6.5 : 2
+            )
+            .frame(width: 22, height: 22)
+    }
+
+    // MARK: - Notifications card
+
+    private func notificationsCard(vm: ProfileViewModel) -> some View {
+        Card(padding: 0) {
             VStack(spacing: 0) {
                 if let s = vm.settings {
-                    toggleRow(
-                        icon: "bell.fill",
-                        label: "Friend logs a meal",
+                    notifRow(
+                        title: "Friends posting",
+                        subtitle: "When friends log new meals",
                         isOn: Binding(
                             get: { s.friendFoodLogged },
-                            set: { new in Task { await vm.toggle(\NotificationSettingsDTO.friendFoodLogged, to: new) } }
+                            set: { v in Task { await vm.toggle(\NotificationSettingsDTO.friendFoodLogged, to: v) } }
                         )
                     )
                     divider
-                    toggleRow(
-                        icon: "checkmark.seal.fill",
-                        label: "Friend hits goal",
+                    notifRow(
+                        title: "Friend goals",
+                        subtitle: "When friends hit their goal",
                         isOn: Binding(
                             get: { s.friendGoalReached },
-                            set: { new in Task { await vm.toggle(\NotificationSettingsDTO.friendGoalReached, to: new) } }
+                            set: { v in Task { await vm.toggle(\NotificationSettingsDTO.friendGoalReached, to: v) } }
                         )
                     )
                     divider
-                    toggleRow(
-                        icon: "person.crop.circle.badge.plus",
-                        label: "New friend added",
+                    notifRow(
+                        title: "New friends",
+                        subtitle: "When someone adds you back",
                         isOn: Binding(
                             get: { s.friendAdded },
-                            set: { new in Task { await vm.toggle(\NotificationSettingsDTO.friendAdded, to: new) } }
+                            set: { v in Task { await vm.toggle(\NotificationSettingsDTO.friendAdded, to: v) } }
                         )
                     )
                     divider
-                    toggleRow(
-                        icon: "hand.tap.fill",
-                        label: "Receive nudges",
+                    notifRow(
+                        title: "Receive nudges",
+                        subtitle: "Friend taps from across the table",
                         isOn: Binding(
                             get: { s.receiveNudges },
-                            set: { new in Task { await vm.toggle(\NotificationSettingsDTO.receiveNudges, to: new) } }
+                            set: { v in Task { await vm.toggle(\NotificationSettingsDTO.receiveNudges, to: v) } }
                         )
                     )
                 } else {
@@ -140,167 +317,97 @@ struct ProfileView: View {
                             .font(.system(size: 12, weight: .medium, design: .rounded))
                             .foregroundStyle(EatoColor.textSecondary)
                     }
-                    .padding(.vertical, Spacing.sm)
+                    .padding(14)
                     .frame(maxWidth: .infinity, alignment: .leading)
                 }
             }
         }
     }
 
-    private var appCard: some View {
-        Card {
-            VStack(spacing: 0) {
-                row(icon: "info.circle.fill", label: "Version", value: appVersion)
-                divider
-                row(
-                    icon: "doc.text.fill",
-                    label: "Privacy policy",
-                    value: "",
-                    trailing: { Image(systemName: "arrow.up.right.square").foregroundStyle(EatoColor.textTertiary) },
-                    onTap: { /* TODO: open URL */ }
-                )
+    private func notifRow(title: String, subtitle: String, isOn: Binding<Bool>) -> some View {
+        HStack(spacing: 12) {
+            VStack(alignment: .leading, spacing: 1) {
+                Text(title)
+                    .font(.system(size: 15, weight: .heavy, design: .rounded))
+                    .foregroundStyle(EatoColor.textPrimary)
+                Text(subtitle)
+                    .font(.system(size: 12, weight: .medium, design: .rounded))
+                    .foregroundStyle(EatoColor.textTertiary)
             }
+            Spacer()
+            Toggle("", isOn: isOn)
+                .labelsHidden()
+                .tint(EatoColor.terracotta)
         }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 14)
     }
+
+    // MARK: - Sign out + footer
 
     private var signOutButton: some View {
         Button {
             Task { await session.signOut() }
         } label: {
             Text("Sign out")
-                .font(.system(size: 14, weight: .bold, design: .rounded))
+                .font(.system(size: 14, weight: .heavy, design: .rounded))
                 .foregroundStyle(EatoColor.danger)
                 .frame(maxWidth: .infinity)
-                .padding(.vertical, Spacing.md)
-                .background(EatoColor.danger.opacity(0.08), in: .rect(cornerRadius: Radius.lg))
+                .padding(.vertical, 14)
+                .background(EatoColor.danger.opacity(0.08), in: .rect(cornerRadius: 14))
         }
         .buttonStyle(.plain)
-        .softShadow(elevation: 2)
     }
 
-    private var goalEditorSheet: some View {
-        VStack(spacing: Spacing.lg) {
-            Capsule()
-                .fill(EatoColor.divider)
-                .frame(width: 40, height: 4)
-                .padding(.top, Spacing.sm)
-
-            Text("Daily calorie goal")
-                .font(.system(size: 18, weight: .bold, design: .rounded))
-                .foregroundStyle(EatoColor.textPrimary)
-
-            HStack {
-                Button { goalDraft = max(1000, goalDraft - 50) } label: {
-                    Image(systemName: "minus.circle.fill").font(.system(size: 32))
-                }
-                Spacer()
-                Text("\(Int(goalDraft))")
-                    .font(.system(size: 44, weight: .bold, design: .rounded))
-                    .foregroundStyle(EatoColor.terracotta)
-                    .monospacedDigit()
-                Spacer()
-                Button { goalDraft = min(10000, goalDraft + 50) } label: {
-                    Image(systemName: "plus.circle.fill").font(.system(size: 32))
-                }
-            }
-            .foregroundStyle(EatoColor.textPrimary)
-            .padding(.horizontal, Spacing.xl)
-
-            Text("kcal per day")
-                .font(.system(size: 12, weight: .semibold, design: .rounded))
-                .foregroundStyle(EatoColor.textSecondary)
-
-            Spacer()
-
-            Button {
-                Task {
-                    await viewModel?.updateGoal(goalDraft)
-                    showGoalSheet = false
-                }
-            } label: {
-                Text(viewModel?.isSaving == true ? "Saving…" : "Save")
-                    .font(.system(size: 14, weight: .bold, design: .rounded))
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, Spacing.md)
-                    .foregroundStyle(EatoColor.accentContrast)
-                    .background(EatoColor.terracotta, in: .rect(cornerRadius: Radius.lg))
-            }
-            .buttonStyle(.plain)
-            .padding(.horizontal, Spacing.lg)
-            .padding(.bottom, Spacing.xl)
-        }
-        .background(EatoColor.background)
+    private var footer: some View {
+        Text("made with warmth · v\(appVersion)")
+            .font(.system(size: 14, weight: .semibold, design: .rounded))
+            .italic()
+            .foregroundStyle(EatoColor.textTertiary)
+            .frame(maxWidth: .infinity)
     }
 
     // MARK: - Helpers
+
+    private func sectionTitle(_ text: String) -> some View {
+        Text(text.uppercased())
+            .font(.system(size: 12, weight: .bold, design: .rounded))
+            .foregroundStyle(EatoColor.textTertiary)
+            .kerning(1.2)
+            .padding(.horizontal, 28)
+            .padding(.top, 4)
+            .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    private var divider: some View {
+        Rectangle()
+            .fill(EatoColor.divider.opacity(0.6))
+            .frame(height: 1)
+            .padding(.leading, 16)
+    }
 
     private var initials: String {
         let name = session.currentUser?.name ?? session.currentUser?.email ?? "?"
         let parts = name.split(separator: " ").map(String.init)
         if parts.count >= 2 { return String(parts[0].prefix(1) + parts[1].prefix(1)) }
-        return String(name.prefix(2))
+        return String(name.prefix(1)).uppercased()
+    }
+
+    private var displayName: String {
+        session.currentUser?.name ?? "Friend"
+    }
+
+    private var subline: String {
+        let friends = viewModel?.friendCount ?? 0
+        let streak = viewModel?.streak?.currentStreak ?? 0
+        let f = friends == 1 ? "1 friend" : "\(friends) friends"
+        if streak > 0 {
+            return "\(f) · \(streak)-day streak"
+        }
+        return f
     }
 
     private var appVersion: String {
-        let v = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "—"
-        let b = Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion") as? String ?? "—"
-        return "\(v) (\(b))"
-    }
-
-    private var divider: some View {
-        Rectangle()
-            .fill(EatoColor.divider.opacity(0.5))
-            .frame(height: 1)
-            .padding(.leading, 40)
-    }
-
-    private func row<Trailing: View>(
-        icon: String,
-        label: String,
-        value: String,
-        @ViewBuilder trailing: () -> Trailing = { EmptyView() },
-        onTap: (() -> Void)? = nil
-    ) -> some View {
-        Button {
-            onTap?()
-        } label: {
-            HStack(spacing: Spacing.md) {
-                Image(systemName: icon)
-                    .font(.system(size: 14, weight: .semibold))
-                    .foregroundStyle(EatoColor.terracotta)
-                    .frame(width: 24)
-                Text(label)
-                    .font(.system(size: 14, weight: .semibold, design: .rounded))
-                    .foregroundStyle(EatoColor.textPrimary)
-                Spacer()
-                if !value.isEmpty {
-                    Text(value)
-                        .font(.system(size: 13, weight: .semibold, design: .rounded))
-                        .foregroundStyle(EatoColor.textSecondary)
-                        .monospacedDigit()
-                }
-                trailing()
-            }
-            .padding(.vertical, Spacing.sm)
-        }
-        .buttonStyle(.plain)
-        .disabled(onTap == nil)
-    }
-
-    private func toggleRow(icon: String, label: String, isOn: Binding<Bool>) -> some View {
-        HStack(spacing: Spacing.md) {
-            Image(systemName: icon)
-                .font(.system(size: 14, weight: .semibold))
-                .foregroundStyle(EatoColor.terracotta)
-                .frame(width: 24)
-            Text(label)
-                .font(.system(size: 14, weight: .semibold, design: .rounded))
-                .foregroundStyle(EatoColor.textPrimary)
-            Spacer()
-            Toggle("", isOn: isOn)
-                .labelsHidden()
-                .tint(EatoColor.terracotta)
-        }
-        .padding(.vertical, Spacing.sm)
+        Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "1.0"
     }
 }

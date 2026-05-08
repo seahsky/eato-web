@@ -133,8 +133,7 @@ final class LogEntryViewModel {
             consumedAt: dateString,
             isManualEntry: isManual,
             dataSource: seed.dataSource,
-            fatSecretId: seed.fatSecretId,
-            forPartnerId: nil
+            fatSecretId: seed.fatSecretId
         )
 
         do {
