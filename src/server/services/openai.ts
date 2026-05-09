@@ -26,9 +26,10 @@ export async function analyzeFoodImage(
 ): Promise<AnalyzedFoodItem[]> {
   try {
     const response = await getClient().chat.completions.create({
-      model: "gpt-4o-mini",
+      model: "gpt-5-nano",
       response_format: { type: "json_object" },
-      max_tokens: 1024,
+      max_completion_tokens: 16384,
+      reasoning_effort: "minimal",
       messages: [
         {
           role: "user",
@@ -57,7 +58,13 @@ Rules:
       ],
     });
 
-    const content = response.choices[0]?.message?.content;
+    const choice = response.choices[0];
+    if (choice?.finish_reason === "length") {
+      console.warn(
+        "OpenAI food analysis hit token cap (finish_reason=length); returning empty result"
+      );
+    }
+    const content = choice?.message?.content;
     if (!content) return [];
 
     const parsed = JSON.parse(content);
