@@ -310,6 +310,24 @@ struct ProfileView: View {
                             set: { v in Task { await vm.toggle(\NotificationSettingsDTO.receiveNudges, to: v) } }
                         )
                     )
+                    divider
+                    notifRow(
+                        title: "Circle meal moments",
+                        subtitle: "Scheduled prompts from your circles",
+                        isOn: Binding(
+                            get: { s.circleMealMomentEnabled },
+                            set: { v in Task { await vm.toggle(\NotificationSettingsDTO.circleMealMomentEnabled, to: v) } }
+                        )
+                    )
+                    divider
+                    notifRow(
+                        title: "Circle ad-hoc calls",
+                        subtitle: "When a friend in a circle is eating",
+                        isOn: Binding(
+                            get: { s.circleAdhocCallsEnabled },
+                            set: { v in Task { await vm.toggle(\NotificationSettingsDTO.circleAdhocCallsEnabled, to: v) } }
+                        )
+                    )
                 } else {
                     HStack {
                         ProgressView()

@@ -9,7 +9,10 @@ export type NotificationType =
   | "PENDING_APPROVAL"
   | "CELEBRATION"
   | "BADGE_UNLOCKED"
-  | "APPROVAL_RESULT";
+  | "APPROVAL_RESULT"
+  | "CIRCLE_MOMENT_FIRED"
+  | "CIRCLE_MOMENT_LOGGED"
+  | "CIRCLE_DAY_CARD_READY";
 
 export interface NotificationPayload {
   title: string;

@@ -284,6 +284,38 @@ export const BADGES: Record<string, BadgeDefinition> = {
     rarity: "common",
     order: 3,
   },
+
+  // Meal Circle badges
+  circle_first_moment: {
+    id: "circle_first_moment",
+    name: "First Bite Together",
+    description: "Logged your first synchronous meal moment",
+    category: "social",
+    icon: "circle",
+    requirement: "Log a meal moment with a circle",
+    rarity: "common",
+    order: 4,
+  },
+  circle_seven_day: {
+    id: "circle_seven_day",
+    name: "Week of Moments",
+    description: "Logged in 7 separate moments in one circle",
+    category: "social",
+    icon: "calendar",
+    requirement: "Log 7 moments in one circle",
+    rarity: "uncommon",
+    order: 5,
+  },
+  circle_full_house: {
+    id: "circle_full_house",
+    name: "Full House",
+    description: "Every member of your circle logged in the same moment",
+    category: "social",
+    icon: "users",
+    requirement: "Get every member to log in one moment",
+    rarity: "rare",
+    order: 6,
+  },
 } as const;
 
 // Get all badges in a category

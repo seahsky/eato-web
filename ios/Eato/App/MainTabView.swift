@@ -35,7 +35,8 @@ struct MainTabView: View {
         .onChange(of: router.pendingLink) { _, link in
             guard let link else { return }
             switch link {
-            case .friends, .friendCode: selection = .friends
+            case .friends, .friendCode, .circle, .circleMoment:
+                selection = .friends
             }
         }
     }

@@ -66,6 +66,13 @@ model User {
 
   // Achievements
   achievements Achievement[]
+
+  // Meal Circles (synchronous meal moments)
+  circlesCreated        Circle[]             @relation("CircleCreator")
+  circleMemberships     CircleMember[]
+  adhocMomentsTriggered MealMoment[]         @relation("AdhocMomentTrigger")
+  mealMomentEntries     MealMomentEntry[]    @relation("MealMomentEntries")
+  mealMomentReactions   MealMomentReaction[] @relation("MealMomentReactions")
 }
 
 // Profile for BMR calculation
@@ -395,6 +402,10 @@ model NotificationSettings {
   // Nudge notifications
   receiveNudges Boolean @default(true)
 
+  // Meal Circle notifications
+  circleMealMomentEnabled  Boolean @default(true)
+  circleAdhocCallsEnabled  Boolean @default(true)
+
   // Timezone (IANA format, e.g., "America/New_York")
   timezone String @default("UTC")
 
@@ -646,4 +657,152 @@ model Achievement {
 
   @@unique([userId, badgeId])
   @@index([userId])
+}
+
+// ============================================
+// Meal Circles — synchronous meal moments
+// ============================================
+
+// Small named group container (3–8 members) that receives meal moments.
+model Circle {
+  id                      String   @id @default(auto()) @map("_id") @db.ObjectId
+  name                    String
+  emoji                   String   @default("🍽️")
+  createdById             String   @db.ObjectId
+  createdBy               User     @relation("CircleCreator", fields: [createdById], references: [id], onDelete: Cascade)
+  // IANA tz used to evaluate scheduled meal times.
+  timezone                String   @default("UTC")
+  // How long after a moment fires that members can still log synchronously.
+  mealMomentWindowMinutes Int      @default(30)
+  // Per-circle setting: render empty slots in the per-meal grid.
+  showEmptySlots          Boolean  @default(true)
+  createdAt               DateTime @default(now())
+  updatedAt               DateTime @updatedAt
+
+  members     CircleMember[]
+  schedules   CircleSchedule[]
+  mealMoments MealMoment[]
+  dayCards    DayCard[]
+
+  @@index([createdById])
+}
+
+enum CircleRole {
+  OWNER
+  MEMBER
+}
+
+// Membership of a user in a circle. Owner can manage schedules + invites.
+model CircleMember {
+  id       String     @id @default(auto()) @map("_id") @db.ObjectId
+  circleId String     @db.ObjectId
+  circle   Circle     @relation(fields: [circleId], references: [id], onDelete: Cascade)
+  userId   String     @db.ObjectId
+  user     User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role     CircleRole @default(MEMBER)
+  joinedAt DateTime   @default(now())
+
+  @@unique([circleId, userId])
+  @@index([userId])
+  @@index([circleId])
+}
+
+// Recurring meal time per circle. Multiple per circle (e.g., 3 daily meals).
+model CircleSchedule {
+  id         String   @id @default(auto()) @map("_id") @db.ObjectId
+  circleId   String   @db.ObjectId
+  circle     Circle   @relation(fields: [circleId], references: [id], onDelete: Cascade)
+  label      String // "Breakfast" | "Lunch" | "Dinner" | custom
+  localTime  String // "HH:MM" 24h in circle timezone
+  // Bitmask: bit 0 = Sun, bit 6 = Sat. 127 = all 7 days.
+  daysOfWeek Int      @default(127)
+  enabled    Boolean  @default(true)
+  createdAt  DateTime @default(now())
+
+  mealMoments MealMoment[]
+
+  @@index([circleId])
+}
+
+enum MealMomentKind {
+  SCHEDULED
+  ADHOC
+}
+
+// One firing of a meal moment (scheduled OR ad-hoc).
+model MealMoment {
+  id                String          @id @default(auto()) @map("_id") @db.ObjectId
+  circleId          String          @db.ObjectId
+  circle            Circle          @relation(fields: [circleId], references: [id], onDelete: Cascade)
+  kind              MealMomentKind
+  firedAt           DateTime
+  closesAt          DateTime
+  triggeredByUserId String?         @db.ObjectId
+  triggeredBy       User?           @relation("AdhocMomentTrigger", fields: [triggeredByUserId], references: [id], onDelete: SetNull)
+  scheduleId        String?         @db.ObjectId
+  schedule          CircleSchedule? @relation(fields: [scheduleId], references: [id], onDelete: SetNull)
+  label             String
+  // Server-composited per-meal split grid; set when moment closes.
+  gridImageUrl      String?
+  createdAt         DateTime        @default(now())
+
+  entries MealMomentEntry[]
+
+  @@index([circleId, firedAt])
+  @@index([firedAt])
+}
+
+// One slot per (moment × member). Pre-created when the moment fires so
+// empty slots render naturally. foodEntryId nil = missed / not yet logged.
+model MealMomentEntry {
+  id          String     @id @default(auto()) @map("_id") @db.ObjectId
+  momentId    String     @db.ObjectId
+  moment      MealMoment @relation(fields: [momentId], references: [id], onDelete: Cascade)
+  userId      String     @db.ObjectId
+  user        User       @relation("MealMomentEntries", fields: [userId], references: [id], onDelete: Cascade)
+  // Optional foodEntry; null means the slot is still empty.
+  foodEntryId String?    @db.ObjectId
+  // ms since moment.firedAt — used for "logged 4 min late" labels.
+  loggedAtMs  Int?
+  // Denormalized photo URL from FoodEntry for fast grid render.
+  photoUrl    String?
+  note        String?
+  mood        String?
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  reactions MealMomentReaction[]
+
+  @@unique([momentId, userId])
+  @@index([userId])
+  @@index([momentId])
+}
+
+// Lightweight emoji reactions on a slot. One row per (entry, user, emoji).
+model MealMomentReaction {
+  id        String          @id @default(auto()) @map("_id") @db.ObjectId
+  entryId   String          @db.ObjectId
+  entry     MealMomentEntry @relation(fields: [entryId], references: [id], onDelete: Cascade)
+  userId    String          @db.ObjectId
+  user      User            @relation("MealMomentReactions", fields: [userId], references: [id], onDelete: Cascade)
+  emoji     String
+  createdAt DateTime        @default(now())
+
+  @@unique([entryId, userId, emoji])
+  @@index([entryId])
+}
+
+// End-of-day rollup, generated lazily once per (circle, date).
+model DayCard {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  circleId    String   @db.ObjectId
+  circle      Circle   @relation(fields: [circleId], references: [id], onDelete: Cascade)
+  // Stored as midnight UTC of the local date in the circle's timezone.
+  date        DateTime
+  imageUrl    String
+  momentIds   String[] @db.ObjectId
+  generatedAt DateTime @default(now())
+
+  @@unique([circleId, date])
+  @@index([circleId])
 }

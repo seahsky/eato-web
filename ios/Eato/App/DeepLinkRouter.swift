@@ -9,12 +9,24 @@ import Observation
 final class DeepLinkRouter {
     var pendingLink: DeepLink?
     var pendingFriendCode: String?
+    /// Set when a circle / moment push is tapped. The Friends tab's Circles
+    /// sub-tab consumes this to push the right detail screen.
+    var pendingCircleId: String?
+    var pendingCircleMomentId: String?
 
     func handle(_ url: URL) {
         guard let link = DeepLink.parse(url) else { return }
         pendingLink = link
-        if case .friendCode(let code) = link {
+        switch link {
+        case .friendCode(let code):
             pendingFriendCode = code
+        case .circle(let id):
+            pendingCircleId = id
+        case .circleMoment(let circleId, let momentId):
+            pendingCircleId = circleId
+            pendingCircleMomentId = momentId
+        case .friends:
+            break
         }
     }
 
@@ -22,6 +34,14 @@ final class DeepLinkRouter {
         let code = pendingFriendCode
         pendingFriendCode = nil
         return code
+    }
+
+    func consumeCircle() -> (circleId: String, momentId: String?)? {
+        guard let id = pendingCircleId else { return nil }
+        let mom = pendingCircleMomentId
+        pendingCircleId = nil
+        pendingCircleMomentId = nil
+        return (id, mom)
     }
 
     func consume() -> DeepLink? {

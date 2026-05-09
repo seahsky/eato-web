@@ -24,6 +24,8 @@ struct NotificationSettingsDTO: Decodable, Sendable, Equatable {
     var friendGoalReached: Bool
     var friendAdded: Bool
     var receiveNudges: Bool
+    var circleMealMomentEnabled: Bool
+    var circleAdhocCallsEnabled: Bool
     var timezone: String
 }
 
@@ -32,6 +34,8 @@ struct UpdateNotificationSettingsRequest: Encodable, Sendable {
     let friendGoalReached: Bool?
     let friendAdded: Bool?
     let receiveNudges: Bool?
+    let circleMealMomentEnabled: Bool?
+    let circleAdhocCallsEnabled: Bool?
     let timezone: String?
 }
 
