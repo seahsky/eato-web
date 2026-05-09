@@ -181,6 +181,8 @@ export const notificationRouter = router({
         friendGoalReached: true,
         friendAdded: true,
         receiveNudges: true,
+        circleMealMomentEnabled: true,
+        circleAdhocCallsEnabled: true,
         timezone: "UTC",
       };
     }
@@ -190,6 +192,8 @@ export const notificationRouter = router({
       friendGoalReached: settings.friendGoalReached,
       friendAdded: settings.friendAdded,
       receiveNudges: settings.receiveNudges,
+      circleMealMomentEnabled: settings.circleMealMomentEnabled,
+      circleAdhocCallsEnabled: settings.circleAdhocCallsEnabled,
       timezone: settings.timezone,
     };
   }),
@@ -203,6 +207,8 @@ export const notificationRouter = router({
         friendGoalReached: z.boolean().optional(),
         friendAdded: z.boolean().optional(),
         receiveNudges: z.boolean().optional(),
+        circleMealMomentEnabled: z.boolean().optional(),
+        circleAdhocCallsEnabled: z.boolean().optional(),
         timezone: z.string().optional(),
       })
     )

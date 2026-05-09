@@ -81,6 +81,8 @@ final class ProfileViewModel {
             friendGoalReached: keyPath == \NotificationSettingsDTO.friendGoalReached ? value : nil,
             friendAdded: keyPath == \NotificationSettingsDTO.friendAdded ? value : nil,
             receiveNudges: keyPath == \NotificationSettingsDTO.receiveNudges ? value : nil,
+            circleMealMomentEnabled: keyPath == \NotificationSettingsDTO.circleMealMomentEnabled ? value : nil,
+            circleAdhocCallsEnabled: keyPath == \NotificationSettingsDTO.circleAdhocCallsEnabled ? value : nil,
             timezone: nil
         )
         do {

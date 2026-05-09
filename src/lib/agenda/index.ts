@@ -66,7 +66,15 @@ export async function getAgenda(): Promise<Agenda> {
  * Define all job types
  */
 async function defineJobs(_agenda: Agenda): Promise<void> {
-  // No jobs currently defined (meal reminders removed)
+  // Circle scheduler — registers fire-moment / close-moment / reschedule /
+  // day-card jobs and seeds the next 24h of fires on startup.
+  const { registerCircleSchedulerJobs, rescheduleAllCircleMoments } =
+    await import("@/server/services/circleScheduler");
+  await registerCircleSchedulerJobs();
+  // Best-effort seed: failure here shouldn't block agenda start.
+  rescheduleAllCircleMoments().catch((err) => {
+    console.error("Initial circle reschedule failed:", err);
+  });
 }
 
 /**

@@ -1,12 +1,13 @@
 import SwiftUI
 
 enum FriendsTab: String, CaseIterable, Identifiable {
-    case feed, friends, you
+    case feed, friends, circles, you
     var id: String { rawValue }
     var label: String {
         switch self {
         case .feed: return "Feed"
         case .friends: return "Friends"
+        case .circles: return "Circles"
         case .you: return "You"
         }
     }
@@ -19,6 +20,13 @@ struct FriendsView: View {
     @State private var selection: FriendsTab = .feed
     @State private var lastAddedFriendName: String?
     @State private var showAddSheet: Bool = false
+    @State private var pendingCircleNav: PendingCircleNav?
+
+    struct PendingCircleNav: Identifiable, Hashable {
+        var id: String { circleId + (momentId ?? "") }
+        let circleId: String
+        let momentId: String?
+    }
 
     var body: some View {
         NavigationStack {
@@ -32,6 +40,13 @@ struct FriendsView: View {
                 }
             }
             .navigationBarTitleDisplayMode(.inline)
+            .navigationDestination(item: $pendingCircleNav) { nav in
+                if let momentId = nav.momentId {
+                    MomentGridView(circleId: nav.circleId, momentId: momentId)
+                } else {
+                    CircleDetailView(circleId: nav.circleId)
+                }
+            }
         }
         .task {
             if viewModel == nil {
@@ -42,6 +57,17 @@ struct FriendsView: View {
                 viewModel?.acceptCodeInput = pending
                 showAddSheet = true
             }
+            if let circle = router.consumeCircle() {
+                selection = .circles
+                pendingCircleNav = .init(circleId: circle.circleId, momentId: circle.momentId)
+            }
+        }
+        .onChange(of: router.pendingCircleId) { _, newValue in
+            // Fired when a CIRCLE_* push lands while the app is foregrounded
+            // and FriendsView is already mounted.
+            guard newValue != nil, let circle = router.consumeCircle() else { return }
+            selection = .circles
+            pendingCircleNav = .init(circleId: circle.circleId, momentId: circle.momentId)
         }
     }
 
@@ -61,6 +87,7 @@ struct FriendsView: View {
                 switch selection {
                 case .feed: FeedTab(vm: vm)
                 case .friends: FriendsListTab(vm: vm, openAdd: { showAddSheet = true })
+                case .circles: CirclesListView()
                 case .you: YouTab(vm: vm, lastAddedFriendName: $lastAddedFriendName)
                 }
             }
